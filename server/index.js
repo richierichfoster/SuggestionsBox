@@ -245,6 +245,66 @@ app.post('/api/auth/login', async (req, res) => {
   });
 });
 
+// Google Sign-In. The frontend sends the ID token it gets from Google's
+// Identity Services library; we verify it directly against Google's own
+// tokeninfo endpoint (no extra dependency needed for this). If an account
+// with that email already exists, log into it. Otherwise create a new one
+// — Google doesn't give us a business name, so we use a sensible default
+// the person can rename later.
+const GOOGLE_CLIENT_ID = '84971942559-b3287j5jg35h6h3sveccle2n6d28admc.apps.googleusercontent.com';
+
+app.post('/api/auth/google', async (req, res) => {
+  const { credential } = req.body;
+  if (!credential) {
+    return res.status(400).json({ error: 'credential is required' });
+  }
+
+  let payload;
+  try {
+    const verifyRes = await fetch(`https://oauth2.googleapis.com/tokeninfo?id_token=${credential}`);
+    if (!verifyRes.ok) throw new Error('bad token');
+    payload = await verifyRes.json();
+  } catch (err) {
+    return res.status(401).json({ error: 'Could not verify Google sign-in' });
+  }
+
+  if (payload.aud !== GOOGLE_CLIENT_ID) {
+    return res.status(401).json({ error: 'Token was not issued for this app' });
+  }
+  if (payload.email_verified !== 'true' || !payload.email) {
+    return res.status(401).json({ error: 'Google account email is not verified' });
+  }
+
+  await db.read();
+  const normalizedEmail = payload.email.trim().toLowerCase();
+  let business = db.data.businesses.find((b) => b.email === normalizedEmail);
+
+  if (!business) {
+    business = {
+      id: newId(),
+      businessName: payload.name ? `${payload.name}'s Business` : 'My Business',
+      ownerName: payload.name || null,
+      email: normalizedEmail,
+      passwordHash: null, // Google accounts don't use a password
+      passwordSalt: null,
+      isGoogleAccount: true,
+      plan: 'starter',
+      createdAt: new Date().toISOString(),
+      notes: [],
+    };
+    db.data.businesses.push(business);
+  }
+
+  const token = createToken();
+  db.data.sessions[token] = business.id;
+  await db.write();
+
+  res.json({
+    token,
+    business: { id: business.id, businessName: business.businessName, plan: business.plan },
+  });
+});
+
 app.post('/api/auth/logout', requireSession, async (req, res) => {
   const auth = req.headers.authorization || '';
   const token = auth.slice(7);

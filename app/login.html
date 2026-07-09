@@ -8,6 +8,7 @@
 <title>Log in — Suggestions Box</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600;700&family=Work+Sans:wght@400;500;600;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+<script src="https://accounts.google.com/gsi/client" async defer></script>
 <style>
   :root{
     color-scheme: light;
@@ -95,7 +96,7 @@
   <p class="sub">Log in to reply to notes, update statuses, and see what your customers and team are saying.</p>
 
   <div class="card">
-    <div class="btn-social">
+    <div class="btn-social" id="google-btn">
       <svg viewBox="0 0 24 24" width="16" height="16"><path fill="#E2653A" d="M12 2L2 7l10 5 10-5-10-5z"/></svg>
       Continue with Google
     </div>
@@ -124,7 +125,42 @@
 
 <script>
   // Change this to your deployed server URL once it's live (see README).
-  const API_BASE = 'https://suggestionsbox-production.up.railway.app';
+  const API_BASE = 'https://api.suggestionsbox.com.au';
+
+  // Google Sign-In
+  const GOOGLE_CLIENT_ID = '84971942559-b3287j5jg35h6h3sveccle2n6d28admc.apps.googleusercontent.com';
+
+  async function handleGoogleCredential(response) {
+    try {
+      const res = await fetch(`${API_BASE}/api/auth/google`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ credential: response.credential }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        alert(data.error || 'Google sign-in failed. Please try again.');
+        return;
+      }
+      localStorage.setItem('sb_token', data.token);
+      localStorage.setItem('sb_business', JSON.stringify(data.business));
+      window.location.href = 'dashboard.html';
+    } catch (err) {
+      alert("Couldn't reach the server. Is the API running?");
+    }
+  }
+
+  window.addEventListener('load', () => {
+    if (window.google?.accounts?.id) {
+      google.accounts.id.initialize({
+        client_id: GOOGLE_CLIENT_ID,
+        callback: handleGoogleCredential,
+      });
+      document.getElementById('google-btn').addEventListener('click', () => {
+        google.accounts.id.prompt();
+      });
+    }
+  });
 
   const errorBox = document.getElementById('form-error');
   const submitBtn = document.getElementById('submit-btn');
