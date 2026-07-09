@@ -12,7 +12,7 @@ const adapter = new JSONFile(file);
 const defaultData = {
   business: {
     name: 'Fix It Right Plumbing',
-    ownerPasscode: 'fixitright2026', // change this before going live
+    ownerPasscode: 'FixItRight-9247-Kelp', // change this before going live
   },
   notes: [], // {id, text, category, isAnonymous, authorName, votes: [deviceIds], status, statusHistory: [{status, message, at}], createdAt}
 
