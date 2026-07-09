@@ -1,0 +1,260 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="color-scheme" content="light">
+<meta name="supported-color-schemes" content="light">
+<title>Dashboard — Suggestions Box</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600;700&family=Work+Sans:wght@400;500;600;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    color-scheme: light;
+    --cream:#FBF1E2; --parchment:#F3E9D8; --card:#FFFCF6;
+    --terra:#E2653A; --terra-deep:#B84B29;
+    --gold:#D9A441; --gold-deep:#B7852A;
+    --teal:#3D6B66; --teal-deep:#254240; --teal-tint:#E3EDEB;
+    --ink:#2E2B28; --ink-soft:#6E6A63; --line:#EDE0CC;
+    --good:#EFF4DE; --good-ink:#5E7A1F;
+  }
+  *{box-sizing:border-box; margin:0; padding:0;}
+  html{background:#FBF1E2 !important;}
+  body{font-family:'Work Sans',sans-serif; color:#2E2B28 !important; background:#FBF1E2 !important; -webkit-font-smoothing:antialiased;}
+  a{color:inherit; text-decoration:none;}
+  h1,h2{font-family:'Fredoka',sans-serif; font-weight:600;}
+
+  header{padding:18px 24px; border-bottom:1px solid var(--line); background:rgba(251,241,226,0.92);}
+  .header-row{max-width:900px; margin:0 auto; display:flex; align-items:center; justify-content:space-between;}
+  .brand{display:flex; align-items:center; gap:9px;}
+  .brand svg{width:28px; height:28px;}
+  .brand span{font-family:'Fredoka',sans-serif; font-weight:700; font-size:16px;}
+  .brand span em{font-style:normal; color:var(--terra);}
+  .logout-btn{
+    font-size:13px; font-weight:600; font-family:'Fredoka',sans-serif; color:var(--ink-soft);
+    background:var(--card); border:1px solid var(--line); border-radius:20px; padding:8px 16px; cursor:pointer;
+  }
+
+  .wrap{max-width:900px; margin:0 auto; padding:40px 24px 60px;}
+  .welcome-row{display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:14px; margin-bottom:28px;}
+  .welcome-row h1{font-size:24px;}
+  .plan-badge{
+    font-family:'Space Mono',monospace; font-size:11px; text-transform:uppercase; letter-spacing:.05em;
+    background:#FBEBD9; color:var(--terra-deep); border:1px solid #F0C9A8; padding:6px 13px; border-radius:16px; font-weight:700;
+  }
+
+  .stat-row{display:grid; grid-template-columns:repeat(3,1fr); gap:14px; margin-bottom:32px;}
+  @media (max-width:640px){ .stat-row{grid-template-columns:1fr; } }
+  .stat-card{background:var(--card); border:1px solid var(--line); border-radius:16px; padding:18px;}
+  .stat-num{font-family:'Fredoka',sans-serif; font-size:26px; font-weight:700;}
+  .stat-label{font-size:12px; color:var(--ink-soft); margin-top:2px;}
+
+  .panel{background:var(--card); border:1px solid var(--line); border-radius:18px; padding:30px 26px; text-align:center;}
+  .panel svg{width:40px; height:40px; margin:0 auto 14px;}
+  .panel h2{font-size:18px; margin-bottom:8px;}
+  .panel p{font-size:13.5px; color:var(--ink-soft); max-width:400px; margin:0 auto 20px; line-height:1.6;}
+
+  .qr-box{
+    display:inline-flex; align-items:center; gap:10px; background:var(--cream); border:1px solid var(--line);
+    border-radius:12px; padding:12px 18px; font-family:'Space Mono',monospace; font-size:12.5px; color:var(--ink-soft);
+  }
+
+  .loading, .error-state{text-align:center; padding:80px 20px; color:var(--ink-soft); font-size:14px;}
+  .error-state a{color:var(--terra-deep); font-weight:600;}
+
+  .board-link-box{
+    display:flex; align-items:center; justify-content:space-between; gap:14px; flex-wrap:wrap;
+    background:var(--teal-tint); border:1px solid #CBE0DC; border-radius:14px; padding:16px 18px; margin-bottom:26px;
+  }
+  .board-link-box b{font-family:'Fredoka',sans-serif; font-size:14px; color:var(--teal-deep); display:block; margin-bottom:3px;}
+  .board-url{font-family:'Space Mono',monospace; font-size:11px; color:var(--ink-soft); word-break:break-all;}
+  .board-link-btn{
+    background:var(--teal-deep); color:var(--cream); font-family:'Fredoka',sans-serif; font-weight:600;
+    font-size:13px; padding:10px 18px; border-radius:10px; white-space:nowrap; flex:none;
+  }
+
+  .notes-list{display:flex; flex-direction:column; gap:12px;}
+  .owner-note-row{background:var(--card); border:1px solid var(--line); border-radius:16px; padding:16px;}
+  .owner-note-row .note-text{font-size:13.5px; line-height:1.5; margin-bottom:8px;}
+  .owner-note-row .note-meta{font-family:'Space Mono',monospace; font-size:10.5px; color:var(--ink-soft); margin-bottom:12px;}
+  .status-row{display:flex; flex-wrap:wrap; gap:6px; margin-bottom:10px;}
+  .status-opt{font-size:11px; padding:6px 11px; border-radius:14px; border:1px solid var(--line); background:var(--cream); cursor:pointer;}
+  .status-opt.selected{background:var(--ink); color:var(--cream); border-color:var(--ink);}
+  .status-msg{
+    width:100%; margin-bottom:10px; padding:9px 11px; border-radius:8px; border:1px solid var(--line);
+    font-size:12.5px; background:var(--cream); font-family:'Work Sans',sans-serif;
+  }
+  .status-save{
+    background:transparent; border:1px solid var(--line); color:var(--ink); font-family:'Fredoka',sans-serif;
+    font-weight:600; font-size:12.5px; padding:9px 16px; border-radius:9px; cursor:pointer;
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="header-row">
+    <div class="brand">
+      <svg viewBox="0 0 200 200"><path d="M56 10 L146 10 L190 54 L190 144 A46 46 0 0 1 144 190 L56 190 A46 46 0 0 1 10 144 L10 56 A46 46 0 0 1 56 10 Z" fill="#FBF1E2" stroke="#E2653A" stroke-width="10"/><path d="M146 10 L190 54 L146 54 Z" fill="#E2653A"/><path d="M146 10 L146 54 L190 54" fill="none" stroke="#B84B29" stroke-width="4" stroke-linejoin="round"/><circle cx="66" cy="86" r="9" fill="#E2653A"/><circle cx="130" cy="86" r="9" fill="#E2653A"/><path d="M56 120 Q100 158 142 120" stroke="#E2653A" stroke-width="16" stroke-linecap="round" fill="none"/></svg>
+      <span>Suggestions<em>Box</em></span>
+    </div>
+    <button class="logout-btn" id="logout-btn">Log out</button>
+  </div>
+</header>
+
+<div class="wrap" id="app">
+  <div class="loading">Loading your dashboard…</div>
+</div>
+
+<script>
+  const API_BASE = 'https://api.suggestionsbox.com.au';
+  const app = document.getElementById('app');
+  const token = localStorage.getItem('sb_token');
+
+  function showLoggedOut() {
+    app.innerHTML = `
+      <div class="error-state">
+        You're not logged in.<br><br>
+        <a href="login.html">Go to login</a> or <a href="signup.html">create an account</a>.
+      </div>`;
+  }
+
+  if (!token) {
+    showLoggedOut();
+  } else {
+    (async () => {
+      try {
+        const meRes = await fetch(`${API_BASE}/api/me`, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        if (!meRes.ok) {
+          localStorage.removeItem('sb_token');
+          localStorage.removeItem('sb_business');
+          showLoggedOut();
+          return;
+        }
+        const me = await meRes.json();
+
+        const notesRes = await fetch(`${API_BASE}/api/my-notes`, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        const notes = await notesRes.json();
+
+        render(me, notes);
+      } catch (err) {
+        app.innerHTML = `<div class="error-state">Couldn't reach the server. Is the API running?</div>`;
+      }
+    })();
+  }
+
+  function render(business, notes) {
+    const totalVotes = notes.reduce((sum, n) => sum + (n.voteCount || 0), 0);
+    const actioned = notes.filter((n) => n.status === 'actioned').length;
+    const boardUrl = `board.html?business=${business.id}`;
+
+    app.innerHTML = `
+      <div class="welcome-row">
+        <h1>Welcome, ${escapeHtml(business.businessName)}</h1>
+        <span class="plan-badge">${escapeHtml(business.plan)} plan</span>
+      </div>
+
+      <div class="board-link-box">
+        <div>
+          <b>Your live board</b>
+          <div class="board-url">${window.location.origin}${window.location.pathname.replace('dashboard.html','')}${boardUrl}</div>
+        </div>
+        <a href="${boardUrl}" target="_blank" class="board-link-btn">Open board →</a>
+      </div>
+
+      <div class="stat-row">
+        <div class="stat-card"><div class="stat-num">${notes.length}</div><div class="stat-label">Notes received</div></div>
+        <div class="stat-card"><div class="stat-num">${totalVotes}</div><div class="stat-label">Total votes</div></div>
+        <div class="stat-card"><div class="stat-num">${actioned}</div><div class="stat-label">Actioned</div></div>
+      </div>
+
+      ${notes.length === 0 ? emptyState() : notesList(notes)}
+    `;
+
+    if (notes.length > 0) wireStatusControls();
+  }
+
+  const STATUSES = ['sent','seen','acknowledged','in_progress','actioned','not_planned'];
+
+  function notesList(notes) {
+    return `<div class="notes-list">` + notes.map((n) => `
+      <div class="owner-note-row" data-id="${n.id}">
+        <div class="note-text">${escapeHtml(n.text)}</div>
+        <div class="note-meta">${n.voteCount} votes · ${escapeHtml(n.category)} · ${n.isAnonymous ? 'Anonymous' : escapeHtml(n.authorName || 'Customer')}</div>
+        <div class="status-row">
+          ${STATUSES.map((s) => `<div class="status-opt ${n.status === s ? 'selected' : ''}" data-status="${s}" data-note="${n.id}">${s.replace('_',' ')}</div>`).join('')}
+        </div>
+        <input class="status-msg" data-msg="${n.id}" placeholder="Optional message with this update">
+        <button class="status-save" data-save="${n.id}">Update status</button>
+      </div>
+    `).join('') + `</div>`;
+  }
+
+  function wireStatusControls() {
+    const pending = {};
+    document.querySelectorAll('[data-status]').forEach((el) => {
+      el.addEventListener('click', () => {
+        const noteId = el.dataset.note;
+        pending[noteId] = el.dataset.status;
+        document.querySelectorAll(`[data-status][data-note="${noteId}"]`).forEach((o) => o.classList.remove('selected'));
+        el.classList.add('selected');
+      });
+    });
+    document.querySelectorAll('[data-save]').forEach((btn) => {
+      btn.addEventListener('click', async () => {
+        const noteId = btn.dataset.save;
+        const status = pending[noteId];
+        if (!status) return;
+        const msgInput = document.querySelector(`[data-msg="${noteId}"]`);
+        btn.textContent = 'Saving…';
+        btn.disabled = true;
+        try {
+          await fetch(`${API_BASE}/api/my-notes/${noteId}/status`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+            body: JSON.stringify({ status, message: msgInput.value }),
+          });
+          location.reload();
+        } catch {
+          btn.textContent = 'Update status';
+          btn.disabled = false;
+        }
+      });
+    });
+  }
+
+  function emptyState() {
+    return `
+      <div class="panel">
+        <svg viewBox="0 0 24 24" fill="none"><path d="M9 12l2 2 4-4M21 12a9 9 0 11-18 0 9 9 0 0118 0z" stroke="#5E7A1F" stroke-width="1.6"/></svg>
+        <h2>No notes yet — that's normal on day one</h2>
+        <p>Share your board link above with customers and your team. Notes will show up here, ranked by votes, as soon as the first one comes in.</p>
+      </div>
+    `;
+  }
+
+  function escapeHtml(str) {
+    const div = document.createElement('div');
+    div.textContent = str;
+    return div.innerHTML;
+  }
+
+  document.getElementById('logout-btn').addEventListener('click', async () => {
+    try {
+      await fetch(`${API_BASE}/api/auth/logout`, {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${token}` },
+      });
+    } catch {}
+    localStorage.removeItem('sb_token');
+    localStorage.removeItem('sb_business');
+    window.location.href = 'login.html';
+  });
+</script>
+
+</body>
+</html>

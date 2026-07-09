@@ -1,0 +1,239 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="color-scheme" content="light">
+<meta name="supported-color-schemes" content="light">
+<title>Sign up — Suggestions Box</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600;700&family=Work+Sans:wght@400;500;600;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    color-scheme: light;
+    --cream:#FBF1E2; --parchment:#F3E9D8; --card:#FFFCF6;
+    --terra:#E2653A; --terra-deep:#B84B29;
+    --gold:#D9A441; --gold-deep:#B7852A;
+    --teal:#3D6B66; --teal-deep:#254240; --teal-tint:#E3EDEB;
+    --ink:#2E2B28; --ink-soft:#6E6A63; --line:#EDE0CC;
+    --good:#EFF4DE; --good-ink:#5E7A1F;
+  }
+  *{box-sizing:border-box; margin:0; padding:0;}
+  html{background:#FBF1E2 !important;}
+  body{font-family:'Work Sans',sans-serif; color:#2E2B28 !important; background:#FBF1E2 !important; -webkit-font-smoothing:antialiased;}
+  a{color:inherit; text-decoration:none;}
+  h1,h2{font-family:'Fredoka',sans-serif; font-weight:600;}
+
+  header{padding:20px 24px; border-bottom:1px solid var(--line); background:rgba(251,241,226,0.92);}
+  .brand{display:flex; align-items:center; gap:9px; max-width:1120px; margin:0 auto;}
+  .brand svg{width:28px; height:28px;}
+  .brand span{font-family:'Fredoka',sans-serif; font-weight:700; font-size:16px;}
+  .brand span em{font-style:normal; color:var(--terra);}
+
+  .wrap{max-width:440px; margin:0 auto; padding:56px 24px 60px;}
+  .eyebrow{
+    font-family:'Space Mono',monospace; font-size:11px; letter-spacing:.08em; text-transform:uppercase;
+    color:var(--terra-deep); margin-bottom:14px; display:inline-block; background:#FBEBD9; border:1px solid #F0C9A8;
+    padding:6px 14px; border-radius:20px; font-weight:700;
+  }
+  h1{font-size:27px; margin-bottom:8px;}
+  .sub{font-size:14px; color:var(--ink-soft); margin-bottom:28px; line-height:1.5;}
+
+  .card{background:var(--card); border:1px solid var(--line); border-radius:20px; padding:28px 26px; box-shadow:0 14px 30px rgba(75,33,66,0.08);}
+
+  .field{margin-bottom:15px;}
+  .field label{font-family:'Space Mono',monospace; font-size:10px; text-transform:uppercase; color:var(--ink-soft); display:block; margin-bottom:6px;}
+  .field input{
+    width:100%; background:var(--cream); border:1px solid var(--line); border-radius:10px;
+    padding:12px 13px; font-size:14px; font-family:'Work Sans',sans-serif; color:var(--ink);
+  }
+  .field input:focus{outline:2px solid var(--terra); outline-offset:1px;}
+  .field-row{display:flex; gap:10px;}
+  .field-row .field{flex:1;}
+
+  .plan-row{display:flex; gap:8px; margin-bottom:16px;}
+  .plan-chip{
+    flex:1; text-align:center; padding:10px 6px; border-radius:11px; border:1.5px solid var(--line);
+    background:var(--cream); font-size:12px; font-weight:600; cursor:pointer;
+  }
+  .plan-chip.selected{background:var(--terra); border-color:var(--terra); color:var(--card);}
+  .plan-chip .psub{display:block; font-family:'Space Mono',monospace; font-weight:400; font-size:9.5px; margin-top:2px; opacity:.8;}
+
+  .btn-primary{
+    width:100%; background:var(--terra); color:var(--card); border:none; font-family:'Fredoka',sans-serif;
+    font-weight:600; font-size:14.5px; padding:14px; border-radius:12px; cursor:pointer; margin-top:4px;
+    box-shadow:0 10px 22px rgba(226,101,58,0.25);
+  }
+
+  .terms{font-size:11px; color:var(--ink-soft); text-align:center; margin-top:14px; line-height:1.5;}
+  .terms a{color:var(--terra-deep); font-weight:600;}
+
+  .divider{display:flex; align-items:center; gap:10px; margin:20px 0; font-family:'Space Mono',monospace; font-size:10px; color:var(--ink-soft); text-transform:uppercase;}
+  .divider::before, .divider::after{content:""; flex:1; height:1px; background:var(--line);}
+
+  .btn-social{
+    display:flex; align-items:center; justify-content:center; gap:8px; width:100%;
+    background:var(--cream); border:1px solid var(--line); border-radius:12px; padding:12px;
+    font-family:'Fredoka',sans-serif; font-weight:600; font-size:13.5px; margin-bottom:10px; cursor:pointer;
+  }
+
+  .switch-line{text-align:center; font-size:13.5px; color:var(--ink-soft); margin-top:24px;}
+  .switch-line a{color:var(--terra-deep); font-weight:600;}
+
+  .back-home{display:inline-flex; align-items:center; gap:6px; font-size:13px; color:var(--ink-soft); margin-bottom:22px;}
+  .back-home:hover{color:var(--terra-deep);}
+  .back-home svg{width:13px; height:13px;}
+
+  .trust-line{display:flex; align-items:center; gap:7px; font-size:12px; color:var(--ink-soft); margin-top:18px; justify-content:center;}
+  .trust-line svg{width:14px; height:14px; flex:none;}
+</style>
+</head>
+<body>
+
+<header>
+  <a href="https://www.suggestionsbox.com.au/" class="brand">
+    <svg viewBox="0 0 200 200"><path d="M56 10 L146 10 L190 54 L190 144 A46 46 0 0 1 144 190 L56 190 A46 46 0 0 1 10 144 L10 56 A46 46 0 0 1 56 10 Z" fill="#FBF1E2" stroke="#E2653A" stroke-width="10"/><path d="M146 10 L190 54 L146 54 Z" fill="#E2653A"/><path d="M146 10 L146 54 L190 54" fill="none" stroke="#B84B29" stroke-width="4" stroke-linejoin="round"/><circle cx="66" cy="86" r="9" fill="#E2653A"/><circle cx="130" cy="86" r="9" fill="#E2653A"/><path d="M56 120 Q100 158 142 120" stroke="#E2653A" stroke-width="16" stroke-linecap="round" fill="none"/></svg>
+    <span>Suggestions<em>Box</em></span>
+  </a>
+</header>
+
+<div class="wrap">
+  <a href="https://www.suggestionsbox.com.au/" class="back-home">
+    <svg viewBox="0 0 24 24" fill="none"><path d="M15 18l-6-6 6-6" stroke="#6E6A63" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+    Back to home
+  </a>
+
+  <span class="eyebrow">Get started</span>
+  <h1>Create your business account.</h1>
+  <p class="sub">Free on Starter — no card required. Customers and staff always post for free, on every plan.</p>
+
+  <div class="card">
+    <div class="btn-social">
+      <svg viewBox="0 0 24 24" width="16" height="16"><path fill="#E2653A" d="M12 2L2 7l10 5 10-5-10-5z"/></svg>
+      Continue with Google
+    </div>
+    <div class="divider">or</div>
+
+    <div class="field">
+      <label>Business name</label>
+      <input type="text" id="f-business" placeholder="e.g. Fix It Right Plumbing">
+    </div>
+    <div class="field-row">
+      <div class="field">
+        <label>Your name</label>
+        <input type="text" id="f-name" placeholder="Alex">
+      </div>
+      <div class="field">
+        <label>Email</label>
+        <input type="email" id="f-email" placeholder="you@business.com">
+      </div>
+    </div>
+    <div class="field">
+      <label>Password</label>
+      <input type="password" id="f-password" placeholder="At least 8 characters">
+    </div>
+
+    <div class="field">
+      <label>Plan</label>
+      <div class="plan-row">
+        <div class="plan-chip selected" data-plan="starter">Starter<span class="psub">Free</span></div>
+        <div class="plan-chip" data-plan="growth">Growth<span class="psub">$59/mo</span></div>
+        <div class="plan-chip" data-plan="business">Business<span class="psub">Custom</span></div>
+      </div>
+    </div>
+
+    <div id="form-error" style="display:none; color:#C4432A; font-size:12.5px; margin-bottom:12px;"></div>
+
+    <button class="btn-primary" id="submit-btn">Create account</button>
+    <p class="terms">By continuing, you agree to our <a href="#">Terms</a> and <a href="#">Privacy Policy</a>.</p>
+  </div>
+
+  <div class="switch-line">
+    Already have an account? <a href="login.html">Log in</a>
+  </div>
+
+  <div class="trust-line">
+    <svg viewBox="0 0 24 24" fill="none"><path d="M9 12l2 2 4-4M21 12a9 9 0 11-18 0 9 9 0 0118 0z" stroke="#5E7A1F" stroke-width="1.8"/></svg>
+    Team notes included free, on every plan — always.
+  </div>
+</div>
+
+<script>
+  // Pre-select the plan chip if arriving from a pricing page link (?plan=growth etc.)
+  const params = new URLSearchParams(window.location.search);
+  const plan = params.get('plan');
+  if (plan) {
+    const chips = document.querySelectorAll('.plan-chip');
+    const index = { starter: 0, growth: 1, business: 2 }[plan];
+    if (index !== undefined) {
+      chips.forEach((c) => c.classList.remove('selected'));
+      chips[index].classList.add('selected');
+    }
+  }
+  document.querySelectorAll('.plan-chip').forEach((chip) => {
+    chip.addEventListener('click', () => {
+      document.querySelectorAll('.plan-chip').forEach((c) => c.classList.remove('selected'));
+      chip.classList.add('selected');
+    });
+  });
+
+  // Change this to your deployed server URL once it's live (see README).
+  const API_BASE = 'https://api.suggestionsbox.com.au';
+
+  const errorBox = document.getElementById('form-error');
+  const submitBtn = document.getElementById('submit-btn');
+
+  function showError(msg) {
+    errorBox.textContent = msg;
+    errorBox.style.display = 'block';
+  }
+
+  submitBtn.addEventListener('click', async () => {
+    errorBox.style.display = 'none';
+
+    const businessName = document.getElementById('f-business').value.trim();
+    const ownerName = document.getElementById('f-name').value.trim();
+    const email = document.getElementById('f-email').value.trim();
+    const password = document.getElementById('f-password').value;
+    const selectedPlan = document.querySelector('.plan-chip.selected')?.dataset.plan || 'starter';
+
+    if (!businessName || !email || !password) {
+      showError('Business name, email, and password are all required.');
+      return;
+    }
+    if (password.length < 8) {
+      showError('Password needs to be at least 8 characters.');
+      return;
+    }
+
+    submitBtn.disabled = true;
+    submitBtn.textContent = 'Creating account…';
+
+    try {
+      const res = await fetch(`${API_BASE}/api/auth/signup`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ businessName, ownerName, email, password, plan: selectedPlan }),
+      });
+      const data = await res.json();
+
+      if (!res.ok) {
+        showError(data.error || 'Something went wrong. Please try again.');
+        submitBtn.disabled = false;
+        submitBtn.textContent = 'Create account';
+        return;
+      }
+
+      localStorage.setItem('sb_token', data.token);
+      localStorage.setItem('sb_business', JSON.stringify(data.business));
+      window.location.href = 'dashboard.html';
+    } catch (err) {
+      showError("Couldn't reach the server. Is the API running?");
+      submitBtn.disabled = false;
+      submitBtn.textContent = 'Create account';
+    }
+  });
+</script>
+
+</body>
+</html>
