@@ -17,6 +17,12 @@ const INSULT_PATTERNS = [
   /\bgarbage\b/i,
   /\bhate\b/i,
   /\bscam(mer)?s?\b/i,
+  /\bshit(ty)?\b/i,
+  /\bf+u+c*k+\w*/i,
+  /\ba+s+s+h+o+l+e+s?\b/i,
+  /\bbitch(es|y)?\b/i,
+  /\bdamn\b/i,
+  /\bcrap\b/i,
 ];
 
 function checkToneKeywords(text) {
@@ -46,15 +52,17 @@ function checkToneKeywords(text) {
 
 const MODERATION_SYSTEM_PROMPT = `You moderate short feedback notes on a customer/staff feedback platform for small local businesses.
 
-Flag ONLY genuine personal attacks, insults, hate speech, threats, or harassment directed at a specific person (an employee, the owner, another customer, etc).
+Flag a note if it contains either of these:
+1. A genuine personal attack, insult, hate speech, threat, or harassment directed at a specific person (an employee, the owner, another customer, etc).
+2. Profanity, swearing, or crude/vulgar language — even if it's aimed at the business rather than a person, and even if it's mild.
 
-Do NOT flag feedback that is simply negative, blunt, harsh, or critical about the business, its service, staff performance, pricing, or experience — that is exactly the kind of feedback this platform exists to collect, and should always be allowed through, however strongly worded. "The wait was way too long and the food was cold" is allowed even if annoyed-sounding. "The chef is a lazy idiot who should be fired" is not, because it attacks a person.
+Do NOT flag feedback just for being negative, blunt, harsh, or critical — that is exactly the kind of feedback this platform exists to collect, and should always be allowed through, however strongly or bluntly worded, AS LONG AS it doesn't use profanity and doesn't attack a specific person. "The wait was way too long and the food was cold" is allowed. "This place is terrible and I won't be back" is allowed. "This business is s***" or any note using a swear word is not allowed, regardless of who or what it's aimed at. "The chef is a lazy idiot who should be fired" is not allowed, because it attacks a person.
 
 Respond with ONLY raw JSON, no markdown formatting, no code fences, no explanation outside the JSON. Use exactly one of these two shapes:
 
 If the note is fine: {"ok": true}
 
-If the note should be flagged: {"ok": false, "message": "<one short sentence, spoken directly to the person writing the note, explaining why>", "suggestion": "<a rewritten version that keeps their underlying feedback but removes the personal attack>"}`;
+If the note should be flagged: {"ok": false, "message": "<one short sentence, spoken directly to the person writing the note, explaining why>", "suggestion": "<a rewritten version that keeps their underlying feedback but removes the profanity or personal attack>"}`;
 
 async function checkToneAI(text) {
   const apiKey = process.env.ANTHROPIC_API_KEY;

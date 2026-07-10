@@ -115,7 +115,14 @@
   }
 
   .notes-list{display:flex; flex-direction:column; gap:12px;}
-  .owner-note-row{background:var(--card); border:1px solid var(--line); border-radius:16px; padding:16px;}
+  .owner-note-row{background:var(--card); border:1px solid var(--line); border-radius:16px; padding:16px; position:relative;}
+  .note-delete-btn{
+    position:absolute; top:14px; right:14px; width:28px; height:28px; border-radius:8px;
+    background:transparent; border:1px solid var(--line); color:var(--ink-soft); cursor:pointer;
+    display:flex; align-items:center; justify-content:center;
+  }
+  .note-delete-btn:hover{background:#F5E6E1; border-color:#E8C4B8; color:var(--danger);}
+  .note-delete-btn svg{width:14px; height:14px;}
   .owner-note-row .note-text{font-size:13.5px; line-height:1.5; margin-bottom:8px;}
   .owner-note-row .note-meta{font-family:'Space Mono',monospace; font-size:10.5px; color:var(--ink-soft); margin-bottom:12px;}
   .response-preview{background:var(--cream); border-radius:9px; padding:10px 12px; font-size:12.5px; line-height:1.5; margin-bottom:12px; color:var(--ink);}
@@ -2761,7 +2768,10 @@ var qrcode = function() {
         : null;
       return `
       <div class="owner-note-row" data-id="${n.id}">
-        <div class="note-text">${escapeHtml(n.text)}</div>
+        <button class="note-delete-btn" data-delete="${n.id}" title="Delete note" aria-label="Delete note">
+          <svg viewBox="0 0 24 24" fill="none"><path d="M3 6h18M8 6V4a2 2 0 012-2h4a2 2 0 012 2v2m3 0v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6h14z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </button>
+        <div class="note-text" style="padding-right:36px;">${escapeHtml(n.text)}</div>
         <div class="note-meta">${n.lane === 'employee' ? '<b style="color:#B84B29;">Team ·</b> ' : ''}${n.voteCount} votes · ${escapeHtml(n.category)} · ${n.isAnonymous ? 'Anonymous' : escapeHtml(n.authorName || 'Customer')}</div>
         ${latestEntry ? `<div class="response-preview"><b>Your response:</b> ${escapeHtml(latestEntry.message)}</div>` : ''}
         <div class="status-row">
@@ -2825,6 +2835,21 @@ var qrcode = function() {
           MY_NOTES = await apiFetch('/api/my-notes');
         } catch {
           toggle.classList.toggle('on', !newValue); // revert on failure
+        }
+      });
+    });
+    document.querySelectorAll('[data-delete]').forEach((btn) => {
+      btn.addEventListener('click', async () => {
+        const noteId = btn.dataset.delete;
+        if (!confirm('Delete this note? This can\'t be undone.')) return;
+        btn.disabled = true;
+        try {
+          await apiFetch(`/api/my-notes/${noteId}`, { method: 'DELETE' });
+          MY_NOTES = await apiFetch('/api/my-notes');
+          if (currentNotesScope === 'all') showNotes(); else showTeamBoard();
+        } catch {
+          btn.disabled = false;
+          alert("Couldn't delete this note — please try again.");
         }
       });
     });

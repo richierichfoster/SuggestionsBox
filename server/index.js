@@ -550,6 +550,21 @@ app.post('/api/my-notes/:id/wall-visibility', requireSession, async (req, res) =
   res.json({ ok: true, showOnWall: note.showOnWall });
 });
 
+// Deletes a note — the business can only ever delete its own notes,
+// enforced by scoping the lookup to req.business.id, same as every
+// other /api/my-notes endpoint.
+app.delete('/api/my-notes/:id', requireSession, async (req, res) => {
+  await db.read();
+  const business = db.data.businesses.find((b) => b.id === req.business.id);
+  const noteIndex = business.notes.findIndex((n) => n.id === req.params.id);
+  if (noteIndex === -1) return res.status(404).json({ error: 'not found' });
+
+  business.notes.splice(noteIndex, 1);
+  await db.write();
+
+  res.json({ ok: true });
+});
+
 // ============================================================
 // Public board — this is what links the two systems together.
 // Anyone with a business's ID (from their signup) can browse,
