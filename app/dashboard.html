@@ -116,6 +116,8 @@
   .owner-note-row{background:var(--card); border:1px solid var(--line); border-radius:16px; padding:16px;}
   .owner-note-row .note-text{font-size:13.5px; line-height:1.5; margin-bottom:8px;}
   .owner-note-row .note-meta{font-family:'Space Mono',monospace; font-size:10.5px; color:var(--ink-soft); margin-bottom:12px;}
+  .response-preview{background:var(--cream); border-radius:9px; padding:10px 12px; font-size:12.5px; line-height:1.5; margin-bottom:12px; color:var(--ink);}
+  .response-preview b{color:var(--teal-deep); font-weight:600;}
   .status-row{display:flex; flex-wrap:wrap; gap:6px; margin-bottom:10px;}
   .status-opt{font-size:11px; padding:6px 11px; border-radius:14px; border:1px solid var(--line); background:var(--cream); cursor:pointer;}
   .status-opt.selected{background:var(--ink); color:var(--cream); border-color:var(--ink);}
@@ -409,10 +411,15 @@
   const STATUSES = ['sent','seen','acknowledged','in_progress','actioned','not_planned'];
 
   function notesList(notes) {
-    return `<div class="notes-list">` + notes.map((n) => `
+    return `<div class="notes-list">` + notes.map((n) => {
+      const latestEntry = n.statusHistory && n.statusHistory.length
+        ? [...n.statusHistory].reverse().find((h) => h.status === n.status && h.message)
+        : null;
+      return `
       <div class="owner-note-row" data-id="${n.id}">
         <div class="note-text">${escapeHtml(n.text)}</div>
         <div class="note-meta">${n.lane === 'employee' ? '<b style="color:#B84B29;">Team ·</b> ' : ''}${n.voteCount} votes · ${escapeHtml(n.category)} · ${n.isAnonymous ? 'Anonymous' : escapeHtml(n.authorName || 'Customer')}</div>
+        ${latestEntry ? `<div class="response-preview"><b>Your response:</b> ${escapeHtml(latestEntry.message)}</div>` : ''}
         <div class="status-row">
           ${STATUSES.map((s) => `<div class="status-opt ${n.status === s ? 'selected' : ''}" data-status="${s}" data-note="${n.id}">${s.replace('_',' ')}</div>`).join('')}
         </div>
@@ -425,7 +432,8 @@
           </label>
         ` : ''}
       </div>
-    `).join('') + `</div>`;
+    `;
+    }).join('') + `</div>`;
   }
 
   function wireStatusControls() {
