@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="color-scheme" content="light">
+<meta name="supported-color-schemes" content="light">
+<title>Find a business — Suggestions Box</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600;700&family=Work+Sans:wght@400;500;600;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    color-scheme: light;
+    --cream:#FBF1E2; --card:#FFFCF6; --terra:#E2653A; --terra-deep:#B84B29;
+    --teal-deep:#254240; --teal-tint:#E3EDEB;
+    --ink:#2E2B28; --ink-soft:#6E6A63; --line:#EDE0CC;
+  }
+  *{box-sizing:border-box; margin:0; padding:0;}
+  html{background:#FBF1E2 !important;}
+  body{font-family:'Work Sans',sans-serif; color:#2E2B28 !important; background:#FBF1E2 !important; -webkit-font-smoothing:antialiased;}
+  #root{max-width:480px; margin:0 auto; min-height:100vh; padding-bottom:50px;}
+  h1,h2{font-family:'Fredoka',sans-serif; font-weight:600;}
+  a{color:inherit;}
+
+  .topbar{padding:18px 18px 14px; position:sticky; top:0; background:rgba(251,241,226,0.94); backdrop-filter:blur(6px); z-index:10; border-bottom:1px solid var(--line);}
+  .topbar h1{font-size:17px;}
+  .page{padding:16px 18px;}
+
+  .search-box{display:flex; gap:8px; margin-bottom:10px;}
+  .search-box input{
+    flex:1; background:var(--card); border:1px solid var(--line); border-radius:12px;
+    padding:12px 14px; font-size:14px; font-family:'Work Sans',sans-serif; color:var(--ink);
+  }
+  .search-box input:focus{outline:2px solid var(--terra); outline-offset:1px;}
+  .btn-search{background:var(--terra); color:var(--card); border:none; border-radius:12px; padding:0 16px; font-family:'Fredoka',sans-serif; font-weight:600; font-size:13.5px; cursor:pointer;}
+
+  .near-me-btn{
+    display:flex; align-items:center; gap:8px; width:100%; justify-content:center;
+    background:var(--teal-tint); color:var(--teal-deep); border:1px solid #CBE0DC; border-radius:12px;
+    padding:11px; font-family:'Fredoka',sans-serif; font-weight:600; font-size:13.5px; cursor:pointer; margin-bottom:18px;
+  }
+  .near-me-btn svg{width:15px; height:15px;}
+
+  .result-card{
+    display:flex; align-items:center; gap:12px; background:var(--card); border:1px solid var(--line);
+    border-radius:14px; padding:14px; margin-bottom:10px; cursor:pointer;
+  }
+  .result-logo{width:44px; height:44px; border-radius:11px; background:var(--cream); border:1px solid var(--line); display:flex; align-items:center; justify-content:center; overflow:hidden; flex-shrink:0;}
+  .result-logo img{width:100%; height:100%; object-fit:cover;}
+  .result-logo .placeholder{font-family:'Fredoka',sans-serif; font-weight:600; font-size:16px; color:var(--ink-soft);}
+  .result-info{flex:1; min-width:0;}
+  .result-name{font-family:'Fredoka',sans-serif; font-weight:600; font-size:14px;}
+  .result-meta{font-size:12px; color:var(--ink-soft); margin-top:2px;}
+
+  .empty{text-align:center; padding:60px 20px; color:var(--ink-soft); font-size:13.5px; line-height:1.6;}
+  .footer-brand{text-align:center; padding:18px; font-family:'Space Mono',monospace; font-size:10.5px; color:var(--ink-soft);}
+  .footer-brand a{color:var(--terra-deep); font-weight:700;}
+</style>
+</head>
+<body>
+
+<div id="root">
+  <div class="topbar"><h1>Find a business</h1></div>
+  <div class="page">
+    <div class="search-box">
+      <input type="text" id="search-input" placeholder="Business name or suburb">
+      <button class="btn-search" id="search-btn">Search</button>
+    </div>
+    <button class="near-me-btn" id="near-me-btn">
+      <svg viewBox="0 0 24 24" fill="none"><path d="M12 22s8-7.5 8-13a8 8 0 10-16 0c0 5.5 8 13 8 13z" stroke="#254240" stroke-width="1.8"/><circle cx="12" cy="9" r="2.5" stroke="#254240" stroke-width="1.8"/></svg>
+      Use my location
+    </button>
+    <div id="results"><div class="empty">Search for a business by name or suburb, or use your location to find one nearby.</div></div>
+  </div>
+  <div class="footer-brand">Powered by <a href="https://www.suggestionsbox.com.au/">Suggestions Box</a></div>
+</div>
+
+<script>
+  const API_BASE = 'https://api.suggestionsbox.com.au';
+  const resultsEl = document.getElementById('results');
+  const searchInput = document.getElementById('search-input');
+
+  function escapeHtml(str) {
+    const div = document.createElement('div');
+    div.textContent = str == null ? '' : str;
+    return div.innerHTML;
+  }
+
+  async function runSearch(params) {
+    resultsEl.innerHTML = '<div class="empty">Searching…</div>';
+    try {
+      const res = await fetch(`${API_BASE}/api/businesses/search?${params}`);
+      const results = await res.json();
+      renderResults(results, params.includes('near='));
+    } catch (err) {
+      resultsEl.innerHTML = '<div class="empty">Couldn\'t reach the server. Please try again.</div>';
+    }
+  }
+
+  function renderResults(results, isNearSearch) {
+    if (results.length === 0) {
+      resultsEl.innerHTML = isNearSearch
+        ? '<div class="empty">No businesses found within 100km. Try searching by name instead.</div>'
+        : '<div class="empty">No businesses match that search.</div>';
+      return;
+    }
+    resultsEl.innerHTML = results.map((b) => `
+      <a href="board.html?business=${b.id}" style="text-decoration:none; color:inherit;">
+        <div class="result-card">
+          <div class="result-logo">
+            ${b.logoDataUrl ? `<img src="${b.logoDataUrl}" alt="">` : `<span class="placeholder">${escapeHtml((b.businessName || '?').charAt(0).toUpperCase())}</span>`}
+          </div>
+          <div class="result-info">
+            <div class="result-name">${escapeHtml(b.businessName)}</div>
+            <div class="result-meta">
+              ${b.address ? escapeHtml(b.address) : 'Address not listed'}
+              ${b.distanceKm != null ? ` · ${b.distanceKm < 1 ? 'under 1km' : Math.round(b.distanceKm) + 'km away'}` : ''}
+            </div>
+          </div>
+        </div>
+      </a>
+    `).join('');
+  }
+
+  document.getElementById('search-btn').addEventListener('click', () => {
+    const q = searchInput.value.trim();
+    if (!q) return;
+    runSearch(`q=${encodeURIComponent(q)}`);
+  });
+  searchInput.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') document.getElementById('search-btn').click();
+  });
+
+  document.getElementById('near-me-btn').addEventListener('click', () => {
+    if (!navigator.geolocation) {
+      resultsEl.innerHTML = '<div class="empty">Your browser doesn\'t support location search — try searching by name instead.</div>';
+      return;
+    }
+    resultsEl.innerHTML = '<div class="empty">Getting your location…</div>';
+    navigator.geolocation.getCurrentPosition(
+      (pos) => {
+        const { latitude, longitude } = pos.coords;
+        runSearch(`near=${latitude},${longitude}`);
+      },
+      () => {
+        resultsEl.innerHTML = '<div class="empty">Couldn\'t get your location — check your browser\'s permission settings, or try searching by name instead.</div>';
+      }
+    );
+  });
+</script>
+
+</body>
+</html>

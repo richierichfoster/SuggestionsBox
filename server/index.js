@@ -6,11 +6,42 @@ import { hashPassword, verifyPassword, createToken } from './auth.js';
 
 const app = express();
 app.use(cors());
-app.use(express.json());
+app.use(express.json({ limit: '3mb' }));
 
 const STATUS_ORDER = ['sent', 'seen', 'acknowledged', 'in_progress', 'actioned', 'not_planned'];
 
 await initDb();
+
+// Turns a free-text address into coordinates using OpenStreetMap's free
+// Nominatim service — no API key needed. Returns null on any failure
+// (bad address, service down, etc.) rather than throwing, since a
+// business should still be able to save its profile even if geocoding
+// doesn't resolve — it just won't show up in "near me" search until it does.
+async function geocodeAddress(address) {
+  if (!address || !address.trim()) return null;
+  try {
+    const url = `https://nominatim.openstreetmap.org/search?format=json&limit=1&q=${encodeURIComponent(address)}`;
+    const res = await fetch(url, { headers: { 'User-Agent': 'SuggestionsBox/1.0 (suggestionsbox.com.au)' } });
+    if (!res.ok) return null;
+    const results = await res.json();
+    if (!results.length) return null;
+    return { lat: parseFloat(results[0].lat), lng: parseFloat(results[0].lon) };
+  } catch (err) {
+    return null;
+  }
+}
+
+// Distance between two lat/lng points in kilometers (haversine formula).
+function distanceKm(lat1, lng1, lat2, lng2) {
+  const toRad = (d) => (d * Math.PI) / 180;
+  const R = 6371;
+  const dLat = toRad(lat2 - lat1);
+  const dLng = toRad(lng2 - lng1);
+  const a =
+    Math.sin(dLat / 2) ** 2 +
+    Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) * Math.sin(dLng / 2) ** 2;
+  return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+}
 
 // --- Public: business info ---
 app.get('/api/business', async (req, res) => {
@@ -208,6 +239,10 @@ app.post('/api/auth/signup', async (req, res) => {
     passwordSalt: salt,
     plan: plan || 'starter',
     isAdmin: false,
+    address: null,
+    lat: null,
+    lng: null,
+    logoDataUrl: null,
     createdAt: new Date().toISOString(),
     notes: [],
   };
@@ -264,8 +299,151 @@ app.get('/api/me', requireSession, (req, res) => {
     plan: req.business.plan,
     isAdmin: !!req.business.isAdmin,
     employeeNotesEnabled: planIncludesEmployeeNotes(req.business.plan),
+    address: req.business.address || null,
+    lat: req.business.lat ?? null,
+    lng: req.business.lng ?? null,
+    logoDataUrl: req.business.logoDataUrl || null,
     createdAt: req.business.createdAt,
   });
+});
+
+const MAX_LOGO_DATA_URL_LENGTH = 1_500_000; // ~1.1MB image, base64-inflated
+
+// Updates the caller's own business profile — name, owner name, email,
+// address (re-geocoded if it changed), and logo. Password is handled
+// by a separate endpoint below since it needs current-password verification.
+app.post('/api/business/profile', requireSession, async (req, res) => {
+  const { businessName, ownerName, email, address, logoDataUrl, removeLogo } = req.body;
+
+  if (businessName !== undefined && !businessName.trim()) {
+    return res.status(400).json({ error: 'businessName cannot be empty' });
+  }
+  if (logoDataUrl && logoDataUrl.length > MAX_LOGO_DATA_URL_LENGTH) {
+    return res.status(413).json({ error: 'Logo image is too large — please use a smaller image' });
+  }
+  if (logoDataUrl && !/^data:image\/(png|jpe?g|webp|gif);base64,/.test(logoDataUrl)) {
+    return res.status(400).json({ error: 'Logo must be a PNG, JPEG, WEBP, or GIF image' });
+  }
+
+  await db.read();
+  const business = db.data.businesses.find((b) => b.id === req.business.id);
+
+  if (email !== undefined && email.trim()) {
+    const normalizedEmail = email.trim().toLowerCase();
+    const existing = db.data.businesses.find((b) => b.email === normalizedEmail && b.id !== business.id);
+    if (existing) {
+      return res.status(409).json({ error: 'Another account already uses that email' });
+    }
+    business.email = normalizedEmail;
+  }
+
+  if (businessName !== undefined && businessName.trim()) business.businessName = businessName.trim();
+  if (ownerName !== undefined) business.ownerName = ownerName.trim() || null;
+
+  if (address !== undefined) {
+    const trimmedAddress = address.trim() || null;
+    if (trimmedAddress !== business.address) {
+      business.address = trimmedAddress;
+      if (trimmedAddress) {
+        const coords = await geocodeAddress(trimmedAddress);
+        business.lat = coords?.lat ?? null;
+        business.lng = coords?.lng ?? null;
+      } else {
+        business.lat = null;
+        business.lng = null;
+      }
+    }
+  }
+
+  if (removeLogo) {
+    business.logoDataUrl = null;
+  } else if (logoDataUrl) {
+    business.logoDataUrl = logoDataUrl;
+  }
+
+  await db.write();
+
+  res.json({
+    ok: true,
+    businessName: business.businessName,
+    ownerName: business.ownerName,
+    email: business.email,
+    address: business.address,
+    lat: business.lat,
+    lng: business.lng,
+    logoDataUrl: business.logoDataUrl,
+  });
+});
+
+app.post('/api/business/password', requireSession, async (req, res) => {
+  const { currentPassword, newPassword } = req.body;
+  if (!currentPassword || !newPassword) {
+    return res.status(400).json({ error: 'currentPassword and newPassword are required' });
+  }
+  if (newPassword.length < 8) {
+    return res.status(400).json({ error: 'New password must be at least 8 characters' });
+  }
+
+  await db.read();
+  const business = db.data.businesses.find((b) => b.id === req.business.id);
+  if (!verifyPassword(currentPassword, business.passwordHash, business.passwordSalt)) {
+    return res.status(401).json({ error: 'Current password is incorrect' });
+  }
+
+  const { hash, salt } = hashPassword(newPassword);
+  business.passwordHash = hash;
+  business.passwordSalt = salt;
+  await db.write();
+
+  res.json({ ok: true });
+});
+
+// Public — lets customers find a business by name/suburb text match,
+// and/or by proximity if they share their location. No auth: this is
+// meant to be browsed by anyone looking for a local business's board.
+app.get('/api/businesses/search', async (req, res) => {
+  await db.read();
+  const q = (req.query.q || '').trim().toLowerCase();
+  const near = req.query.near; // "lat,lng"
+
+  let results = db.data.businesses;
+
+  if (q) {
+    results = results.filter((b) =>
+      b.businessName.toLowerCase().includes(q) || (b.address || '').toLowerCase().includes(q)
+    );
+  }
+
+  let userLat, userLng;
+  if (near) {
+    const parts = near.split(',').map(Number);
+    if (parts.length === 2 && parts.every((n) => !Number.isNaN(n))) {
+      [userLat, userLng] = parts;
+    }
+  }
+
+  let mapped = results.map((b) => {
+    const hasCoords = b.lat != null && b.lng != null;
+    const distance = userLat != null && hasCoords ? distanceKm(userLat, userLng, b.lat, b.lng) : null;
+    return {
+      id: b.id,
+      businessName: b.businessName,
+      address: b.address,
+      logoDataUrl: b.logoDataUrl,
+      distanceKm: distance,
+    };
+  });
+
+  if (userLat != null) {
+    // Near-me search: only businesses with known coordinates, closest first,
+    // capped to a reasonable radius so it doesn't return the whole country.
+    mapped = mapped.filter((b) => b.distanceKm != null && b.distanceKm <= 100);
+    mapped.sort((a, b) => a.distanceKm - b.distanceKm);
+  } else {
+    mapped.sort((a, b) => a.businessName.localeCompare(b.businessName));
+  }
+
+  res.json(mapped.slice(0, 30));
 });
 
 const VALID_PLANS = ['starter', 'growth', 'business'];

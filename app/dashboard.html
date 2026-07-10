@@ -16,7 +16,7 @@
     --gold:#D9A441; --gold-deep:#B7852A;
     --teal:#3D6B66; --teal-deep:#254240; --teal-tint:#E3EDEB;
     --ink:#2E2B28; --ink-soft:#6E6A63; --line:#EDE0CC;
-    --good:#EFF4DE; --good-ink:#5E7A1F;
+    --good:#EFF4DE; --good-ink:#5E7A1F; --danger:#B85C4A;
   }
   *{box-sizing:border-box; margin:0; padding:0;}
   html{background:#FBF1E2 !important;}
@@ -24,27 +24,55 @@
   a{color:inherit; text-decoration:none;}
   h1,h2{font-family:'Fredoka',sans-serif; font-weight:600;}
 
-  header{padding:18px 24px; border-bottom:1px solid var(--line); background:rgba(251,241,226,0.92);}
-  .header-row{max-width:900px; margin:0 auto; display:flex; align-items:center; justify-content:space-between;}
-  .brand{display:flex; align-items:center; gap:9px;}
-  .brand svg{width:28px; height:28px;}
-  .brand span{font-family:'Fredoka',sans-serif; font-weight:700; font-size:16px;}
-  .brand span em{font-style:normal; color:var(--terra);}
-  .logout-btn{
-    font-size:13px; font-weight:600; font-family:'Fredoka',sans-serif; color:var(--ink-soft);
-    background:var(--card); border:1px solid var(--line); border-radius:20px; padding:8px 16px; cursor:pointer;
-  }
+  #appShell{display:flex; min-height:100vh;}
+  @media (max-width:900px){ #appShell{flex-direction:column;} }
 
-  .wrap{max-width:900px; margin:0 auto; padding:40px 24px 60px;}
-  .welcome-row{display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:14px; margin-bottom:28px;}
-  .welcome-row h1{font-size:24px;}
+  .sidebar{
+    width:230px; flex-shrink:0; background:var(--teal-deep); color:#E3EDEB;
+    padding:22px 18px; display:flex; flex-direction:column; gap:24px;
+    position:sticky; top:0; height:100vh;
+  }
+  @media (max-width:900px){ .sidebar{width:100%; height:auto; position:relative; padding:14px 16px; gap:14px;} }
+  .sb-brand{display:flex; align-items:center; gap:10px;}
+  .sb-brand svg{width:26px; height:26px; flex-shrink:0;}
+  .sb-brand-text{font-family:'Fredoka',sans-serif; font-weight:600; font-size:14.5px; line-height:1.2;}
+  .sb-brand-text span{display:block; font-family:'Space Mono',monospace; font-weight:400; font-size:10px; color:#8FADA8; margin-top:2px; max-width:150px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;}
+
+  nav.sb-nav{display:flex; flex-direction:column; gap:2px;}
+  @media (max-width:900px){ nav.sb-nav{display:none;} nav.sb-nav.open{display:flex; position:absolute; top:100%; left:0; right:0; background:var(--teal-deep); padding:10px 14px 16px; z-index:30; box-shadow:0 12px 24px rgba(0,0,0,.25);} }
+  .sb-nav button{
+    display:flex; align-items:center; gap:10px;
+    font-family:'Work Sans',sans-serif; font-size:13.5px; font-weight:500;
+    color:#9FC0BA; padding:9px 10px; border-radius:8px;
+    background:none; border:none; cursor:pointer; width:100%; text-align:left;
+  }
+  .sb-nav button:hover{background:#2F4F4C; color:#E3EDEB;}
+  .sb-nav button.active{background:var(--terra); color:#fff;}
+  .sb-nav .dot{width:6px; height:6px; border-radius:50%; background:currentColor; opacity:.6; flex-shrink:0;}
+
+  .hamburger-btn{display:none; background:none; border:1px solid #3E5D59; border-radius:8px; padding:8px 10px; margin-left:auto;}
+  @media (max-width:900px){ .hamburger-btn{display:flex; flex-direction:column; gap:3px; width:34px; height:34px; align-items:center; justify-content:center;} }
+  .hamburger-btn span{width:16px; height:2px; background:#E3EDEB; margin:0 auto; border-radius:1px;}
+
+  .sb-footer{margin-top:auto; font-family:'Space Mono',monospace; font-size:10.5px; color:#7A9C96; line-height:1.6;}
+  .sb-footer button{background:none; border:none; color:#9FC0BA; font-family:'Space Mono',monospace; font-size:10.5px; cursor:pointer; padding:0; text-decoration:underline;}
+  @media (max-width:900px){ .sb-footer{display:none;} }
+
+  main{flex:1; padding:32px 36px 60px; min-width:0;}
+  @media (max-width:900px){ main{padding:20px 16px 50px;} }
+
+  .loading, .error-state{text-align:center; padding:80px 20px; color:var(--ink-soft); font-size:14px;}
+  .error-state a{color:var(--terra-deep); font-weight:600;}
+
+  .topbar{display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:14px; margin-bottom:26px;}
+  .topbar h1{font-size:23px;}
   .plan-badge{
     font-family:'Space Mono',monospace; font-size:11px; text-transform:uppercase; letter-spacing:.05em;
     background:#FBEBD9; color:var(--terra-deep); border:1px solid #F0C9A8; padding:6px 13px; border-radius:16px; font-weight:700;
   }
 
-  .stat-row{display:grid; grid-template-columns:repeat(3,1fr); gap:14px; margin-bottom:32px;}
-  @media (max-width:640px){ .stat-row{grid-template-columns:1fr; } }
+  .stat-row{display:grid; grid-template-columns:repeat(3,1fr); gap:14px; margin-bottom:20px;}
+  @media (max-width:640px){ .stat-row{grid-template-columns:1fr;} }
   .stat-card{background:var(--card); border:1px solid var(--line); border-radius:16px; padding:18px;}
   .stat-num{font-family:'Fredoka',sans-serif; font-size:26px; font-weight:700;}
   .stat-label{font-size:12px; color:var(--ink-soft); margin-top:2px;}
@@ -54,17 +82,9 @@
   .panel h2{font-size:18px; margin-bottom:8px;}
   .panel p{font-size:13.5px; color:var(--ink-soft); max-width:400px; margin:0 auto 20px; line-height:1.6;}
 
-  .qr-box{
-    display:inline-flex; align-items:center; gap:10px; background:var(--cream); border:1px solid var(--line);
-    border-radius:12px; padding:12px 18px; font-family:'Space Mono',monospace; font-size:12.5px; color:var(--ink-soft);
-  }
-
-  .loading, .error-state{text-align:center; padding:80px 20px; color:var(--ink-soft); font-size:14px;}
-  .error-state a{color:var(--terra-deep); font-weight:600;}
-
   .board-link-box{
     display:flex; align-items:center; justify-content:space-between; gap:14px; flex-wrap:wrap;
-    background:var(--teal-tint); border:1px solid #CBE0DC; border-radius:14px; padding:16px 18px; margin-bottom:26px;
+    background:var(--teal-tint); border:1px solid #CBE0DC; border-radius:14px; padding:16px 18px; margin-bottom:16px;
   }
   .board-link-box b{font-family:'Fredoka',sans-serif; font-size:14px; color:var(--teal-deep); display:block; margin-bottom:3px;}
   .board-url{font-family:'Space Mono',monospace; font-size:11px; color:var(--ink-soft); word-break:break-all;}
@@ -80,20 +100,14 @@
   .status-row{display:flex; flex-wrap:wrap; gap:6px; margin-bottom:10px;}
   .status-opt{font-size:11px; padding:6px 11px; border-radius:14px; border:1px solid var(--line); background:var(--cream); cursor:pointer;}
   .status-opt.selected{background:var(--ink); color:var(--cream); border-color:var(--ink);}
-  .status-msg{
-    width:100%; margin-bottom:10px; padding:9px 11px; border-radius:8px; border:1px solid var(--line);
-    font-size:12.5px; background:var(--cream); font-family:'Work Sans',sans-serif;
-  }
-  .status-save{
-    background:transparent; border:1px solid var(--line); color:var(--ink); font-family:'Fredoka',sans-serif;
-    font-weight:600; font-size:12.5px; padding:9px 16px; border-radius:9px; cursor:pointer;
-  }
+  .status-msg{width:100%; margin-bottom:10px; padding:9px 11px; border-radius:8px; border:1px solid var(--line); font-size:12.5px; background:var(--cream); font-family:'Work Sans',sans-serif;}
+  .status-save{background:transparent; border:1px solid var(--line); color:var(--ink); font-family:'Fredoka',sans-serif; font-weight:600; font-size:12.5px; padding:9px 16px; border-radius:9px; cursor:pointer;}
 
-  .plan-section{background:var(--card); border:1px solid var(--line); border-radius:16px; padding:20px; margin-bottom:26px;}
-  .plan-section-head{display:flex; align-items:center; justify-content:space-between; margin-bottom:14px;}
-  .plan-section-head h2{font-size:15px;}
-  .plan-toggle-link{font-size:12.5px; color:var(--terra-deep); font-weight:600; cursor:pointer; background:none; border:none; font-family:'Work Sans',sans-serif;}
-  .plan-cards{display:grid; grid-template-columns:repeat(3,1fr); gap:10px;}
+  .filter-row{display:flex; gap:8px; flex-wrap:wrap; margin-bottom:18px;}
+  .filter-chip{font-size:12px; padding:7px 13px; border-radius:14px; border:1px solid var(--line); background:var(--card); cursor:pointer; font-weight:500;}
+  .filter-chip.active{background:var(--ink); border-color:var(--ink); color:var(--cream);}
+
+  .plan-cards{display:grid; grid-template-columns:repeat(3,1fr); gap:10px; margin-bottom:16px;}
   @media (max-width:640px){ .plan-cards{grid-template-columns:1fr;} }
   .plan-card{border:1.5px solid var(--line); border-radius:12px; padding:14px; cursor:pointer; background:var(--cream);}
   .plan-card.current{border-color:var(--terra); background:#FBEBD9;}
@@ -102,108 +116,166 @@
   .plan-card .pprice{font-family:'Space Mono',monospace; font-size:11px; color:var(--ink-soft); margin:2px 0 6px;}
   .plan-card .pfeat{font-size:11.5px; color:var(--ink-soft); line-height:1.5;}
   .plan-card .pbadge{font-size:9.5px; text-transform:uppercase; letter-spacing:.04em; color:var(--terra-deep); font-weight:700; margin-bottom:4px;}
-
-  .plan-change-action{margin-top:16px; padding-top:16px; border-top:1px solid var(--line);}
+  .plan-change-action{background:var(--card); border:1px solid var(--line); border-radius:14px; padding:16px 18px;}
   .plan-btn-row{display:flex; gap:10px; flex-wrap:wrap;}
-  .btn-stripe{
-    background:var(--ink); color:var(--cream); font-family:'Fredoka',sans-serif; font-weight:600;
-    font-size:13px; padding:11px 18px; border-radius:10px; border:none; opacity:.45; cursor:not-allowed;
-  }
-  .btn-skip-payment{
-    background:transparent; color:var(--terra-deep); font-family:'Fredoka',sans-serif; font-weight:600;
-    font-size:13px; padding:11px 18px; border-radius:10px; border:1.5px dashed var(--terra-deep); cursor:pointer;
-  }
+  .btn-stripe{background:var(--ink); color:var(--cream); font-family:'Fredoka',sans-serif; font-weight:600; font-size:13px; padding:11px 18px; border-radius:10px; border:none; opacity:.45; cursor:not-allowed;}
+  .btn-skip-payment{background:transparent; color:var(--terra-deep); font-family:'Fredoka',sans-serif; font-weight:600; font-size:13px; padding:11px 18px; border-radius:10px; border:1.5px dashed var(--terra-deep); cursor:pointer;}
   .dev-note{font-size:11px; color:var(--ink-soft); margin-top:10px; line-height:1.5;}
+
+  .settings-panel{background:var(--card); border:1px solid var(--line); border-radius:16px; padding:22px; margin-bottom:20px;}
+  .settings-panel h2{font-size:16px; margin-bottom:4px;}
+  .settings-panel .desc{font-size:12.5px; color:var(--ink-soft); margin-bottom:18px;}
+  .field{margin-bottom:16px;}
+  .field label{font-family:'Space Mono',monospace; font-size:10px; text-transform:uppercase; color:var(--ink-soft); display:block; margin-bottom:6px;}
+  .field input{width:100%; background:var(--cream); border:1px solid var(--line); border-radius:10px; padding:11px 13px; font-size:13.5px; font-family:'Work Sans',sans-serif; color:var(--ink);}
+  .field input:focus{outline:2px solid var(--terra); outline-offset:1px;}
+  .field-row{display:flex; gap:12px; flex-wrap:wrap;}
+  .field-row .field{flex:1; min-width:200px;}
+  .field-hint{font-size:11px; color:var(--ink-soft); margin-top:5px; line-height:1.5;}
+
+  .logo-row{display:flex; align-items:center; gap:16px; margin-bottom:16px;}
+  .logo-preview{width:64px; height:64px; border-radius:14px; border:1.5px solid var(--line); background:var(--cream); display:flex; align-items:center; justify-content:center; overflow:hidden; flex-shrink:0;}
+  .logo-preview img{width:100%; height:100%; object-fit:cover;}
+  .logo-preview .placeholder{font-family:'Fredoka',sans-serif; font-weight:600; font-size:22px; color:var(--ink-soft);}
+  .logo-actions{display:flex; gap:8px; flex-wrap:wrap;}
+  .btn-secondary-sm{background:transparent; border:1px solid var(--line); color:var(--ink); font-family:'Fredoka',sans-serif; font-weight:600; font-size:12.5px; padding:9px 14px; border-radius:9px; cursor:pointer;}
+  .btn-remove-sm{background:transparent; border:1px solid #F0C9A8; color:var(--danger); font-family:'Fredoka',sans-serif; font-weight:600; font-size:12.5px; padding:9px 14px; border-radius:9px; cursor:pointer;}
+
+  .btn-primary{background:var(--terra); color:var(--card); border:none; font-family:'Fredoka',sans-serif; font-weight:600; font-size:13.5px; padding:12px 20px; border-radius:11px; cursor:pointer;}
+  .btn-primary:disabled{opacity:.5; cursor:not-allowed;}
+  .form-msg{font-size:12.5px; margin-top:10px;}
+  .form-msg.error{color:var(--danger);}
+  .form-msg.success{color:var(--good-ink);}
 </style>
 </head>
 <body>
 
-<header>
-  <div class="header-row">
-    <div class="brand">
-      <svg viewBox="0 0 200 200"><path d="M56 10 L146 10 L190 54 L190 144 A46 46 0 0 1 144 190 L56 190 A46 46 0 0 1 10 144 L10 56 A46 46 0 0 1 56 10 Z" fill="#FBF1E2" stroke="#E2653A" stroke-width="10"/><path d="M146 10 L190 54 L146 54 Z" fill="#E2653A"/><path d="M146 10 L146 54 L190 54" fill="none" stroke="#B84B29" stroke-width="4" stroke-linejoin="round"/><circle cx="66" cy="86" r="9" fill="#E2653A"/><circle cx="130" cy="86" r="9" fill="#E2653A"/><path d="M56 120 Q100 158 142 120" stroke="#E2653A" stroke-width="16" stroke-linecap="round" fill="none"/></svg>
-      <span>Suggestions<em>Box</em></span>
+<div id="appShell" style="display:none;">
+  <aside class="sidebar">
+    <div class="sb-brand" style="justify-content:space-between;">
+      <div style="display:flex; align-items:center; gap:10px;">
+        <svg viewBox="0 0 200 200"><path d="M56 10 L146 10 L190 54 L190 144 A46 46 0 0 1 144 190 L56 190 A46 46 0 0 1 10 144 L10 56 A46 46 0 0 1 56 10 Z" fill="#FBF1E2" stroke="#E2653A" stroke-width="10"/><path d="M146 10 L190 54 L146 54 Z" fill="#E2653A"/><path d="M146 10 L146 54 L190 54" fill="none" stroke="#B84B29" stroke-width="4" stroke-linejoin="round"/><circle cx="66" cy="86" r="9" fill="#E2653A"/><circle cx="130" cy="86" r="9" fill="#E2653A"/><path d="M56 120 Q100 158 142 120" stroke="#E2653A" stroke-width="16" stroke-linecap="round" fill="none"/></svg>
+        <div class="sb-brand-text">Suggestions<span id="sb-biz-name">Box</span></div>
+      </div>
+      <button type="button" class="hamburger-btn" id="hamburger-btn"><span></span><span></span><span></span></button>
     </div>
-    <button class="logout-btn" id="logout-btn">Log out</button>
-  </div>
-</header>
+    <nav class="sb-nav" id="sbNav">
+      <button type="button" id="navOverview" onclick="showOverview()"><span class="dot"></span>Overview</button>
+      <button type="button" id="navNotes" onclick="showNotes()"><span class="dot"></span>Notes</button>
+      <button type="button" id="navTeamBoard" onclick="showTeamBoard()"><span class="dot"></span>Team Board</button>
+      <button type="button" id="navBilling" onclick="showBilling()"><span class="dot"></span>Plan &amp; Billing</button>
+      <button type="button" id="navSettings" onclick="showSettings()"><span class="dot"></span>Settings</button>
+    </nav>
+    <div class="sb-footer">
+      Suggestions Box<br>
+      <button type="button" id="logout-btn">Log out</button>
+    </div>
+  </aside>
 
-<div class="wrap" id="app">
-  <div class="loading">Loading your dashboard…</div>
+  <main>
+    <div id="app"><div class="loading">Loading your dashboard…</div></div>
+  </main>
+</div>
+
+<div id="loggedOutShell" style="display:none;">
+  <div class="error-state" style="padding-top:120px;">
+    You're not logged in.<br><br>
+    <a href="login.html">Go to login</a> or <a href="signup.html">create an account</a>.
+  </div>
 </div>
 
 <script>
   const API_BASE = 'https://api.suggestionsbox.com.au';
-  const app = document.getElementById('app');
   const token = localStorage.getItem('sb_token');
 
+  let ME = null;
+  let MY_NOTES = [];
+  let currentNoteFilter = 'all';
+  let currentNotesScope = 'all'; // 'all' | 'employee' — used by Notes vs Team Board views
+
+  function escapeHtml(str) {
+    const div = document.createElement('div');
+    div.textContent = str == null ? '' : str;
+    return div.innerHTML;
+  }
+
   function showLoggedOut() {
-    app.innerHTML = `
-      <div class="error-state">
-        You're not logged in.<br><br>
-        <a href="login.html">Go to login</a> or <a href="signup.html">create an account</a>.
-      </div>`;
+    document.getElementById('appShell').style.display = 'none';
+    document.getElementById('loggedOutShell').style.display = 'block';
   }
 
-  if (!token) {
-    showLoggedOut();
-  } else {
-    (async () => {
-      try {
-        const meRes = await fetch(`${API_BASE}/api/me`, {
-          headers: { Authorization: `Bearer ${token}` },
-        });
-        if (!meRes.ok) {
-          localStorage.removeItem('sb_token');
-          localStorage.removeItem('sb_business');
-          showLoggedOut();
-          return;
-        }
-        const me = await meRes.json();
-
-        const notesRes = await fetch(`${API_BASE}/api/my-notes`, {
-          headers: { Authorization: `Bearer ${token}` },
-        });
-        const notes = await notesRes.json();
-
-        render(me, notes);
-      } catch (err) {
-        app.innerHTML = `<div class="error-state">Couldn't reach the server. Is the API running?</div>`;
-      }
-    })();
+  async function apiFetch(path, opts = {}) {
+    const res = await fetch(`${API_BASE}${path}`, {
+      ...opts,
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}`, ...(opts.headers || {}) },
+    });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) {
+      const err = new Error(data.error || 'Request failed');
+      err.status = res.status;
+      throw err;
+    }
+    return data;
   }
 
-  function render(business, notes) {
-    const totalVotes = notes.reduce((sum, n) => sum + (n.voteCount || 0), 0);
-    const actioned = notes.filter((n) => n.status === 'actioned').length;
-    const boardUrl = `board.html?business=${business.id}`;
-    const staffBoardUrl = `board.html?business=${business.id}&staff=1`;
+  async function boot() {
+    if (!token) { showLoggedOut(); return; }
+    try {
+      ME = await apiFetch('/api/me');
+      MY_NOTES = await apiFetch('/api/my-notes');
+    } catch (err) {
+      localStorage.removeItem('sb_token');
+      localStorage.removeItem('sb_business');
+      showLoggedOut();
+      return;
+    }
+    document.getElementById('loggedOutShell').style.display = 'none';
+    document.getElementById('appShell').style.display = 'flex';
+    showOverview();
+  }
+
+  document.getElementById('hamburger-btn').addEventListener('click', () => {
+    document.getElementById('sbNav').classList.toggle('open');
+  });
+  function closeMobileNav() {
+    document.getElementById('sbNav').classList.remove('open');
+  }
+  document.getElementById('logout-btn').addEventListener('click', async () => {
+    try {
+      await apiFetch('/api/auth/logout', { method: 'POST' });
+    } catch {}
+    localStorage.removeItem('sb_token');
+    localStorage.removeItem('sb_business');
+    window.location.href = 'login.html';
+  });
+
+  function hideAllNav() {
+    ['navOverview','navNotes','navTeamBoard','navBilling','navSettings'].forEach((id) => {
+      document.getElementById(id).classList.remove('active');
+    });
+  }
+
+  const app = document.getElementById('app');
+
+  // ---------- Overview ----------
+  function showOverview() {
+    closeMobileNav();
+    hideAllNav();
+    document.getElementById('navOverview').classList.add('active');
+
+    const boardUrl = `board.html?business=${ME.id}`;
+    const staffBoardUrl = `board.html?business=${ME.id}&staff=1`;
     const basePath = `${window.location.origin}${window.location.pathname.replace('dashboard.html','')}`;
 
-    const employeeNotes = notes.filter((n) => n.lane === 'employee').length;
-    const customerNotes = notes.length - employeeNotes;
+    const totalVotes = MY_NOTES.reduce((sum, n) => sum + (n.voteCount || 0), 0);
+    const actioned = MY_NOTES.filter((n) => n.status === 'actioned').length;
+    const employeeNotes = MY_NOTES.filter((n) => n.lane === 'employee').length;
+    const customerNotes = MY_NOTES.length - employeeNotes;
 
     app.innerHTML = `
-      <div class="welcome-row">
-        <h1>Welcome, ${escapeHtml(business.businessName)}</h1>
-        <span class="plan-badge">${escapeHtml(business.plan)} plan</span>
-      </div>
-
-      <div class="plan-section">
-        <div class="plan-section-head">
-          <h2>Your plan</h2>
-          <button class="plan-toggle-link" id="plan-toggle">Change plan</button>
-        </div>
-        <div id="plan-picker" style="display:none;">
-          <div class="plan-cards" id="plan-cards"></div>
-          <div class="plan-change-action" id="plan-change-action" style="display:none;">
-            <div class="plan-btn-row">
-              <button class="btn-stripe" disabled>Pay with card</button>
-              <button class="btn-skip-payment" id="skip-payment-btn">Skip payment — apply now (testing)</button>
-            </div>
-            <div class="dev-note">"Pay with card" isn't wired up yet — real billing goes through Stripe once that's connected. The button on the right applies the plan change immediately, no payment involved, for testing plan-gated features during the pilot.</div>
-          </div>
-        </div>
+      <div class="topbar">
+        <h1>Welcome, ${escapeHtml(ME.businessName)}</h1>
+        <span class="plan-badge">${escapeHtml(ME.plan)} plan</span>
       </div>
 
       <div class="board-link-box">
@@ -214,104 +286,111 @@
         <a href="${boardUrl}" target="_blank" class="board-link-btn">Open board →</a>
       </div>
 
-      ${business.employeeNotesEnabled ? `
+      ${ME.employeeNotesEnabled ? `
         <div class="board-link-box" style="background:#FBEBD9; border-color:#F0C9A8;">
           <div>
             <b style="color:#B84B29;">Your team's board</b>
             <div class="board-url">${basePath}${staffBoardUrl}</div>
-            <div style="font-size:11px; color:var(--ink-soft); margin-top:4px;">Share this privately with staff only — not the public one above.</div>
           </div>
           <a href="${staffBoardUrl}" target="_blank" class="board-link-btn" style="background:#B84B29;">Open team board →</a>
         </div>
-      ` : `
-        <div class="board-link-box" style="opacity:.7;">
-          <div>
-            <b>Team notes</b>
-            <div style="font-size:11px; color:var(--ink-soft); margin-top:4px;">Available on Growth and Business plans — collect private feedback from your staff.</div>
-          </div>
-        </div>
-      `}
+      ` : ''}
 
       <div class="stat-row">
-        <div class="stat-card"><div class="stat-num">${notes.length}</div><div class="stat-label">Notes received</div></div>
+        <div class="stat-card"><div class="stat-num">${MY_NOTES.length}</div><div class="stat-label">Notes received</div></div>
         <div class="stat-card"><div class="stat-num">${totalVotes}</div><div class="stat-label">Total votes</div></div>
         <div class="stat-card"><div class="stat-num">${actioned}</div><div class="stat-label">Actioned</div></div>
       </div>
 
-      ${business.employeeNotesEnabled ? `
+      ${ME.employeeNotesEnabled ? `
         <div class="stat-row">
           <div class="stat-card"><div class="stat-num">${customerNotes}</div><div class="stat-label">From customers</div></div>
           <div class="stat-card"><div class="stat-num">${employeeNotes}</div><div class="stat-label">From your team</div></div>
         </div>
       ` : ''}
 
-      ${notes.length === 0 ? emptyState() : notesList(notes)}
+      ${MY_NOTES.length === 0 ? emptyState("No notes yet — that's normal on day one", 'Share your board link above with customers and your team. Notes will show up here, ranked by votes, as soon as the first one comes in.') : ''}
     `;
-
-    if (notes.length > 0) wireStatusControls();
-    wirePlanPicker(business.plan);
   }
 
-  const PLANS = [
-    { id: 'starter', name: 'Starter', price: 'Free', features: 'Customer notes, 1 location' },
-    { id: 'growth', name: 'Growth', price: '$59/mo', features: 'Team notes, trends, priority queue' },
-    { id: 'business', name: 'Business', price: 'Custom', features: 'Multi-location, full permissions' },
-  ];
+  // ---------- Notes ----------
+  function showNotes() {
+    closeMobileNav();
+    hideAllNav();
+    document.getElementById('navNotes').classList.add('active');
+    currentNotesScope = 'all';
+    currentNoteFilter = 'all';
+    renderNotesView('All notes', 'all');
+  }
 
-  function wirePlanPicker(currentPlan) {
-    const toggleBtn = document.getElementById('plan-toggle');
-    const picker = document.getElementById('plan-picker');
-    const cardsEl = document.getElementById('plan-cards');
-    const actionEl = document.getElementById('plan-change-action');
-    let selectedPlan = null;
+  function showTeamBoard() {
+    closeMobileNav();
+    hideAllNav();
+    document.getElementById('navTeamBoard').classList.add('active');
 
-    toggleBtn.addEventListener('click', () => {
-      const open = picker.style.display !== 'none';
-      picker.style.display = open ? 'none' : 'block';
-      toggleBtn.textContent = open ? 'Change plan' : 'Close';
-    });
+    if (!ME.employeeNotesEnabled) {
+      app.innerHTML = `
+        <div class="topbar"><h1>Team Board</h1></div>
+        <div class="panel">
+          <h2>Not on your current plan</h2>
+          <p>Private feedback from your staff — separate from the public customer board — comes with Growth and Business plans.</p>
+          <button class="btn-primary" onclick="showBilling()">See plans</button>
+        </div>
+      `;
+      return;
+    }
 
-    cardsEl.innerHTML = PLANS.map((p) => `
-      <div class="plan-card ${p.id === currentPlan ? 'current' : ''}" data-plan="${p.id}">
-        ${p.id === currentPlan ? '<div class="pbadge">Current plan</div>' : ''}
-        <div class="pname">${p.name}</div>
-        <div class="pprice">${p.price}</div>
-        <div class="pfeat">${p.features}</div>
-      </div>
+    currentNotesScope = 'employee';
+    currentNoteFilter = 'all';
+    renderNotesView('Team Board', 'employee', true);
+  }
+
+  function renderNotesView(title, scope, showLink) {
+    const staffBoardUrl = `board.html?business=${ME.id}&staff=1`;
+    const basePath = `${window.location.origin}${window.location.pathname.replace('dashboard.html','')}`;
+
+    const scopedNotes = scope === 'all' ? MY_NOTES : MY_NOTES.filter((n) => n.lane === scope);
+
+    app.innerHTML = `
+      <div class="topbar"><h1>${escapeHtml(title)}</h1></div>
+      ${showLink ? `
+        <div class="board-link-box" style="background:#FBEBD9; border-color:#F0C9A8;">
+          <div>
+            <b style="color:#B84B29;">Share privately with staff</b>
+            <div class="board-url">${basePath}${staffBoardUrl}</div>
+          </div>
+          <a href="${staffBoardUrl}" target="_blank" class="board-link-btn" style="background:#B84B29;">Open →</a>
+        </div>
+      ` : ''}
+      <div class="filter-row" id="notes-filter-row"></div>
+      <div id="notes-list-container"></div>
+    `;
+
+    const filterOptions = ['all','sent','seen','acknowledged','in_progress','actioned','not_planned'];
+    document.getElementById('notes-filter-row').innerHTML = filterOptions.map((s) => `
+      <div class="filter-chip ${s === currentNoteFilter ? 'active' : ''}" data-status="${s}">${s === 'all' ? 'All' : s.replace('_',' ')}</div>
     `).join('');
-
-    cardsEl.querySelectorAll('.plan-card').forEach((card) => {
-      card.addEventListener('click', () => {
-        const plan = card.dataset.plan;
-        if (plan === currentPlan) {
-          actionEl.style.display = 'none';
-          selectedPlan = null;
-          cardsEl.querySelectorAll('.plan-card').forEach((c) => c.classList.remove('selected'));
-          return;
-        }
-        selectedPlan = plan;
-        cardsEl.querySelectorAll('.plan-card').forEach((c) => c.classList.toggle('selected', c.dataset.plan === plan));
-        actionEl.style.display = 'block';
+    document.querySelectorAll('#notes-filter-row .filter-chip').forEach((chip) => {
+      chip.addEventListener('click', () => {
+        currentNoteFilter = chip.dataset.status;
+        document.querySelectorAll('#notes-filter-row .filter-chip').forEach((c) => c.classList.remove('active'));
+        chip.classList.add('active');
+        renderFilteredNotes(scopedNotes);
       });
     });
 
-    document.getElementById('skip-payment-btn').addEventListener('click', async () => {
-      if (!selectedPlan) return;
-      const btn = document.getElementById('skip-payment-btn');
-      btn.disabled = true;
-      btn.textContent = 'Applying…';
-      try {
-        await fetch(`${API_BASE}/api/billing/change-plan`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
-          body: JSON.stringify({ plan: selectedPlan }),
-        });
-        location.reload();
-      } catch (err) {
-        btn.disabled = false;
-        btn.textContent = 'Skip payment — apply now (testing)';
-      }
-    });
+    renderFilteredNotes(scopedNotes);
+  }
+
+  function renderFilteredNotes(scopedNotes) {
+    const filtered = currentNoteFilter === 'all' ? scopedNotes : scopedNotes.filter((n) => n.status === currentNoteFilter);
+    const container = document.getElementById('notes-list-container');
+    if (filtered.length === 0) {
+      container.innerHTML = emptyState('No notes here', 'Nothing matches this filter yet.');
+      return;
+    }
+    container.innerHTML = notesList(filtered);
+    wireStatusControls();
   }
 
   const STATUSES = ['sent','seen','acknowledged','in_progress','actioned','not_planned'];
@@ -349,12 +428,12 @@
         btn.textContent = 'Saving…';
         btn.disabled = true;
         try {
-          await fetch(`${API_BASE}/api/my-notes/${noteId}/status`, {
+          await apiFetch(`/api/my-notes/${noteId}/status`, {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
             body: JSON.stringify({ status, message: msgInput.value }),
           });
-          location.reload();
+          MY_NOTES = await apiFetch('/api/my-notes');
+          if (currentNotesScope === 'all') showNotes(); else showTeamBoard();
         } catch {
           btn.textContent = 'Update status';
           btn.disabled = false;
@@ -363,33 +442,228 @@
     });
   }
 
-  function emptyState() {
+  function emptyState(title, body) {
     return `
       <div class="panel">
         <svg viewBox="0 0 24 24" fill="none"><path d="M9 12l2 2 4-4M21 12a9 9 0 11-18 0 9 9 0 0118 0z" stroke="#5E7A1F" stroke-width="1.6"/></svg>
-        <h2>No notes yet — that's normal on day one</h2>
-        <p>Share your board link above with customers and your team. Notes will show up here, ranked by votes, as soon as the first one comes in.</p>
+        <h2>${escapeHtml(title)}</h2>
+        <p>${escapeHtml(body)}</p>
       </div>
     `;
   }
 
-  function escapeHtml(str) {
-    const div = document.createElement('div');
-    div.textContent = str;
-    return div.innerHTML;
+  // ---------- Plan & Billing ----------
+  const PLANS = [
+    { id: 'starter', name: 'Starter', price: 'Free', features: 'Customer notes, 1 location' },
+    { id: 'growth', name: 'Growth', price: '$59/mo', features: 'Team notes, trends, priority queue' },
+    { id: 'business', name: 'Business', price: 'Custom', features: 'Multi-location, full permissions' },
+  ];
+
+  function showBilling() {
+    closeMobileNav();
+    hideAllNav();
+    document.getElementById('navBilling').classList.add('active');
+
+    app.innerHTML = `
+      <div class="topbar"><h1>Plan &amp; Billing</h1></div>
+      <div class="plan-cards" id="plan-cards"></div>
+      <div class="plan-change-action" id="plan-change-action" style="display:none;">
+        <div class="plan-btn-row">
+          <button class="btn-stripe" disabled>Pay with card</button>
+          <button class="btn-skip-payment" id="skip-payment-btn">Skip payment — apply now (testing)</button>
+        </div>
+        <div class="dev-note">"Pay with card" isn't wired up yet — real billing goes through Stripe once that's connected. The button on the right applies the plan change immediately, no payment involved, for testing during the pilot.</div>
+      </div>
+    `;
+
+    let selectedPlan = null;
+    const cardsEl = document.getElementById('plan-cards');
+    const actionEl = document.getElementById('plan-change-action');
+
+    cardsEl.innerHTML = PLANS.map((p) => `
+      <div class="plan-card ${p.id === ME.plan ? 'current' : ''}" data-plan="${p.id}">
+        ${p.id === ME.plan ? '<div class="pbadge">Current plan</div>' : ''}
+        <div class="pname">${p.name}</div>
+        <div class="pprice">${p.price}</div>
+        <div class="pfeat">${p.features}</div>
+      </div>
+    `).join('');
+
+    cardsEl.querySelectorAll('.plan-card').forEach((card) => {
+      card.addEventListener('click', () => {
+        const plan = card.dataset.plan;
+        if (plan === ME.plan) {
+          actionEl.style.display = 'none';
+          selectedPlan = null;
+          cardsEl.querySelectorAll('.plan-card').forEach((c) => c.classList.remove('selected'));
+          return;
+        }
+        selectedPlan = plan;
+        cardsEl.querySelectorAll('.plan-card').forEach((c) => c.classList.toggle('selected', c.dataset.plan === plan));
+        actionEl.style.display = 'block';
+      });
+    });
+
+    document.getElementById('skip-payment-btn').addEventListener('click', async () => {
+      if (!selectedPlan) return;
+      const btn = document.getElementById('skip-payment-btn');
+      btn.disabled = true;
+      btn.textContent = 'Applying…';
+      try {
+        await apiFetch('/api/billing/change-plan', {
+          method: 'POST',
+          body: JSON.stringify({ plan: selectedPlan }),
+        });
+        ME = await apiFetch('/api/me');
+        showBilling();
+      } catch (err) {
+        btn.disabled = false;
+        btn.textContent = 'Skip payment — apply now (testing)';
+      }
+    });
   }
 
-  document.getElementById('logout-btn').addEventListener('click', async () => {
-    try {
-      await fetch(`${API_BASE}/api/auth/logout`, {
-        method: 'POST',
-        headers: { Authorization: `Bearer ${token}` },
+  // ---------- Settings ----------
+  function showSettings() {
+    closeMobileNav();
+    hideAllNav();
+    document.getElementById('navSettings').classList.add('active');
+
+    app.innerHTML = `
+      <div class="topbar"><h1>Settings</h1></div>
+
+      <div class="settings-panel">
+        <h2>Business profile</h2>
+        <p class="desc">Shown to customers and staff on your board.</p>
+
+        <div class="logo-row">
+          <div class="logo-preview" id="logo-preview">
+            ${ME.logoDataUrl ? `<img src="${ME.logoDataUrl}" alt="Logo">` : `<span class="placeholder">${escapeHtml((ME.businessName || '?').charAt(0).toUpperCase())}</span>`}
+          </div>
+          <div class="logo-actions">
+            <input type="file" id="logo-input" accept="image/png,image/jpeg,image/webp,image/gif" style="display:none;">
+            <button type="button" class="btn-secondary-sm" id="logo-upload-btn">Upload logo</button>
+            ${ME.logoDataUrl ? '<button type="button" class="btn-remove-sm" id="logo-remove-btn">Remove</button>' : ''}
+          </div>
+        </div>
+
+        <div class="field"><label>Business name</label><input id="set-business-name" value="${escapeHtml(ME.businessName)}"></div>
+        <div class="field"><label>Owner name</label><input id="set-owner-name" value="${escapeHtml(ME.ownerName || '')}"></div>
+        <div class="field"><label>Email</label><input id="set-email" type="email" value="${escapeHtml(ME.email)}"></div>
+        <div class="field">
+          <label>Address</label>
+          <input id="set-address" placeholder="e.g. 12 High St, Melbourne VIC" value="${escapeHtml(ME.address || '')}">
+          <div class="field-hint">Used so customers can find you in "search near me." ${ME.address && ME.lat == null ? "We couldn't pin this address on the map yet — double check it's correct and save again." : ''}</div>
+        </div>
+
+        <div id="profile-msg" class="form-msg" style="display:none;"></div>
+        <button class="btn-primary" id="save-profile-btn">Save changes</button>
+      </div>
+
+      <div class="settings-panel">
+        <h2>Password</h2>
+        <p class="desc">Change your login password.</p>
+        <div class="field-row">
+          <div class="field"><label>Current password</label><input id="set-current-password" type="password"></div>
+          <div class="field"><label>New password</label><input id="set-new-password" type="password" placeholder="At least 8 characters"></div>
+        </div>
+        <div id="password-msg" class="form-msg" style="display:none;"></div>
+        <button class="btn-primary" id="save-password-btn">Update password</button>
+      </div>
+    `;
+
+    wireSettingsForm();
+  }
+
+  function wireSettingsForm() {
+    let pendingLogoDataUrl; // undefined = no change, null = remove, string = new upload
+    const logoInput = document.getElementById('logo-input');
+    const logoPreview = document.getElementById('logo-preview');
+
+    document.getElementById('logo-upload-btn').addEventListener('click', () => logoInput.click());
+
+    logoInput.addEventListener('change', () => {
+      const file = logoInput.files[0];
+      if (!file) return;
+      if (file.size > 1000000) {
+        showFormMsg('profile-msg', 'Image is too large — please use one under 1MB.', 'error');
+        return;
+      }
+      const reader = new FileReader();
+      reader.onload = () => {
+        pendingLogoDataUrl = reader.result;
+        logoPreview.innerHTML = `<img src="${reader.result}" alt="Logo preview">`;
+      };
+      reader.readAsDataURL(file);
+    });
+
+    const removeBtn = document.getElementById('logo-remove-btn');
+    if (removeBtn) {
+      removeBtn.addEventListener('click', () => {
+        pendingLogoDataUrl = null;
+        logoPreview.innerHTML = `<span class="placeholder">${escapeHtml((ME.businessName || '?').charAt(0).toUpperCase())}</span>`;
       });
-    } catch {}
-    localStorage.removeItem('sb_token');
-    localStorage.removeItem('sb_business');
-    window.location.href = 'login.html';
-  });
+    }
+
+    document.getElementById('save-profile-btn').addEventListener('click', async () => {
+      const btn = document.getElementById('save-profile-btn');
+      const body = {
+        businessName: document.getElementById('set-business-name').value,
+        ownerName: document.getElementById('set-owner-name').value,
+        email: document.getElementById('set-email').value,
+        address: document.getElementById('set-address').value,
+      };
+      if (pendingLogoDataUrl === null) body.removeLogo = true;
+      else if (typeof pendingLogoDataUrl === 'string') body.logoDataUrl = pendingLogoDataUrl;
+
+      btn.disabled = true;
+      btn.textContent = 'Saving…';
+      try {
+        await apiFetch('/api/business/profile', { method: 'POST', body: JSON.stringify(body) });
+        ME = await apiFetch('/api/me');
+        showSettings();
+        showFormMsg('profile-msg', 'Saved.', 'success');
+      } catch (err) {
+        showFormMsg('profile-msg', err.message, 'error');
+        btn.disabled = false;
+        btn.textContent = 'Save changes';
+      }
+    });
+
+    document.getElementById('save-password-btn').addEventListener('click', async () => {
+      const btn = document.getElementById('save-password-btn');
+      const currentPassword = document.getElementById('set-current-password').value;
+      const newPassword = document.getElementById('set-new-password').value;
+      if (!currentPassword || !newPassword) {
+        showFormMsg('password-msg', 'Both fields are required.', 'error');
+        return;
+      }
+      btn.disabled = true;
+      btn.textContent = 'Updating…';
+      try {
+        await apiFetch('/api/business/password', {
+          method: 'POST',
+          body: JSON.stringify({ currentPassword, newPassword }),
+        });
+        showFormMsg('password-msg', 'Password updated.', 'success');
+        document.getElementById('set-current-password').value = '';
+        document.getElementById('set-new-password').value = '';
+      } catch (err) {
+        showFormMsg('password-msg', err.message, 'error');
+      }
+      btn.disabled = false;
+      btn.textContent = 'Update password';
+    });
+  }
+
+  function showFormMsg(id, text, kind) {
+    const el = document.getElementById(id);
+    el.textContent = text;
+    el.className = `form-msg ${kind}`;
+    el.style.display = 'block';
+  }
+
+  boot();
 </script>
 
 </body>
