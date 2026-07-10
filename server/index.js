@@ -268,6 +268,29 @@ app.get('/api/me', requireSession, (req, res) => {
   });
 });
 
+const VALID_PLANS = ['starter', 'growth', 'business'];
+
+// TEMPORARY DEV BYPASS — no real Stripe integration exists yet, so this
+// lets a business change its own plan with no payment collected, purely
+// for testing plan-gated features (e.g. team notes). It only ever
+// touches the caller's own account, never another business's.
+//
+// Before any real users could hit this: either remove it, or gate it
+// behind a real Stripe webhook confirming payment succeeded first.
+app.post('/api/billing/change-plan', requireSession, async (req, res) => {
+  const { plan } = req.body;
+  if (!VALID_PLANS.includes(plan)) {
+    return res.status(400).json({ error: `plan must be one of: ${VALID_PLANS.join(', ')}` });
+  }
+
+  await db.read();
+  const business = db.data.businesses.find((b) => b.id === req.business.id);
+  business.plan = plan;
+  await db.write();
+
+  res.json({ ok: true, plan: business.plan });
+});
+
 // Notes for a freshly signed-up business (starts empty — this is a brand
 // new account, not the Fix It Right Plumbing pilot data above).
 app.get('/api/my-notes', requireSession, (req, res) => {

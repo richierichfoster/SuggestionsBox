@@ -88,6 +88,32 @@
     background:transparent; border:1px solid var(--line); color:var(--ink); font-family:'Fredoka',sans-serif;
     font-weight:600; font-size:12.5px; padding:9px 16px; border-radius:9px; cursor:pointer;
   }
+
+  .plan-section{background:var(--card); border:1px solid var(--line); border-radius:16px; padding:20px; margin-bottom:26px;}
+  .plan-section-head{display:flex; align-items:center; justify-content:space-between; margin-bottom:14px;}
+  .plan-section-head h2{font-size:15px;}
+  .plan-toggle-link{font-size:12.5px; color:var(--terra-deep); font-weight:600; cursor:pointer; background:none; border:none; font-family:'Work Sans',sans-serif;}
+  .plan-cards{display:grid; grid-template-columns:repeat(3,1fr); gap:10px;}
+  @media (max-width:640px){ .plan-cards{grid-template-columns:1fr;} }
+  .plan-card{border:1.5px solid var(--line); border-radius:12px; padding:14px; cursor:pointer; background:var(--cream);}
+  .plan-card.current{border-color:var(--terra); background:#FBEBD9;}
+  .plan-card.selected{border-color:var(--teal-deep); background:var(--teal-tint);}
+  .plan-card .pname{font-family:'Fredoka',sans-serif; font-weight:600; font-size:13.5px;}
+  .plan-card .pprice{font-family:'Space Mono',monospace; font-size:11px; color:var(--ink-soft); margin:2px 0 6px;}
+  .plan-card .pfeat{font-size:11.5px; color:var(--ink-soft); line-height:1.5;}
+  .plan-card .pbadge{font-size:9.5px; text-transform:uppercase; letter-spacing:.04em; color:var(--terra-deep); font-weight:700; margin-bottom:4px;}
+
+  .plan-change-action{margin-top:16px; padding-top:16px; border-top:1px solid var(--line);}
+  .plan-btn-row{display:flex; gap:10px; flex-wrap:wrap;}
+  .btn-stripe{
+    background:var(--ink); color:var(--cream); font-family:'Fredoka',sans-serif; font-weight:600;
+    font-size:13px; padding:11px 18px; border-radius:10px; border:none; opacity:.45; cursor:not-allowed;
+  }
+  .btn-skip-payment{
+    background:transparent; color:var(--terra-deep); font-family:'Fredoka',sans-serif; font-weight:600;
+    font-size:13px; padding:11px 18px; border-radius:10px; border:1.5px dashed var(--terra-deep); cursor:pointer;
+  }
+  .dev-note{font-size:11px; color:var(--ink-soft); margin-top:10px; line-height:1.5;}
 </style>
 </head>
 <body>
@@ -163,6 +189,23 @@
         <span class="plan-badge">${escapeHtml(business.plan)} plan</span>
       </div>
 
+      <div class="plan-section">
+        <div class="plan-section-head">
+          <h2>Your plan</h2>
+          <button class="plan-toggle-link" id="plan-toggle">Change plan</button>
+        </div>
+        <div id="plan-picker" style="display:none;">
+          <div class="plan-cards" id="plan-cards"></div>
+          <div class="plan-change-action" id="plan-change-action" style="display:none;">
+            <div class="plan-btn-row">
+              <button class="btn-stripe" disabled>Pay with card</button>
+              <button class="btn-skip-payment" id="skip-payment-btn">Skip payment — apply now (testing)</button>
+            </div>
+            <div class="dev-note">"Pay with card" isn't wired up yet — real billing goes through Stripe once that's connected. The button on the right applies the plan change immediately, no payment involved, for testing plan-gated features during the pilot.</div>
+          </div>
+        </div>
+      </div>
+
       <div class="board-link-box">
         <div>
           <b>Your live board</b>
@@ -206,6 +249,69 @@
     `;
 
     if (notes.length > 0) wireStatusControls();
+    wirePlanPicker(business.plan);
+  }
+
+  const PLANS = [
+    { id: 'starter', name: 'Starter', price: 'Free', features: 'Customer notes, 1 location' },
+    { id: 'growth', name: 'Growth', price: '$59/mo', features: 'Team notes, trends, priority queue' },
+    { id: 'business', name: 'Business', price: 'Custom', features: 'Multi-location, full permissions' },
+  ];
+
+  function wirePlanPicker(currentPlan) {
+    const toggleBtn = document.getElementById('plan-toggle');
+    const picker = document.getElementById('plan-picker');
+    const cardsEl = document.getElementById('plan-cards');
+    const actionEl = document.getElementById('plan-change-action');
+    let selectedPlan = null;
+
+    toggleBtn.addEventListener('click', () => {
+      const open = picker.style.display !== 'none';
+      picker.style.display = open ? 'none' : 'block';
+      toggleBtn.textContent = open ? 'Change plan' : 'Close';
+    });
+
+    cardsEl.innerHTML = PLANS.map((p) => `
+      <div class="plan-card ${p.id === currentPlan ? 'current' : ''}" data-plan="${p.id}">
+        ${p.id === currentPlan ? '<div class="pbadge">Current plan</div>' : ''}
+        <div class="pname">${p.name}</div>
+        <div class="pprice">${p.price}</div>
+        <div class="pfeat">${p.features}</div>
+      </div>
+    `).join('');
+
+    cardsEl.querySelectorAll('.plan-card').forEach((card) => {
+      card.addEventListener('click', () => {
+        const plan = card.dataset.plan;
+        if (plan === currentPlan) {
+          actionEl.style.display = 'none';
+          selectedPlan = null;
+          cardsEl.querySelectorAll('.plan-card').forEach((c) => c.classList.remove('selected'));
+          return;
+        }
+        selectedPlan = plan;
+        cardsEl.querySelectorAll('.plan-card').forEach((c) => c.classList.toggle('selected', c.dataset.plan === plan));
+        actionEl.style.display = 'block';
+      });
+    });
+
+    document.getElementById('skip-payment-btn').addEventListener('click', async () => {
+      if (!selectedPlan) return;
+      const btn = document.getElementById('skip-payment-btn');
+      btn.disabled = true;
+      btn.textContent = 'Applying…';
+      try {
+        await fetch(`${API_BASE}/api/billing/change-plan`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+          body: JSON.stringify({ plan: selectedPlan }),
+        });
+        location.reload();
+      } catch (err) {
+        btn.disabled = false;
+        btn.textContent = 'Skip payment — apply now (testing)';
+      }
+    });
   }
 
   const STATUSES = ['sent','seen','acknowledged','in_progress','actioned','not_planned'];
