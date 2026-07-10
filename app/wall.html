@@ -1,0 +1,306 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Response Wall — Suggestions Box</title>
+<meta name="color-scheme" content="light">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600;700&family=Work+Sans:wght@400;500;600&family=Space+Mono&display=swap" rel="stylesheet">
+<style>
+  html{background:#F6EFE3 !important;color-scheme:light;}
+  :root{
+    --terracotta:#C96A45;
+    --terracotta-deep:#A8502F;
+    --gold:#D9A441;
+    --cream:#FBF5EC;
+    --ink:#2E2620;
+    --ink-soft:#6B5F54;
+    --line:#E7DACB;
+    --page-bg:#F6EFE3;
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0;
+    background:var(--page-bg) !important;
+    font-family:'Work Sans',sans-serif;
+    color:var(--ink);
+  }
+
+  .hero{
+    background:var(--terracotta);
+    padding:56px 24px 64px;
+    text-align:center;
+    position:relative;
+    overflow:hidden;
+  }
+  .hero::after{
+    content:"";
+    position:absolute;left:0;right:0;bottom:0;height:28px;
+    background:var(--page-bg);
+    clip-path:polygon(0 100%,100% 100%,100% 0,97% 6px,94% 0,91% 6px,88% 0,85% 6px,82% 0,79% 6px,76% 0,73% 6px,70% 0,67% 6px,64% 0,61% 6px,58% 0,55% 6px,52% 0,49% 6px,46% 0,43% 6px,40% 0,37% 6px,34% 0,31% 6px,28% 0,25% 6px,22% 0,19% 6px,16% 0,13% 6px,10% 0,7% 6px,4% 0,1% 6px,0 0);
+  }
+  .mark{width:40px;height:40px;margin:0 auto 14px;display:block;}
+  .eyebrow{
+    font-family:'Space Mono',monospace;font-size:11px;letter-spacing:.08em;
+    text-transform:uppercase;color:rgba(251,245,236,.75);margin-bottom:10px;
+  }
+  .hero h1{
+    font-family:'Fredoka',sans-serif;font-weight:600;font-size:32px;
+    color:#FBF5EC;margin:0 0 12px;max-width:640px;margin-left:auto;margin-right:auto;
+    line-height:1.25;
+  }
+  .hero p{
+    color:rgba(251,245,236,.88);font-size:15px;max-width:480px;margin:0 auto;
+  }
+
+  .stats{
+    display:flex;justify-content:center;gap:14px;flex-wrap:wrap;
+    margin-top:34px;
+  }
+  .stat{
+    background:rgba(251,245,236,.14);
+    border:1px solid rgba(251,245,236,.3);
+    border-radius:12px;padding:14px 22px;min-width:130px;
+  }
+  .stat .num{font-family:'Fredoka',sans-serif;font-size:24px;font-weight:600;color:#FBF5EC;}
+  .stat .label{font-size:11.5px;color:rgba(251,245,236,.8);margin-top:2px;}
+
+  .filters{
+    max-width:900px;margin:0 auto;padding:36px 24px 10px;
+    display:flex;gap:8px;flex-wrap:wrap;justify-content:center;
+  }
+  .filter-btn{
+    font-family:'Work Sans',sans-serif;font-size:13.5px;font-weight:600;
+    padding:8px 16px;border-radius:20px;border:1.5px solid var(--line);
+    background:#fff;color:var(--ink-soft);cursor:pointer;transition:all .15s ease;
+  }
+  .filter-btn:hover{border-color:var(--terracotta);color:var(--terracotta-deep);}
+  .filter-btn.active{background:var(--terracotta);border-color:var(--terracotta);color:#fff;}
+
+  .grid{
+    max-width:1000px;margin:0 auto;padding:24px 24px 70px;
+    display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));
+    gap:22px;
+  }
+  .card{
+    background:#fff;border:1px solid var(--line);border-radius:12px;
+    padding:22px 22px 20px;position:relative;
+    box-shadow:0 1px 2px rgba(46,38,32,.04);
+    display:flex;flex-direction:column;gap:14px;
+    transition:transform .15s ease, box-shadow .15s ease;
+  }
+  .card:hover{transform:translateY(-2px);box-shadow:0 8px 20px rgba(46,38,32,.08);}
+
+  .card-top{display:flex;justify-content:space-between;align-items:flex-start;gap:10px;}
+  .tag-pill{
+    font-family:'Space Mono',monospace;font-size:10px;text-transform:uppercase;
+    letter-spacing:.04em;color:var(--terracotta-deep);background:#FBEFE7;
+    padding:4px 9px;border-radius:6px;
+  }
+  .votes{
+    display:flex;align-items:center;gap:5px;color:var(--ink-soft);font-size:12.5px;
+    font-family:'Space Mono',monospace;flex-shrink:0;
+  }
+  .votes svg{width:12px;height:12px;fill:var(--gold);}
+
+  .suggestion{
+    font-size:14.5px;line-height:1.5;color:var(--ink);
+  }
+
+  .response{
+    background:var(--cream);border-radius:9px;padding:14px 15px;
+    border-left:3px solid var(--gold);
+  }
+  .response .status{
+    display:inline-flex;align-items:center;gap:5px;
+    font-family:'Fredoka',sans-serif;font-weight:600;font-size:12px;
+    color:var(--terracotta-deep);margin-bottom:6px;
+  }
+  .response .status::before{
+    content:"✓";display:inline-flex;align-items:center;justify-content:center;
+    width:15px;height:15px;border-radius:50%;background:var(--terracotta);color:#fff;
+    font-size:10px;
+  }
+  .response p{margin:0;font-size:13.5px;line-height:1.5;color:var(--ink);}
+  .response .date{
+    display:block;margin-top:8px;font-size:10.5px;color:var(--ink-soft);
+    font-family:'Space Mono',monospace;
+  }
+
+  .cta{
+    max-width:640px;margin:0 auto 80px;padding:0 24px;text-align:center;
+  }
+  .cta-inner{
+    background:#fff;border:1.5px dashed var(--gold);border-radius:14px;
+    padding:34px 28px;
+  }
+  .cta h2{
+    font-family:'Fredoka',sans-serif;font-size:20px;font-weight:600;margin:0 0 8px;
+  }
+  .cta p{color:var(--ink-soft);font-size:14px;margin:0 0 20px;}
+  .cta button{
+    font-family:'Work Sans',sans-serif;font-weight:600;font-size:14.5px;
+    background:var(--terracotta);color:#fff;border:none;border-radius:8px;
+    padding:12px 24px;cursor:pointer;
+  }
+  .cta button:hover{background:var(--terracotta-deep);}
+
+  .empty-state{
+    max-width:480px;margin:40px auto 80px;text-align:center;padding:0 24px;
+    color:var(--ink-soft);font-size:14px;line-height:1.6;
+  }
+  .loading{text-align:center;padding:60px 24px;color:var(--ink-soft);font-size:14px;}
+
+  @media (max-width:520px){
+    .hero h1{font-size:25px;}
+    .stats{gap:10px;}
+    .stat{min-width:100px;padding:11px 16px;}
+  }
+</style>
+</head>
+<body>
+
+<div id="root">
+  <div class="loading">Loading…</div>
+</div>
+
+<script>
+  const API_BASE = 'https://api.suggestionsbox.com.au';
+  const params = new URLSearchParams(window.location.search);
+  const businessId = params.get('business');
+  const root = document.getElementById('root');
+
+  function escapeHtml(str) {
+    const div = document.createElement('div');
+    div.textContent = str == null ? '' : str;
+    return div.innerHTML;
+  }
+
+  function heartSvg() {
+    return `<svg viewBox="0 0 20 20"><path d="M10 17s-6.5-4.1-8.5-8.2C.3 6.1 1.7 3 4.7 3c1.7 0 3 .9 3.7 2.1C9.1 3.9 10.4 3 12.1 3c3 0 4.4 3.1 3.2 5.8C14.5 12.9 10 17 10 17z"/></svg>`;
+  }
+
+  const STATUS_LABELS = { sent:'Sent', seen:'Seen', acknowledged:'Acknowledged', in_progress:'In progress', actioned:'Actioned', not_planned:'Not planned' };
+
+  function timeAgo(iso) {
+    if (!iso) return '';
+    const days = Math.floor((Date.now() - new Date(iso).getTime()) / 86400000);
+    if (days <= 0) return 'today';
+    if (days === 1) return 'yesterday';
+    if (days < 30) return `${days} days ago`;
+    const months = Math.floor(days / 30);
+    if (months < 12) return `${months} month${months > 1 ? 's' : ''} ago`;
+    const years = Math.floor(months / 12);
+    return `${years} year${years > 1 ? 's' : ''} ago`;
+  }
+
+  async function boot() {
+    if (!businessId) {
+      root.innerHTML = `<div class="empty-state" style="padding-top:80px;">No business specified.<br>This link should include <code>?business=&lt;id&gt;</code>.</div>`;
+      return;
+    }
+    try {
+      const res = await fetch(`${API_BASE}/api/board/${businessId}/wall`);
+      if (!res.ok) throw new Error('not found');
+      const wall = await res.json();
+      render(wall);
+    } catch (err) {
+      root.innerHTML = `<div class="empty-state" style="padding-top:80px;">Couldn't find that business's response wall.<br>Double check the link.</div>`;
+    }
+  }
+
+  function render(wall) {
+    const items = wall.items;
+    const categories = ['All', ...new Set(items.map((i) => i.category))];
+    let active = 'All';
+
+    root.innerHTML = `
+      <div class="hero">
+        <svg class="mark" viewBox="0 0 200 200">
+          <path d="M54,14 H142 L186,58 V146 Q186,186 146,186 H54 Q14,186 14,146 V54 Q14,14 54,14 Z" fill="#FBF1E2" stroke="#E9DCC5" stroke-width="3"/>
+          <path d="M142,14 L186,58 L142,58 Z" fill="#ECDBBE"/>
+          <circle cx="70" cy="76" r="7" fill="#E2653A"/>
+          <circle cx="130" cy="76" r="7" fill="#E2653A"/>
+          <path d="M64 106 Q100 130 136 106" stroke="#E2653A" stroke-width="14" stroke-linecap="round" fill="none"/>
+        </svg>
+        <div class="eyebrow">${escapeHtml(wall.businessName)} · Response Wall</div>
+        <h1>You told us what would make this place better. Here's what we did about it.</h1>
+        <p>Every note here started as a customer suggestion — not a complaint. This is what happens after you send one.</p>
+
+        <div class="stats">
+          <div class="stat"><div class="num">${wall.totalNotes}</div><div class="label">Suggestions received</div></div>
+          <div class="stat"><div class="num">${wall.actionedCount}</div><div class="label">Actioned</div></div>
+          <div class="stat"><div class="num">${wall.avgResponseDays != null ? wall.avgResponseDays + ' days' : '—'}</div><div class="label">Avg. time to first response</div></div>
+        </div>
+      </div>
+
+      <div class="filters" id="filters"></div>
+      <div class="grid" id="grid"></div>
+
+      <div class="cta">
+        <div class="cta-inner">
+          <h2>Got something on your mind?</h2>
+          <p>Takes about 20 seconds. You can post as yourself or stay anonymous — either way, we're listening.</p>
+          <button id="leave-note-btn">Leave a note</button>
+        </div>
+      </div>
+    `;
+
+    document.getElementById('leave-note-btn').addEventListener('click', () => {
+      window.location.href = `board.html?business=${businessId}`;
+    });
+
+    function renderFilters() {
+      document.getElementById('filters').innerHTML = categories.map((c) => `
+        <button class="filter-btn ${c === active ? 'active' : ''}" data-cat="${escapeHtml(c)}">${escapeHtml(c)}</button>
+      `).join('');
+      document.querySelectorAll('.filter-btn').forEach((btn) => {
+        btn.addEventListener('click', () => {
+          active = btn.dataset.cat;
+          renderFilters();
+          renderGrid();
+        });
+      });
+    }
+
+    function renderGrid() {
+      const filtered = active === 'All' ? items : items.filter((i) => i.category === active);
+      const gridEl = document.getElementById('grid');
+      if (filtered.length === 0) {
+        gridEl.innerHTML = '';
+        gridEl.parentElement.insertAdjacentHTML('beforeend', '');
+      }
+      gridEl.innerHTML = filtered.map((i) => `
+        <div class="card">
+          <div class="card-top">
+            <span class="tag-pill">${escapeHtml(i.category)}</span>
+            <span class="votes">${heartSvg()} ${i.voteCount}</span>
+          </div>
+          <div class="suggestion">"${escapeHtml(i.text)}"</div>
+          <div class="response">
+            <div class="status">${STATUS_LABELS[i.status] || i.status}</div>
+            <p>${i.response ? escapeHtml(i.response) : "The business hasn't written a response yet."}</p>
+            ${i.respondedAt ? `<span class="date">Updated ${timeAgo(i.respondedAt)}</span>` : ''}
+          </div>
+        </div>
+      `).join('');
+    }
+
+    if (items.length === 0) {
+      document.getElementById('filters').style.display = 'none';
+      document.getElementById('grid').innerHTML = '';
+      document.getElementById('grid').insertAdjacentHTML('afterend', `
+        <div class="empty-state">No actioned suggestions yet — check back soon.</div>
+      `);
+    } else {
+      renderFilters();
+      renderGrid();
+    }
+  }
+
+  boot();
+</script>
+
+</body>
+</html>

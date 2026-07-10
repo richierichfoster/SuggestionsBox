@@ -614,18 +614,19 @@ app.get('/api/board/:businessId/wall', async (req, res) => {
   if (!business) return res.status(404).json({ error: 'business not found' });
 
   const customerNotes = business.notes.filter((n) => (n.lane || 'customer') === 'customer');
-  const actionedNotes = customerNotes.filter((n) => n.status === 'actioned' && n.showOnWall === true);
+  const publishedNotes = customerNotes.filter((n) => n.showOnWall === true);
 
-  const wallItems = actionedNotes
+  const wallItems = publishedNotes
     .map((n) => {
-      const actionedEntry = [...n.statusHistory].reverse().find((h) => h.status === 'actioned');
+      const latestEntry = [...n.statusHistory].reverse().find((h) => h.message);
       return {
         id: n.id,
         text: n.text,
         category: n.category,
         voteCount: n.votes.length,
-        response: actionedEntry?.message || null,
-        respondedAt: actionedEntry?.at || null,
+        status: n.status,
+        response: latestEntry?.message || null,
+        respondedAt: latestEntry?.at || null,
       };
     })
     .sort((a, b) => b.voteCount - a.voteCount);
@@ -642,7 +643,7 @@ app.get('/api/board/:businessId/wall', async (req, res) => {
   res.json({
     businessName: business.businessName,
     totalNotes: customerNotes.length,
-    actionedCount: actionedNotes.length,
+    actionedCount: customerNotes.filter((n) => n.status === 'actioned').length,
     avgResponseDays,
     items: wallItems,
   });

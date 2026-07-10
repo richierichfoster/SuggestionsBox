@@ -129,6 +129,7 @@
   .wall-toggle::after{content:""; position:absolute; top:2px; left:2px; width:15px; height:15px; border-radius:50%; background:#fff; transition:transform .15s ease; box-shadow:0 1px 2px rgba(0,0,0,.2);}
   .wall-toggle.on{background:var(--teal-deep);}
   .wall-toggle.on::after{transform:translateX(15px);}
+  .wall-toggle-hint{font-size:11px; color:var(--ink-soft); margin-top:4px; margin-left:43px;}
 
   .filter-row{display:flex; gap:8px; flex-wrap:wrap; margin-bottom:18px;}
   .filter-chip{font-size:12px; padding:7px 13px; border-radius:14px; border:1px solid var(--line); background:var(--card); cursor:pointer; font-weight:500;}
@@ -413,7 +414,7 @@
   function notesList(notes) {
     return `<div class="notes-list">` + notes.map((n) => {
       const latestEntry = n.statusHistory && n.statusHistory.length
-        ? [...n.statusHistory].reverse().find((h) => h.status === n.status && h.message)
+        ? [...n.statusHistory].reverse().find((h) => h.message)
         : null;
       return `
       <div class="owner-note-row" data-id="${n.id}">
@@ -425,7 +426,7 @@
         </div>
         <input class="status-msg" data-msg="${n.id}" placeholder="Optional message with this update">
         <button class="status-save" data-save="${n.id}">Update status</button>
-        ${n.status === 'actioned' && n.lane !== 'employee' ? `
+        ${n.lane !== 'employee' ? `
           <label class="wall-toggle-row">
             <span class="wall-toggle ${n.showOnWall ? 'on' : ''}" data-wall-toggle="${n.id}"></span>
             Show on public response wall
