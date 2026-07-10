@@ -3024,9 +3024,28 @@ var qrcode = function() {
           <div class="pc-biz-name">${escapeHtml(biz.businessName)}</div>
         </div>
         <script>
-          window.onload = function() {
-            setTimeout(function() { window.focus(); window.print(); }, 300);
-          };
+          var qrImg = document.querySelector('.pc-qr-box img');
+          function triggerPrint() {
+            window.focus();
+            window.print();
+          }
+          function whenReady() {
+            // Wait for both the QR image and web fonts to be fully ready,
+            // not just a guessed delay — a fixed timeout can fire before
+            // Google Fonts finishes loading on a slower connection, which
+            // produces a print preview with fallback fonts / an unfinished
+            // image, even though the DOM technically looks "loaded."
+            var fontsReady = document.fonts && document.fonts.ready ? document.fonts.ready : Promise.resolve();
+            var imgReady = new Promise(function(resolve) {
+              if (qrImg.complete) resolve();
+              else { qrImg.onload = resolve; qrImg.onerror = resolve; }
+            });
+            Promise.all([fontsReady, imgReady]).then(function() {
+              setTimeout(triggerPrint, 150); // small buffer for final paint
+            });
+          }
+          if (document.readyState === 'complete') whenReady();
+          else window.onload = whenReady;
         <\/script>
       </body>
       </html>
