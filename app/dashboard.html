@@ -67,8 +67,17 @@
   .sb-footer button{background:none; border:none; color:#9FC0BA; font-family:'Space Mono',monospace; font-size:10.5px; cursor:pointer; padding:0; text-decoration:underline;}
   @media (max-width:900px){ .sb-footer{display:none;} }
 
-  main{flex:1; padding:32px 36px 60px; min-width:0;}
+  main{flex:1; padding:32px 36px 60px; min-width:0; position:relative;}
   @media (max-width:900px){ main{padding:20px 16px 50px;} }
+
+  .top-right-avatar{
+    position:absolute; top:28px; right:32px; width:42px; height:42px; border-radius:12px;
+    border:1.5px solid var(--line); background:var(--card); display:flex; align-items:center; justify-content:center;
+    overflow:hidden; z-index:5;
+  }
+  .top-right-avatar img{width:100%; height:100%; object-fit:cover;}
+  .top-right-avatar .placeholder{font-family:'Fredoka',sans-serif; font-weight:600; font-size:16px; color:var(--ink-soft);}
+  @media (max-width:900px){ .top-right-avatar{top:14px; right:16px; width:36px; height:36px;} }
 
   .loading, .error-state{text-align:center; padding:80px 20px; color:var(--ink-soft); font-size:14px;}
   .error-state a{color:var(--terra-deep); font-weight:600;}
@@ -182,6 +191,7 @@
   </aside>
 
   <main>
+    <div class="top-right-avatar" id="top-right-avatar" style="display:none;"></div>
     <div id="app"><div class="loading">Loading your dashboard…</div></div>
   </main>
 </div>
@@ -240,7 +250,16 @@
     }
     document.getElementById('loggedOutShell').style.display = 'none';
     document.getElementById('appShell').style.display = 'flex';
+    renderTopRightAvatar();
     showOverview();
+  }
+
+  function renderTopRightAvatar() {
+    const el = document.getElementById('top-right-avatar');
+    el.style.display = 'flex';
+    el.innerHTML = ME.logoDataUrl
+      ? `<img src="${ME.logoDataUrl}" alt="${escapeHtml(ME.businessName)}">`
+      : `<span class="placeholder">${escapeHtml((ME.businessName || '?').charAt(0).toUpperCase())}</span>`;
   }
 
   document.getElementById('hamburger-btn').addEventListener('click', () => {
@@ -629,6 +648,7 @@
       try {
         await apiFetch('/api/business/profile', { method: 'POST', body: JSON.stringify(body) });
         ME = await apiFetch('/api/me');
+        renderTopRightAvatar();
         showSettings();
         showFormMsg('profile-msg', 'Saved.', 'success');
       } catch (err) {
