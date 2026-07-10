@@ -19,20 +19,42 @@ await initDb();
 // doesn't resolve — it just won't show up in "near me" search until it does.
 async function geocodeAddress(address) {
   if (!address || !address.trim()) return null;
-  try {
-    const url = `https://nominatim.openstreetmap.org/search?format=json&limit=1&q=${encodeURIComponent(address)}`;
+
+  async function query(q) {
+    const url = `https://nominatim.openstreetmap.org/search?format=json&limit=1&countrycodes=au&q=${encodeURIComponent(q)}`;
     const res = await fetch(url, { headers: { 'User-Agent': 'SuggestionsBox/1.0 (suggestionsbox.com.au)' } });
     if (!res.ok) {
-      console.error(`[geocode] Nominatim returned ${res.status} ${res.statusText} for "${address}"`);
+      console.error(`[geocode] Nominatim returned ${res.status} ${res.statusText} for "${q}"`);
       return null;
     }
     const results = await res.json();
-    if (!results.length) {
-      console.error(`[geocode] Nominatim returned zero results for "${address}"`);
-      return null;
-    }
-    console.log(`[geocode] Resolved "${address}" -> ${results[0].lat}, ${results[0].lon}`);
+    if (!results.length) return null;
     return { lat: parseFloat(results[0].lat), lng: parseFloat(results[0].lon) };
+  }
+
+  try {
+    const exact = await query(address);
+    if (exact) {
+      console.log(`[geocode] Resolved "${address}" -> ${exact.lat}, ${exact.lng}`);
+      return exact;
+    }
+
+    // The exact street sometimes isn't in OpenStreetMap's data (especially
+    // newer subdivisions). Falling back to just the last couple of words —
+    // usually the suburb — still gets a usable pin for "near me" search,
+    // which only needs rough accuracy, not the exact building.
+    const words = address.trim().split(/\s+/);
+    if (words.length > 2) {
+      const suburbGuess = words.slice(-2).join(' ');
+      const approx = await query(suburbGuess);
+      if (approx) {
+        console.log(`[geocode] "${address}" had no exact match; used suburb fallback "${suburbGuess}" -> ${approx.lat}, ${approx.lng}`);
+        return approx;
+      }
+    }
+
+    console.error(`[geocode] Nominatim returned zero results for "${address}" (including suburb fallback)`);
+    return null;
   } catch (err) {
     console.error(`[geocode] Request failed for "${address}":`, err.message);
     return null;
