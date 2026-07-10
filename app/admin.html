@@ -1,0 +1,852 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Suggestions Box — Admin</title>
+<meta name="color-scheme" content="light">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600;700&family=Work+Sans:wght@400;500;600&family=Space+Mono&display=swap" rel="stylesheet">
+<style>
+  html{background:#F3EEE4 !important;color-scheme:light;}
+  :root{
+    --terracotta:#C96A45;
+    --terracotta-deep:#A8502F;
+    --gold:#D9A441;
+    --teal:#3C7A73;
+    --teal-deep:#254240;
+    --cream:#FBF5EC;
+    --ink:#2E2620;
+    --ink-soft:#6B5F54;
+    --ink-faint:#9C8F7F;
+    --line:#E7DACB;
+    --panel-bg:#F3EEE4;
+    --ok:#5C8A5C;
+    --warn:#C9954A;
+    --danger:#B85C4A;
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0;background:var(--panel-bg) !important;
+    font-family:'Work Sans',sans-serif;color:var(--ink);
+    display:flex;min-height:100vh;
+  }
+
+  /* ---- sidebar ---- */
+  .sidebar{
+    width:230px;flex-shrink:0;background:var(--teal-deep);color:#E3EDEB;
+    padding:22px 18px;display:flex;flex-direction:column;gap:26px;
+    position:sticky;top:0;height:100vh;
+  }
+  .sb-brand{display:flex;align-items:center;gap:10px;}
+  .sb-mark{width:28px;height:28px;flex-shrink:0;}
+  .sb-brand-text{font-family:'Fredoka',sans-serif;font-weight:600;font-size:15px;line-height:1.2;}
+  .sb-brand-text span{display:block;font-family:'Space Mono',monospace;font-weight:400;font-size:10px;color:#8FADA8;margin-top:2px;letter-spacing:.04em;text-transform:uppercase;}
+
+  nav.sb-nav{display:flex;flex-direction:column;gap:2px;}
+  .sb-nav button{
+    display:flex;align-items:center;gap:10px;
+    font-family:'Work Sans',sans-serif;font-size:13.5px;font-weight:500;
+    color:#9FC0BA;text-decoration:none;padding:9px 10px;border-radius:8px;
+    transition:background .15s ease, color .15s ease;
+    background:none;border:none;cursor:pointer;width:100%;text-align:left;
+  }
+  .sb-nav button:hover{background:#2F4F4C;color:#E3EDEB;}
+  .sb-nav button.active{background:var(--terracotta);color:#fff;}
+  .sb-nav .dot{width:6px;height:6px;border-radius:50%;background:currentColor;opacity:.6;flex-shrink:0;}
+
+  .sb-footer{
+    margin-top:auto;font-family:'Space Mono',monospace;font-size:10.5px;
+    color:#7A9C96;line-height:1.6;
+  }
+
+  .hamburger-btn{
+    display:none;flex-direction:column;justify-content:center;gap:4px;
+    width:34px;height:34px;background:none;border:1px solid #4A3E32;border-radius:8px;
+    cursor:pointer;flex-shrink:0;
+  }
+  .hamburger-btn span{width:16px;height:2px;background:#E3EDEB;margin:0 auto;border-radius:1px;}
+
+  /* ---- main ---- */
+  main{flex:1;padding:30px 36px 60px;min-width:0;}
+
+  .topbar{
+    display:flex;justify-content:space-between;align-items:flex-start;
+    margin-bottom:26px;flex-wrap:wrap;gap:14px;
+  }
+  .topbar h1{font-family:'Fredoka',sans-serif;font-size:23px;font-weight:600;margin:0 0 4px;}
+  .topbar p{margin:0;color:var(--ink-soft);font-size:13.5px;}
+  .range-select{
+    display:flex;gap:6px;background:#fff;border:1px solid var(--line);
+    border-radius:9px;padding:4px;
+  }
+  .range-select button{
+    font-family:'Work Sans',sans-serif;font-size:12.5px;font-weight:600;
+    border:none;background:none;color:var(--ink-soft);padding:7px 13px;border-radius:6px;
+    cursor:pointer;transition:background .15s ease,color .15s ease;
+  }
+  .range-select button.active{background:var(--terracotta);color:#fff;}
+
+  .sample-note{
+    font-family:'Space Mono',monospace;font-size:10.5px;color:var(--ink-faint);
+    margin:-14px 0 22px;
+  }
+
+  /* ---- stat cards ---- */
+  .stats{
+    display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));
+    gap:14px;margin-bottom:26px;
+  }
+  .stat-card{
+    background:#fff;border:1px solid var(--line);border-radius:12px;padding:16px 18px;
+  }
+  .stat-card .label{
+    font-family:'Space Mono',monospace;font-size:10.5px;text-transform:uppercase;
+    letter-spacing:.04em;color:var(--ink-soft);margin-bottom:8px;
+  }
+  .stat-card .num{font-family:'Fredoka',sans-serif;font-size:26px;font-weight:600;color:var(--ink);}
+  .stat-card .delta{font-size:12px;margin-top:4px;font-weight:600;}
+  .delta.up{color:var(--ok);} .delta.down{color:var(--danger);} .delta.flat{color:var(--ink-faint);}
+
+  /* ---- chart panel ---- */
+  .chart-panel{
+    background:#fff;border:1px solid var(--line);border-radius:12px;
+    padding:20px 22px 14px;margin-bottom:26px;
+  }
+  .chart-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;}
+  .chart-head h2{font-family:'Fredoka',sans-serif;font-size:15.5px;font-weight:600;margin:0;}
+  .legend{display:flex;gap:16px;font-size:11.5px;color:var(--ink-soft);}
+  .legend span{display:inline-flex;align-items:center;gap:6px;}
+  .legend i{width:9px;height:9px;border-radius:2px;display:inline-block;}
+
+  /* ---- table ---- */
+  .table-panel{
+    background:#fff;border:1px solid var(--line);border-radius:12px;overflow:hidden;
+  }
+  .table-head{
+    display:flex;justify-content:space-between;align-items:center;
+    padding:18px 20px 14px;border-bottom:1px solid var(--line);
+  }
+  .table-head h2{font-family:'Fredoka',sans-serif;font-size:15.5px;font-weight:600;margin:0;}
+  .table-head input{
+    font-family:'Work Sans',sans-serif;font-size:12.5px;padding:7px 11px;
+    border:1px solid var(--line);border-radius:7px;background:var(--cream);width:190px;
+  }
+
+  table{width:100%;border-collapse:collapse;font-size:13px;}
+  thead th{
+    text-align:left;font-family:'Space Mono',monospace;font-size:10px;
+    text-transform:uppercase;letter-spacing:.04em;color:var(--ink-faint);
+    padding:10px 20px;border-bottom:1px solid var(--line);font-weight:400;
+  }
+  tbody td{padding:13px 20px;border-bottom:1px solid #F1E9DA;vertical-align:middle;}
+  tbody tr:last-child td{border-bottom:none;}
+  tbody tr:hover{background:#FCF9F3;}
+
+  .biz-name{font-weight:600;color:var(--ink);}
+  .biz-sub{font-family:'Space Mono',monospace;font-size:10.5px;color:var(--ink-faint);margin-top:1px;}
+
+  .plan-pill{
+    font-family:'Space Mono',monospace;font-size:10px;text-transform:uppercase;
+    padding:3px 8px;border-radius:6px;letter-spacing:.03em;
+  }
+  .plan-pill.starter{background:#EFEAE0;color:var(--ink-soft);}
+  .plan-pill.growth{background:#FBEFE7;color:var(--terracotta-deep);}
+  .plan-pill.business{background:#EDE0C9;color:#8A6A2A;}
+
+  .status-pill{
+    display:inline-flex;align-items:center;gap:5px;font-size:11.5px;font-weight:600;
+  }
+  .status-pill::before{content:"";width:7px;height:7px;border-radius:50%;}
+  .status-pill.active{color:var(--ok);} .status-pill.active::before{background:var(--ok);}
+  .status-pill.trial{color:var(--warn);} .status-pill.trial::before{background:var(--warn);}
+  .status-pill.churn{color:var(--danger);} .status-pill.churn::before{background:var(--danger);}
+
+  .bar-track{width:74px;height:6px;background:#F1E9DA;border-radius:4px;overflow:hidden;}
+  .bar-fill{height:100%;background:var(--terracotta);border-radius:4px;}
+  .bar-row{display:flex;align-items:center;gap:8px;}
+  .bar-pct{font-family:'Space Mono',monospace;font-size:11px;color:var(--ink-soft);width:32px;}
+
+  /* ---- table scroll wrapper ---- */
+  .table-scroll{overflow-x:auto;-webkit-overflow-scrolling:touch;}
+  .table-scroll table{min-width:640px;}
+
+  .nh-filters{overflow-x:auto;-webkit-overflow-scrolling:touch;flex-wrap:nowrap;}
+  .nh-filter{white-space:nowrap;}
+
+  @media (max-width:900px){
+    body{flex-direction:column;}
+    .sidebar{
+      width:100%;height:auto;position:relative;
+      flex-direction:row;align-items:center;justify-content:space-between;
+      padding:14px 16px;gap:14px;
+    }
+    .sb-brand{flex-shrink:0;}
+    .sb-footer{display:none;}
+    main{padding:20px 16px 50px;}
+
+    .hamburger-btn{display:flex;}
+
+    nav.sb-nav{
+      display:none;position:absolute;top:100%;left:0;right:0;
+      flex-direction:column;background:var(--teal-deep);padding:10px 14px 16px;
+      box-shadow:0 12px 24px rgba(0,0,0,.25);z-index:40;gap:2px;
+    }
+    nav.sb-nav.open{display:flex;}
+    .sb-nav button{white-space:normal;}
+
+    .stats{
+      display:flex;flex-wrap:nowrap;overflow-x:auto;scroll-snap-type:x mandatory;
+      gap:12px;padding-bottom:6px;-webkit-overflow-scrolling:touch;
+    }
+    .stat-card{flex:0 0 155px;scroll-snap-align:start;}
+  }
+
+  /* ---- detail view ---- */
+  .back-link{
+    display:inline-flex;align-items:center;gap:6px;font-family:'Space Mono',monospace;
+    font-size:11.5px;color:var(--ink-soft);text-decoration:none;cursor:pointer;
+    margin-bottom:18px;background:none;border:none;padding:0;
+  }
+  .back-link:hover{color:var(--terracotta-deep);}
+
+  .detail-head{
+    display:flex;justify-content:space-between;align-items:flex-start;
+    margin-bottom:22px;flex-wrap:wrap;gap:14px;
+  }
+  .detail-head h1{font-family:'Fredoka',sans-serif;font-size:22px;font-weight:600;margin:0 0 4px;}
+  .detail-head .sub-row{display:flex;align-items:center;gap:10px;font-size:12.5px;color:var(--ink-soft);}
+  .detail-head-right{display:flex;gap:8px;}
+
+  .note-history-panel{background:#fff;border:1px solid var(--line);border-radius:12px;overflow:hidden;}
+  .nh-head{
+    display:flex;justify-content:space-between;align-items:center;
+    padding:18px 20px 14px;border-bottom:1px solid var(--line);flex-wrap:wrap;gap:10px;
+  }
+  .nh-head h2{font-family:'Fredoka',sans-serif;font-size:15.5px;font-weight:600;margin:0;}
+  .nh-filters{display:flex;gap:6px;}
+  .nh-filter{
+    font-family:'Space Mono',monospace;font-size:10px;text-transform:uppercase;
+    padding:5px 10px;border-radius:20px;border:1px solid var(--line);color:var(--ink-soft);
+    background:#fff;cursor:pointer;
+  }
+  .nh-filter.active{background:var(--terracotta);border-color:var(--terracotta);color:#fff;}
+
+  .note-row{
+    display:flex;gap:14px;align-items:flex-start;padding:14px 20px;border-bottom:1px solid #F1E9DA;
+  }
+  .note-row:last-child{border-bottom:none;}
+  .note-row:hover{background:#FCF9F3;}
+  .note-lane-dot{width:8px;height:8px;border-radius:50%;margin-top:6px;flex-shrink:0;}
+  .note-lane-dot.customer{background:var(--terracotta);}
+  .note-lane-dot.employee{background:var(--teal);}
+  .note-main{flex:1;min-width:0;}
+  .note-text{font-size:13px;color:var(--ink);line-height:1.45;}
+  .note-meta-row{display:flex;gap:10px;align-items:center;margin-top:6px;flex-wrap:wrap;}
+  .note-tag{font-family:'Space Mono',monospace;font-size:9.5px;text-transform:uppercase;color:var(--ink-faint);}
+  .note-date{font-family:'Space Mono',monospace;font-size:9.5px;color:var(--ink-faint);}
+  .note-votes{display:flex;align-items:center;gap:4px;font-family:'Space Mono',monospace;font-size:10.5px;color:var(--ink-soft);}
+  .note-votes svg{width:9px;height:9px;fill:var(--gold);}
+  .note-status-pill{
+    font-family:'Space Mono',monospace;font-size:9.5px;text-transform:uppercase;
+    padding:4px 9px;border-radius:20px;white-space:nowrap;flex-shrink:0;
+  }
+  .note-status-pill.sent{background:#F1E9DA;color:var(--ink-soft);}
+  .note-status-pill.seen{background:#EAE3D6;color:var(--ink-soft);}
+  .note-status-pill.acknowledged{background:#FBEFE7;color:var(--terracotta-deep);}
+  .note-status-pill.inprogress{background:#FBF0DC;color:#8A6A2A;}
+  .note-status-pill.actioned{background:#E9F1E6;color:#3D6B3D;}
+  .note-status-pill.notplanned{background:#F5E6E1;color:var(--danger);}
+
+  /* ---- billing view ---- */
+  .plan-breakdown{display:flex;flex-direction:column;gap:12px;}
+  .pb-row{display:flex;align-items:center;gap:14px;}
+  .pb-label{width:90px;flex-shrink:0;font-family:'Fredoka',sans-serif;font-size:12.5px;font-weight:600;}
+  .pb-track{flex:1;height:10px;background:#F1E9DA;border-radius:6px;overflow:hidden;}
+  .pb-fill{height:100%;border-radius:6px;}
+  .pb-fill.starter{background:var(--ink-faint);}
+  .pb-fill.growth{background:var(--terracotta);}
+  .pb-fill.business{background:var(--gold);}
+  .pb-value{width:110px;flex-shrink:0;text-align:right;font-family:'Space Mono',monospace;font-size:11.5px;color:var(--ink-soft);}
+
+  .renewal-row{display:flex;justify-content:space-between;align-items:center;padding:12px 0;border-bottom:1px solid #F1E9DA;font-size:13px;}
+  .renewal-row:last-child{border-bottom:none;}
+  .renewal-left .name{font-weight:600;}
+  .renewal-left .sub{font-family:'Space Mono',monospace;font-size:10px;color:var(--ink-faint);margin-top:2px;}
+  .renewal-right{text-align:right;}
+  .renewal-right .amt{font-family:'Space Mono',monospace;font-weight:700;}
+  .renewal-right .date{font-size:11px;color:var(--ink-faint);margin-top:2px;}
+  .pay-status{
+    font-family:'Space Mono',monospace;font-size:9.5px;text-transform:uppercase;
+    padding:3px 8px;border-radius:6px;margin-right:10px;
+  }
+  .pay-status.ok{background:#E9F1E6;color:var(--ok);}
+  .pay-status.risk{background:#FBEDE9;color:var(--danger);}
+
+  /* ---- settings view ---- */
+  .settings-panel{background:#fff;border:1px solid var(--line);border-radius:12px;padding:20px 22px;margin-bottom:20px;}
+  .settings-panel h2{font-family:'Fredoka',sans-serif;font-size:15px;font-weight:600;margin:0 0 4px;}
+  .settings-panel .desc{font-size:12px;color:var(--ink-faint);margin:0 0 18px;}
+
+  .account-row{display:flex;align-items:center;gap:14px;}
+  .avatar-circle{
+    width:44px;height:44px;border-radius:50%;background:var(--terracotta);color:#fff;
+    display:flex;align-items:center;justify-content:center;font-family:'Fredoka',sans-serif;font-weight:600;font-size:15px;flex-shrink:0;
+  }
+  .account-detail .name{font-weight:600;font-size:14px;}
+  .account-detail .email{font-family:'Space Mono',monospace;font-size:11px;color:var(--ink-faint);margin-top:2px;}
+  .account-row .btn{margin-left:auto;}
+
+  .toggle-row{display:flex;justify-content:space-between;align-items:center;padding:12px 0;border-bottom:1px solid #F1E9DA;}
+  .toggle-row:last-child{border-bottom:none;}
+  .toggle-row .t{font-size:13px;font-weight:600;}
+  .toggle-row .d{font-size:11.5px;color:var(--ink-soft);margin-top:2px;}
+  .mini-switch{width:36px;height:20px;border-radius:20px;position:relative;flex-shrink:0;cursor:pointer;background:#E1D6C2;transition:background .15s ease;}
+  .mini-switch::after{content:"";position:absolute;top:2px;left:2px;width:16px;height:16px;border-radius:50%;background:#fff;transition:transform .15s ease;box-shadow:0 1px 2px rgba(0,0,0,.15);}
+  .mini-switch.on{background:var(--terracotta);}
+  .mini-switch.on::after{transform:translateX(16px);}
+
+  .team-row{display:flex;align-items:center;gap:12px;padding:11px 0;border-bottom:1px solid #F1E9DA;}
+  .team-row:last-child{border-bottom:none;}
+  .team-avatar{width:32px;height:32px;border-radius:50%;background:var(--gold-soft,#FBF6E9);border:1px solid var(--line);color:var(--ink-soft);display:flex;align-items:center;justify-content:center;font-family:'Fredoka',sans-serif;font-size:12px;font-weight:600;flex-shrink:0;}
+  .team-detail{flex:1;}
+  .team-detail .n{font-size:13px;font-weight:600;}
+  .team-detail .r{font-family:'Space Mono',monospace;font-size:10px;color:var(--ink-faint);}
+
+</style>
+</head>
+<body>
+
+<div id="authGate" style="display:none;position:fixed;inset:0;background:var(--cream,#FBF1E2);z-index:100;align-items:center;justify-content:center;text-align:center;padding:24px;">
+  <div style="max-width:360px;">
+    <h1 id="authGateTitle" style="font-family:'Fredoka',sans-serif;font-size:20px;margin-bottom:10px;"></h1>
+    <p id="authGateMsg" style="color:var(--ink-soft);font-size:13.5px;line-height:1.6;margin-bottom:20px;"></p>
+    <button class="btn btn-ghost" id="authGateBtn" style="padding:10px 20px;border-radius:9px;border:1px solid var(--line);background:#fff;cursor:pointer;font-family:'Fredoka',sans-serif;font-weight:600;"></button>
+  </div>
+</div>
+
+<div id="appShell" style="display:none;">
+<aside class="sidebar">
+  <div class="sb-brand">
+    <svg class="sb-mark" viewBox="0 0 200 200">
+      <path d="M54,14 H142 L186,58 V146 Q186,186 146,186 H54 Q14,186 14,146 V54 Q14,14 54,14 Z" fill="#FBF1E2" stroke="#4A3E32" stroke-width="4"/>
+      <path d="M142,14 L186,58 L142,58 Z" fill="#D9CBAE"/>
+      <circle cx="70" cy="76" r="8" fill="#E2653A"/>
+      <circle cx="130" cy="76" r="8" fill="#E2653A"/>
+      <path d="M64 106 Q100 130 136 106" stroke="#E2653A" stroke-width="15" stroke-linecap="round" fill="none"/>
+    </svg>
+    <div class="sb-brand-text">Suggestions Box<span>Admin</span></div>
+  </div>
+
+  <button class="hamburger-btn" onclick="toggleMobileNav()" aria-label="Toggle menu">
+    <span></span><span></span><span></span>
+  </button>
+
+  <nav class="sb-nav" id="sbNav">
+    <button type="button" class="active" id="navOverview" onclick="showOverview()"><span class="dot"></span>Overview</button>
+    <button type="button" onclick="showOverview()"><span class="dot"></span>Businesses</button>
+    <button type="button" id="navBilling" onclick="showBilling()"><span class="dot"></span>Billing</button>
+    <button type="button" id="navSettings" onclick="showSettings()"><span class="dot"></span>Settings</button>
+  </nav>
+
+  <div class="sb-footer">
+    Suggestions Box Admin<br>v0.1 · pilot phase
+  </div>
+</aside>
+
+<main>
+<div id="overviewView">
+  <div class="topbar">
+    <div>
+      <h1>Overview</h1>
+      <p>Everything running on Suggestions Box, in one place.</p>
+    </div>
+  </div>
+
+  <div class="stats">
+    <div class="stat-card">
+      <div class="label">Businesses</div>
+      <div class="num" id="statBusinesses">–</div>
+    </div>
+    <div class="stat-card">
+      <div class="label">Suggestions received</div>
+      <div class="num" id="statReceived">–</div>
+    </div>
+    <div class="stat-card">
+      <div class="label">Actioned rate</div>
+      <div class="num" id="statActioned">–</div>
+    </div>
+    <div class="stat-card">
+      <div class="label">MRR</div>
+      <div class="num" id="statMrr">–</div>
+    </div>
+  </div>
+
+  <div class="chart-panel">
+    <div class="chart-head">
+      <h2>Suggestion volume, last 8 weeks</h2>
+      <div class="legend">
+        <span><i style="background:#C96A45"></i>Received</span>
+        <span><i style="background:#D9A441"></i>Actioned</span>
+      </div>
+    </div>
+    <svg id="chart" viewBox="0 0 640 160" style="width:100%;height:160px;display:block;"></svg>
+  </div>
+
+  <div class="table-panel">
+    <div class="table-head">
+      <h2>Businesses</h2>
+      <input type="text" placeholder="Search businesses…" id="search">
+    </div>
+    <div class="table-scroll">
+    <table>
+      <thead>
+        <tr>
+          <th>Business</th>
+          <th>Plan</th>
+          <th>Received</th>
+          <th>Actioned rate</th>
+          <th>Last activity</th>
+        </tr>
+      </thead>
+      <tbody id="bizRows"></tbody>
+    </table>
+    </div>
+  </div>
+</div>
+
+<div id="detailView" style="display:none;">
+  <button class="back-link" onclick="showOverview()">← Back to all businesses</button>
+
+  <div class="detail-head">
+    <div>
+      <h1 id="dName"></h1>
+      <div class="sub-row">
+        <span id="dSub"></span>
+        <span id="dPlan"></span>
+      </div>
+    </div>
+
+  <div class="stats" id="dStats"></div>
+
+  <div class="note-history-panel">
+    <div class="nh-head">
+      <h2>Note history</h2>
+      <div class="nh-filters" id="dFilters"></div>
+    </div>
+    <div id="dNotes"></div>
+  </div>
+</div>
+
+<div id="billingView" style="display:none;">
+  <div class="topbar">
+    <div>
+      <h1>Billing</h1>
+      <p>Projected revenue based on signed-up plans — not live Stripe data yet.</p>
+    </div>
+  </div>
+  <p class="sample-note" id="billNote" style="display:none;"></p>
+
+  <div class="stats" id="billStats"></div>
+
+  <div class="chart-panel">
+    <div class="chart-head"><h2>Revenue by plan</h2></div>
+    <div class="plan-breakdown" id="planBreakdown"></div>
+  </div>
+</div>
+
+<div id="settingsView" style="display:none;">
+  <div class="topbar">
+    <div>
+      <h1>Settings</h1>
+      <p>Your account and how Suggestions Box notifies you.</p>
+    </div>
+  </div>
+
+  <div class="settings-panel">
+    <h2>Account</h2>
+    <p class="desc">This is you — the person running Suggestions Box.</p>
+    <div class="account-row">
+      <div class="avatar-circle" id="settingsAvatar">–</div>
+      <div class="account-detail">
+        <div class="name" id="settingsName">–</div>
+        <div class="email" id="settingsEmail">–</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="settings-panel">
+    <h2>Notifications</h2>
+    <p class="desc">Not wired up to real emails yet — these toggles are a preview of what's coming.</p>
+    <div class="toggle-row">
+      <div><div class="t">New business signs up</div><div class="d">Email the moment someone claims their business.</div></div>
+      <div class="mini-switch" onclick="this.classList.toggle('on')"></div>
+    </div>
+    <div class="toggle-row">
+      <div><div class="t">Payment failed</div><div class="d">Immediate alert if a renewal doesn't go through.</div></div>
+      <div class="mini-switch" onclick="this.classList.toggle('on')"></div>
+    </div>
+    <div class="toggle-row">
+      <div><div class="t">Weekly summary</div><div class="d">A Monday digest of volume, actioned rate, and MRR.</div></div>
+      <div class="mini-switch" onclick="this.classList.toggle('on')"></div>
+    </div>
+  </div>
+</div>
+</main>
+
+
+<script>
+const API_BASE = 'https://api.suggestionsbox.com.au';
+const token = localStorage.getItem('sb_token');
+
+function planLabel(p){ return {starter:'Starter',growth:'Growth',business:'Business'}[p] || p; }
+function noteStatusLabel(s){
+  return {sent:'Sent',seen:'Seen',acknowledged:'Acknowledged',in_progress:'In Progress',actioned:'Actioned',not_planned:'Not planned'}[s] || s;
+}
+function statusPillClass(s){ return (s || '').replace(/_/g, ''); }
+function timeAgo(iso){
+  if(!iso) return '—';
+  const diffMs = Date.now() - new Date(iso).getTime();
+  const mins = Math.floor(diffMs/60000);
+  if(mins < 60) return mins <= 1 ? 'just now' : `${mins} min ago`;
+  const hrs = Math.floor(mins/60);
+  if(hrs < 24) return `${hrs} hour${hrs>1?'s':''} ago`;
+  const days = Math.floor(hrs/24);
+  if(days < 30) return `${days} day${days>1?'s':''} ago`;
+  const months = Math.floor(days/30);
+  return `${months} month${months>1?'s':''} ago`;
+}
+
+function heartSvg(){
+  return '<svg viewBox="0 0 20 20"><path d="M10 17s-6.5-4.1-8.5-8.2C.3 6.1 1.7 3 4.7 3c1.7 0 3 .9 3.7 2.1C9.1 3.9 10.4 3 12.1 3c3 0 4.4 3.1 3.2 5.8C14.5 12.9 10 17 10 17z"/></svg>';
+}
+
+async function apiFetch(path, opts = {}){
+  const res = await fetch(`${API_BASE}${path}`, {
+    ...opts,
+    headers: { ...(opts.headers||{}), Authorization: `Bearer ${token}` },
+  });
+  if(!res.ok){
+    const err = await res.json().catch(()=>({error:'Request failed'}));
+    throw new Error(err.error || 'Request failed');
+  }
+  return res.json();
+}
+
+function showGate(title, msg, btnLabel, btnAction){
+  document.getElementById('appShell').style.display = 'none';
+  document.getElementById('authGate').style.display = 'flex';
+  document.getElementById('authGateTitle').textContent = title;
+  document.getElementById('authGateMsg').textContent = msg;
+  const btn = document.getElementById('authGateBtn');
+  btn.textContent = btnLabel;
+  btn.onclick = btnAction;
+}
+
+let allBusinesses = [];
+
+async function init(){
+  if(!token){
+    showGate("You're not logged in", 'Log in with your business account to view the admin panel.', 'Go to login', () => window.location.href = 'login.html');
+    return;
+  }
+  let me;
+  try {
+    me = await apiFetch('/api/me');
+  } catch(e) {
+    localStorage.removeItem('sb_token');
+    localStorage.removeItem('sb_business');
+    showGate("You're not logged in", 'Your session has expired — please log in again.', 'Go to login', () => window.location.href = 'login.html');
+    return;
+  }
+  if(!me.isAdmin){
+    showGate('Not authorized', `${me.businessName} doesn't have admin access to this panel.`, 'Back to my dashboard', () => window.location.href = 'dashboard.html');
+    return;
+  }
+
+  document.getElementById('settingsAvatar').textContent = (me.businessName || '?').charAt(0).toUpperCase();
+  document.getElementById('settingsName').textContent = me.ownerName || me.businessName;
+  document.getElementById('settingsEmail').textContent = me.email;
+
+  document.getElementById('authGate').style.display = 'none';
+  document.getElementById('appShell').style.display = 'block';
+
+  await showOverview();
+}
+
+async function fetchBusinessDetail(id){
+  return apiFetch(`/api/admin/businesses/${id}`);
+}
+
+function renderRows(filter=''){
+  const rows = allBusinesses.filter(b => b.businessName.toLowerCase().includes(filter.toLowerCase()));
+  document.getElementById('bizRows').innerHTML = rows.length ? rows.map(b => `
+    <tr onclick="showBusiness('${b.id}')" style="cursor:pointer;">
+      <td>
+        <div class="biz-name">${escapeHtml(b.businessName)}</div>
+        <div class="biz-sub">${escapeHtml(b.email)}</div>
+      </td>
+      <td><span class="plan-pill ${b.plan}">${planLabel(b.plan)}</span></td>
+      <td>${b.notesReceived}</td>
+      <td>
+        <div class="bar-row">
+          <div class="bar-track"><div class="bar-fill" style="width:${b.actionedRate}%"></div></div>
+          <span class="bar-pct">${b.actionedRate}%</span>
+        </div>
+      </td>
+      <td>${timeAgo(b.lastActivity)}</td>
+    </tr>
+  `).join('') : '<tr><td colspan="5" style="padding:30px 20px;text-align:center;color:var(--ink-faint);">No businesses match that search.</td></tr>';
+}
+
+function escapeHtml(str){
+  const div = document.createElement('div');
+  div.textContent = str == null ? '' : str;
+  return div.innerHTML;
+}
+
+let currentBizId = null;
+let currentBizNotes = [];
+let currentNoteFilter = 'all';
+
+async function showBusiness(id){
+  hideAllViews();
+  document.getElementById('detailView').style.display = 'block';
+  document.getElementById('dName').textContent = 'Loading…';
+  document.getElementById('dStats').innerHTML = '';
+  document.getElementById('dNotes').innerHTML = '';
+
+  let biz;
+  try {
+    biz = await fetchBusinessDetail(id);
+  } catch(e) {
+    document.getElementById('dName').textContent = 'Could not load this business';
+    return;
+  }
+
+  currentBizId = id;
+  currentBizNotes = biz.notes;
+  currentNoteFilter = 'all';
+
+  document.getElementById('dName').textContent = biz.businessName;
+  document.getElementById('dSub').textContent = biz.email;
+  document.getElementById('dPlan').innerHTML = `<span class="plan-pill ${biz.plan}">${planLabel(biz.plan)}</span>`;
+
+  document.getElementById('dStats').innerHTML = `
+    <div class="stat-card"><div class="label">Total notes</div><div class="num">${biz.notesReceived}</div></div>
+    <div class="stat-card"><div class="label">Actioned rate</div><div class="num">${biz.actionedRate}%</div></div>
+    <div class="stat-card"><div class="label">Last activity</div><div class="num" style="font-size:15px;">${timeAgo(biz.lastActivity)}</div></div>
+  `;
+
+  const filters = ['all','sent','seen','acknowledged','in_progress','actioned','not_planned'];
+  document.getElementById('dFilters').innerHTML = filters.map(f => `
+    <button class="nh-filter ${f===currentNoteFilter?'active':''}" data-f="${f}" onclick="setNoteFilter('${f}')">${f==='all'?'All':noteStatusLabel(f)}</button>
+  `).join('');
+
+  renderNotes();
+}
+
+function setNoteFilter(f){
+  currentNoteFilter = f;
+  document.querySelectorAll('#dFilters .nh-filter').forEach(btn => {
+    btn.classList.toggle('active', btn.dataset.f === f);
+  });
+  renderNotes();
+}
+
+function renderNotes(){
+  const filtered = currentNoteFilter === 'all' ? currentBizNotes : currentBizNotes.filter(n => n.status === currentNoteFilter);
+  document.getElementById('dNotes').innerHTML = filtered.length ? filtered.map(n => `
+    <div class="note-row">
+      <div class="note-main">
+        <div class="note-text">${escapeHtml(n.text)}</div>
+        <div class="note-meta-row">
+          <span class="note-tag">${escapeHtml(n.category)}</span>
+          <span class="note-votes">${heartSvg()} ${n.voteCount}</span>
+          <span class="note-date">${timeAgo(n.createdAt)}</span>
+          ${n.isAnonymous ? '' : `<span class="note-date">${escapeHtml(n.authorName || 'Customer')}</span>`}
+        </div>
+      </div>
+      <span class="note-status-pill ${statusPillClass(n.status)}">${noteStatusLabel(n.status)}</span>
+    </div>
+  `).join('') : '<div style="padding:30px 20px;text-align:center;color:var(--ink-faint);font-size:13px;">No notes at this status.</div>';
+}
+
+function hideAllViews(){
+  document.getElementById('overviewView').style.display = 'none';
+  document.getElementById('detailView').style.display = 'none';
+  document.getElementById('billingView').style.display = 'none';
+  document.getElementById('settingsView').style.display = 'none';
+  ['navOverview','navBilling','navSettings'].forEach(id => document.getElementById(id).classList.remove('active'));
+}
+
+async function showOverview(){
+  hideAllViews();
+  document.getElementById('overviewView').style.display = 'block';
+  document.getElementById('navOverview').classList.add('active');
+  closeMobileNav();
+
+  try {
+    allBusinesses = await apiFetch('/api/admin/businesses');
+  } catch(e) {
+    document.getElementById('bizRows').innerHTML = `<tr><td colspan="5" style="padding:30px 20px;text-align:center;color:var(--danger);">Couldn't load businesses: ${escapeHtml(e.message)}</td></tr>`;
+    return;
+  }
+
+  const totalReceived = allBusinesses.reduce((sum,b) => sum + b.notesReceived, 0);
+  const totalActioned = allBusinesses.reduce((sum,b) => sum + Math.round((b.actionedRate/100) * b.notesReceived), 0);
+  const overallActionedRate = totalReceived ? Math.round((totalActioned/totalReceived)*100) : 0;
+
+  document.getElementById('statBusinesses').textContent = allBusinesses.length;
+  document.getElementById('statReceived').textContent = totalReceived;
+  document.getElementById('statActioned').textContent = overallActionedRate + '%';
+
+  try {
+    const billing = await apiFetch('/api/admin/billing');
+    document.getElementById('statMrr').textContent = '$' + billing.mrr;
+  } catch(e) {
+    document.getElementById('statMrr').textContent = '—';
+  }
+
+  renderRows();
+  document.getElementById('search').oninput = (e) => renderRows(e.target.value);
+
+  await renderChart();
+}
+
+async function showBilling(){
+  hideAllViews();
+  document.getElementById('billingView').style.display = 'block';
+  document.getElementById('navBilling').classList.add('active');
+  closeMobileNav();
+  await renderBilling();
+}
+
+function showSettings(){
+  hideAllViews();
+  document.getElementById('settingsView').style.display = 'block';
+  document.getElementById('navSettings').classList.add('active');
+  closeMobileNav();
+}
+
+async function renderBilling(){
+  document.getElementById('billStats').innerHTML = '<div class="stat-card"><div class="label">Loading…</div><div class="num">–</div></div>';
+  let billing;
+  try {
+    billing = await apiFetch('/api/admin/billing');
+  } catch(e) {
+    document.getElementById('billStats').innerHTML = `<div class="stat-card"><div class="label">Error</div><div class="num" style="font-size:14px;color:var(--danger);">${escapeHtml(e.message)}</div></div>`;
+    return;
+  }
+
+  document.getElementById('billStats').innerHTML = `
+    <div class="stat-card"><div class="label">MRR</div><div class="num">$${billing.mrr}</div></div>
+    <div class="stat-card"><div class="label">Active subscriptions</div><div class="num">${billing.activeSubscriptions}</div></div>
+    <div class="stat-card"><div class="label">On free plan</div><div class="num">${billing.onFreePlan}</div></div>
+    <div class="stat-card"><div class="label">Total businesses</div><div class="num">${billing.totalBusinesses}</div></div>
+  `;
+
+  const noteEl = document.getElementById('billNote');
+  if(billing.note){
+    noteEl.textContent = billing.note;
+    noteEl.style.display = 'block';
+  } else {
+    noteEl.style.display = 'none';
+  }
+
+  const maxRev = Math.max(...Object.values(billing.byPlan), 1);
+  document.getElementById('planBreakdown').innerHTML = ['starter','growth','business'].map(p => `
+    <div class="pb-row">
+      <div class="pb-label">${planLabel(p)}</div>
+      <div class="pb-track"><div class="pb-fill ${p}" style="width:${(billing.byPlan[p]/maxRev)*100}%"></div></div>
+      <div class="pb-value">$${billing.byPlan[p]}/mo</div>
+    </div>
+  `).join('');
+}
+
+function toggleMobileNav(){
+  document.getElementById('sbNav').classList.toggle('open');
+}
+function closeMobileNav(){
+  document.getElementById('sbNav').classList.remove('open');
+}
+
+// ---- volume chart, computed from real note data across all businesses ----
+async function renderChart(){
+  const chart = document.getElementById('chart');
+  chart.innerHTML = '';
+
+  let allNotes = [];
+  try {
+    const details = await Promise.all(allBusinesses.map(b => fetchBusinessDetail(b.id)));
+    allNotes = details.flatMap(d => d.notes);
+  } catch(e) {
+    return; // leave chart empty rather than show fabricated data
+  }
+
+  const weeks = 8;
+  const received = new Array(weeks).fill(0);
+  const actioned = new Array(weeks).fill(0);
+  const now = Date.now();
+  const weekMs = 7 * 24 * 60 * 60 * 1000;
+
+  allNotes.forEach(n => {
+    const age = now - new Date(n.createdAt).getTime();
+    const weekIdx = weeks - 1 - Math.floor(age / weekMs);
+    if(weekIdx >= 0 && weekIdx < weeks){
+      received[weekIdx]++;
+      if(n.status === 'actioned') actioned[weekIdx]++;
+    }
+  });
+
+  const w = 640, h = 160, pad = 8;
+  const maxVal = Math.max(...received, ...actioned, 1) * 1.15;
+  const stepX = (w - pad*2) / (weeks - 1);
+
+  function toPoints(arr){
+    return arr.map((v,i) => {
+      const x = pad + i*stepX;
+      const y = h - pad - (v/maxVal)*(h - pad*2);
+      return `${x},${y}`;
+    }).join(' ');
+  }
+  function toArea(arr){
+    const pts = arr.map((v,i) => {
+      const x = pad + i*stepX;
+      const y = h - pad - (v/maxVal)*(h - pad*2);
+      return `${x},${y}`;
+    });
+    return `${pad},${h-pad} ${pts.join(' ')} ${pad+(weeks-1)*stepX},${h-pad}`;
+  }
+
+  const svgns = "http://www.w3.org/2000/svg";
+  function poly(points, fill, opacity){
+    const el = document.createElementNS(svgns, 'polygon');
+    el.setAttribute('points', points);
+    el.setAttribute('fill', fill);
+    el.setAttribute('opacity', opacity);
+    return el;
+  }
+  function line(points, stroke){
+    const el = document.createElementNS(svgns, 'polyline');
+    el.setAttribute('points', points);
+    el.setAttribute('fill', 'none');
+    el.setAttribute('stroke', stroke);
+    el.setAttribute('stroke-width', '2.5');
+    el.setAttribute('stroke-linecap', 'round');
+    el.setAttribute('stroke-linejoin', 'round');
+    return el;
+  }
+
+  try {
+    chart.appendChild(poly(toArea(received), '#C96A45', 0.10));
+    chart.appendChild(poly(toArea(actioned), '#D9A441', 0.14));
+    chart.appendChild(line(toPoints(received), '#C96A45'));
+    chart.appendChild(line(toPoints(actioned), '#D9A441'));
+  } catch(e) { console.error('chart render failed:', e); }
+}
+
+init();
+</script>
+</div>
+</body>
+</html>

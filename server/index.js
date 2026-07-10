@@ -207,6 +207,7 @@ app.post('/api/auth/signup', async (req, res) => {
     passwordHash: hash,
     passwordSalt: salt,
     plan: plan || 'starter',
+    isAdmin: false,
     createdAt: new Date().toISOString(),
     notes: [],
   };
@@ -245,66 +246,6 @@ app.post('/api/auth/login', async (req, res) => {
   });
 });
 
-// Google Sign-In. The frontend sends the ID token it gets from Google's
-// Identity Services library; we verify it directly against Google's own
-// tokeninfo endpoint (no extra dependency needed for this). If an account
-// with that email already exists, log into it. Otherwise create a new one
-// — Google doesn't give us a business name, so we use a sensible default
-// the person can rename later.
-const GOOGLE_CLIENT_ID = '84971942559-b3287j5jg35h6h3sveccle2n6d28admc.apps.googleusercontent.com';
-
-app.post('/api/auth/google', async (req, res) => {
-  const { credential } = req.body;
-  if (!credential) {
-    return res.status(400).json({ error: 'credential is required' });
-  }
-
-  let payload;
-  try {
-    const verifyRes = await fetch(`https://oauth2.googleapis.com/tokeninfo?id_token=${credential}`);
-    if (!verifyRes.ok) throw new Error('bad token');
-    payload = await verifyRes.json();
-  } catch (err) {
-    return res.status(401).json({ error: 'Could not verify Google sign-in' });
-  }
-
-  if (payload.aud !== GOOGLE_CLIENT_ID) {
-    return res.status(401).json({ error: 'Token was not issued for this app' });
-  }
-  if (payload.email_verified !== 'true' || !payload.email) {
-    return res.status(401).json({ error: 'Google account email is not verified' });
-  }
-
-  await db.read();
-  const normalizedEmail = payload.email.trim().toLowerCase();
-  let business = db.data.businesses.find((b) => b.email === normalizedEmail);
-
-  if (!business) {
-    business = {
-      id: newId(),
-      businessName: payload.name ? `${payload.name}'s Business` : 'My Business',
-      ownerName: payload.name || null,
-      email: normalizedEmail,
-      passwordHash: null, // Google accounts don't use a password
-      passwordSalt: null,
-      isGoogleAccount: true,
-      plan: 'starter',
-      createdAt: new Date().toISOString(),
-      notes: [],
-    };
-    db.data.businesses.push(business);
-  }
-
-  const token = createToken();
-  db.data.sessions[token] = business.id;
-  await db.write();
-
-  res.json({
-    token,
-    business: { id: business.id, businessName: business.businessName, plan: business.plan },
-  });
-});
-
 app.post('/api/auth/logout', requireSession, async (req, res) => {
   const auth = req.headers.authorization || '';
   const token = auth.slice(7);
@@ -321,6 +262,7 @@ app.get('/api/me', requireSession, (req, res) => {
     ownerName: req.business.ownerName,
     email: req.business.email,
     plan: req.business.plan,
+    isAdmin: !!req.business.isAdmin,
     createdAt: req.business.createdAt,
   });
 });
@@ -470,6 +412,135 @@ app.post('/api/board/:businessId/notes/:noteId/vote', async (req, res) => {
   await db.write();
 
   res.json({ voteCount: note.votes.length, hasVoted: idx === -1 });
+});
+
+// ============================================================
+// Platform admin — separate from a business's own dashboard.
+// Reuses the same login/session as a business account, gated by
+// an isAdmin flag on that account rather than a separate login.
+// ============================================================
+
+// One-time setup: run once, logged in as the account that should
+// become the platform admin, with the ADMIN_SETUP_KEY env var set
+// on the server and passed in the x-admin-setup-key header. There
+// is no UI for this on purpose — it's meant to be run once via
+// curl/Postman, not exposed as a clickable feature.
+app.post('/api/admin/claim', requireSession, async (req, res) => {
+  const setupKey = process.env.ADMIN_SETUP_KEY;
+  if (!setupKey) {
+    return res.status(500).json({ error: 'ADMIN_SETUP_KEY is not configured on the server' });
+  }
+  if (req.headers['x-admin-setup-key'] !== setupKey) {
+    return res.status(401).json({ error: 'invalid setup key' });
+  }
+
+  await db.read();
+  const business = db.data.businesses.find((b) => b.id === req.business.id);
+  business.isAdmin = true;
+  await db.write();
+
+  res.json({ ok: true, businessName: business.businessName });
+});
+
+function requireAdmin(req, res, next) {
+  if (!req.business.isAdmin) {
+    return res.status(403).json({ error: 'admin access required' });
+  }
+  next();
+}
+
+const PLAN_PRICES = { starter: 0, growth: 59 }; // 'business' plan is custom-priced, not included in MRR totals
+
+function businessSummary(b) {
+  const notes = b.notes || [];
+  const actionedCount = notes.filter((n) => n.status === 'actioned').length;
+  const lastNoteAt = notes.reduce((latest, n) => {
+    const at = n.statusHistory?.[n.statusHistory.length - 1]?.at || n.createdAt;
+    return !latest || at > latest ? at : latest;
+  }, null);
+
+  return {
+    id: b.id,
+    businessName: b.businessName,
+    email: b.email,
+    plan: b.plan,
+    createdAt: b.createdAt,
+    notesReceived: notes.length,
+    actionedRate: notes.length ? Math.round((actionedCount / notes.length) * 100) : 0,
+    lastActivity: lastNoteAt || b.createdAt,
+  };
+}
+
+// List every business on the platform, with aggregate stats.
+app.get('/api/admin/businesses', requireSession, requireAdmin, async (req, res) => {
+  await db.read();
+  const summaries = db.data.businesses.map(businessSummary).sort((a, b) =>
+    (b.lastActivity || '').localeCompare(a.lastActivity || '')
+  );
+  res.json(summaries);
+});
+
+// One business's full detail, including its real notes.
+app.get('/api/admin/businesses/:id', requireSession, requireAdmin, async (req, res) => {
+  await db.read();
+  const business = db.data.businesses.find((b) => b.id === req.params.id);
+  if (!business) return res.status(404).json({ error: 'business not found' });
+
+  const notes = business.notes
+    .map((n) => ({ ...n, voteCount: n.votes.length }))
+    .sort((a, b) => b.voteCount - a.voteCount);
+
+  res.json({ ...businessSummary(business), notes });
+});
+
+// Admin updates a note's status on behalf of any business.
+app.post('/api/admin/businesses/:id/notes/:noteId/status', requireSession, requireAdmin, async (req, res) => {
+  const { status, message } = req.body;
+  if (!STATUS_ORDER.includes(status)) {
+    return res.status(400).json({ error: `status must be one of: ${STATUS_ORDER.join(', ')}` });
+  }
+
+  await db.read();
+  const business = db.data.businesses.find((b) => b.id === req.params.id);
+  if (!business) return res.status(404).json({ error: 'business not found' });
+  const note = business.notes.find((n) => n.id === req.params.noteId);
+  if (!note) return res.status(404).json({ error: 'not found' });
+
+  note.status = status;
+  note.statusHistory.push({ status, message: message || null, at: new Date().toISOString() });
+  await db.write();
+
+  res.json({ ok: true });
+});
+
+// Platform-wide billing rollup, computed from real plan data.
+// No live Stripe subscriptions are wired up yet, so this is a
+// projection based on signed-up plans, not actual invoiced revenue.
+app.get('/api/admin/billing', requireSession, requireAdmin, async (req, res) => {
+  await db.read();
+  const businesses = db.data.businesses;
+
+  const byPlan = { starter: 0, growth: 0, business: 0 };
+  const countByPlan = { starter: 0, growth: 0, business: 0 };
+  businesses.forEach((b) => {
+    countByPlan[b.plan] = (countByPlan[b.plan] || 0) + 1;
+    byPlan[b.plan] = (byPlan[b.plan] || 0) + (PLAN_PRICES[b.plan] || 0);
+  });
+
+  const mrr = Object.values(byPlan).reduce((sum, v) => sum + v, 0);
+
+  res.json({
+    mrr,
+    byPlan,
+    countByPlan,
+    totalBusinesses: businesses.length,
+    activeSubscriptions: countByPlan.growth + countByPlan.business,
+    onFreePlan: countByPlan.starter,
+    businessPlanCount: countByPlan.business,
+    note: countByPlan.business > 0
+      ? `${countByPlan.business} business(es) on the custom 'Business' plan are not counted in MRR — that pricing isn't stored per-account yet.`
+      : null,
+  });
 });
 
 const PORT = process.env.PORT || 3001;
