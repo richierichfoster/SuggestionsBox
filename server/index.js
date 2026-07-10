@@ -22,11 +22,19 @@ async function geocodeAddress(address) {
   try {
     const url = `https://nominatim.openstreetmap.org/search?format=json&limit=1&q=${encodeURIComponent(address)}`;
     const res = await fetch(url, { headers: { 'User-Agent': 'SuggestionsBox/1.0 (suggestionsbox.com.au)' } });
-    if (!res.ok) return null;
+    if (!res.ok) {
+      console.error(`[geocode] Nominatim returned ${res.status} ${res.statusText} for "${address}"`);
+      return null;
+    }
     const results = await res.json();
-    if (!results.length) return null;
+    if (!results.length) {
+      console.error(`[geocode] Nominatim returned zero results for "${address}"`);
+      return null;
+    }
+    console.log(`[geocode] Resolved "${address}" -> ${results[0].lat}, ${results[0].lon}`);
     return { lat: parseFloat(results[0].lat), lng: parseFloat(results[0].lon) };
   } catch (err) {
+    console.error(`[geocode] Request failed for "${address}":`, err.message);
     return null;
   }
 }
@@ -342,7 +350,9 @@ app.post('/api/business/profile', requireSession, async (req, res) => {
 
   if (address !== undefined) {
     const trimmedAddress = address.trim() || null;
-    if (trimmedAddress !== business.address) {
+    const addressChanged = trimmedAddress !== business.address;
+    const needsRetry = trimmedAddress && business.lat == null;
+    if (addressChanged || needsRetry) {
       business.address = trimmedAddress;
       if (trimmedAddress) {
         const coords = await geocodeAddress(trimmedAddress);
