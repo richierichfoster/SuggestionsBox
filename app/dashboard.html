@@ -35,8 +35,8 @@
   @media (max-width:900px){ .sidebar{width:100%; height:auto; position:relative; padding:14px 16px; gap:14px;} }
   .sb-brand{display:flex; align-items:center; gap:10px;}
   .sb-brand svg{width:26px; height:26px; flex-shrink:0;}
-  .sb-brand-text{font-family:'Fredoka',sans-serif; font-weight:600; font-size:14.5px; line-height:1.2;}
-  .sb-brand-text span{display:block; font-family:'Space Mono',monospace; font-weight:400; font-size:10px; color:#8FADA8; margin-top:2px; max-width:150px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;}
+  .sb-brand-text{font-family:'Fredoka',sans-serif; font-weight:600; font-size:15px; color:#E3EDEB;}
+  .sb-brand-text em{font-style:normal; color:var(--terra);}
 
   nav.sb-nav{display:flex; flex-direction:column; gap:2px;}
   @media (max-width:900px){ nav.sb-nav{display:none;} nav.sb-nav.open{display:flex; position:absolute; top:100%; left:0; right:0; background:var(--teal-deep); padding:10px 14px 16px; z-index:30; box-shadow:0 12px 24px rgba(0,0,0,.25);} }
@@ -155,7 +155,7 @@
     <div class="sb-brand" style="justify-content:space-between;">
       <div style="display:flex; align-items:center; gap:10px;">
         <svg viewBox="0 0 200 200"><path d="M56 10 L146 10 L190 54 L190 144 A46 46 0 0 1 144 190 L56 190 A46 46 0 0 1 10 144 L10 56 A46 46 0 0 1 56 10 Z" fill="#FBF1E2" stroke="#E2653A" stroke-width="10"/><path d="M146 10 L190 54 L146 54 Z" fill="#E2653A"/><path d="M146 10 L146 54 L190 54" fill="none" stroke="#B84B29" stroke-width="4" stroke-linejoin="round"/><circle cx="66" cy="86" r="9" fill="#E2653A"/><circle cx="130" cy="86" r="9" fill="#E2653A"/><path d="M56 120 Q100 158 142 120" stroke="#E2653A" stroke-width="16" stroke-linecap="round" fill="none"/></svg>
-        <div class="sb-brand-text">Suggestions<span id="sb-biz-name">Box</span></div>
+        <div class="sb-brand-text">Suggestions<em>Box</em></div>
       </div>
       <button type="button" class="hamburger-btn" id="hamburger-btn"><span></span><span></span><span></span></button>
     </div>
