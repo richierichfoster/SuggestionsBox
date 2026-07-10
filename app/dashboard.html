@@ -2945,7 +2945,7 @@ var qrcode = function() {
     `;
   }
 
-  const qrImageCache = {};
+  const cardImageCache = {};
 
   function wirePrintCardPanel(boardUrl, biz, idSuffix) {
     const toggleHead = document.getElementById(`print-card-toggle-${idSuffix}`);
@@ -2957,13 +2957,24 @@ var qrcode = function() {
       body.style.display = open ? 'none' : 'block';
       toggleHead.querySelector('.pc-chevron').textContent = open ? '▾' : '▴';
       if (!open && !rendered) {
-        renderQrCodeCanvas(`qr-canvas-${idSuffix}`, boardUrl, biz.logoDataUrl, idSuffix);
+        renderQrCodeCanvas(`qr-canvas-${idSuffix}`, boardUrl, biz.logoDataUrl); // small live preview inside the dashboard panel
         rendered = true;
       }
     });
 
-    document.getElementById(`print-card-btn-${idSuffix}`).addEventListener('click', () => {
-      openPrintWindow(idSuffix, biz);
+    document.getElementById(`print-card-btn-${idSuffix}`).addEventListener('click', async (e) => {
+      const btn = e.currentTarget;
+      btn.disabled = true;
+      btn.textContent = 'Preparing…';
+      try {
+        const cardDataUrl = await renderFullCardImage(biz, boardUrl);
+        cardImageCache[idSuffix] = cardDataUrl;
+        openPrintWindow(idSuffix, biz);
+      } catch (err) {
+        alert("Couldn't generate the card — please try again.");
+      }
+      btn.disabled = false;
+      btn.textContent = 'Print / Save as PDF';
     });
   }
 
@@ -2971,10 +2982,17 @@ var qrcode = function() {
   // hiding the rest of the dashboard via @media print CSS. That approach
   // relies on position:fixed during printing, which behaves inconsistently
   // across browsers/OSes. A standalone document sidesteps that entirely.
+  //
+  // The card itself is a single flattened PNG (built by renderFullCardImage)
+  // rather than live HTML with web fonts — Chrome's print preview can
+  // rasterize before a web font finishes swapping in even after the page
+  // reports "loaded," which produced an unstyled-looking preview that then
+  // "fixed itself" once you cancelled and looked at the live page again.
+  // A pre-rendered image has nothing left to load, so there's no race left.
   function openPrintWindow(idSuffix, biz) {
-    const qrDataUrl = qrImageCache[idSuffix];
-    if (!qrDataUrl) {
-      alert("The QR code hasn't finished generating yet — give it a second and try again.");
+    const cardDataUrl = cardImageCache[idSuffix];
+    if (!cardDataUrl) {
+      alert("The card hasn't finished generating yet — give it a second and try again.");
       return;
     }
 
@@ -2990,62 +3008,20 @@ var qrcode = function() {
       <head>
         <meta charset="UTF-8">
         <title>Print Card — ${escapeHtml(biz.businessName)}</title>
-        <link rel="preconnect" href="https://fonts.googleapis.com">
-        <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@600&family=Work+Sans:wght@500&family=Space+Mono&display=swap" rel="stylesheet">
         <style>
           @page { size: auto; margin: 0.5in; }
           *{box-sizing:border-box; margin:0; padding:0;}
-          body{font-family:'Work Sans',sans-serif; display:flex; align-items:center; justify-content:center; min-height:100vh; background:#fff;}
-          .print-card{
-            width:340px; background:#E2653A; border-radius:20px; padding:36px 28px;
-            text-align:center;
-          }
-          .print-card .pc-mark{width:44px; height:44px;}
-          .pc-logo-lockup{display:flex; align-items:center; justify-content:center; gap:8px; margin-bottom:18px;}
-          .pc-logo-lockup .pc-mark{width:30px; height:30px;}
-          .pc-wordmark{font-family:'Fredoka',sans-serif; font-weight:600; font-size:16px; color:#FBF1E2;}
-          .pc-wordmark em{font-style:normal; color:rgba(251,241,226,.7);}
-          .print-card h2{font-family:'Fredoka',sans-serif; font-weight:600; font-size:19px; color:#FBF1E2; margin-bottom:8px; line-height:1.3;}
-          .print-card p{color:rgba(251,241,226,.88); font-size:13px; line-height:1.5; margin-bottom:22px;}
-          .pc-qr-box{background:#FBF1E2; border-radius:14px; padding:16px; display:inline-block; margin-bottom:16px;}
-          .pc-qr-box img{display:block; width:220px; height:220px;}
-          .pc-biz-name{font-family:'Space Mono',monospace; font-size:11px; letter-spacing:.04em; text-transform:uppercase; color:rgba(251,241,226,.75);}
+          body{display:flex; align-items:center; justify-content:center; min-height:100vh; background:#fff;}
+          img{display:block; width:340px; height:auto;}
         </style>
       </head>
       <body>
-        <div class="print-card">
-          <div class="pc-logo-lockup">
-            <svg class="pc-mark" viewBox="0 0 200 200"><path d="M56 10 L146 10 L190 54 L190 144 A46 46 0 0 1 144 190 L56 190 A46 46 0 0 1 10 144 L10 56 A46 46 0 0 1 56 10 Z" fill="#FBF1E2" stroke="#FBF1E2" stroke-width="10"/><path d="M146 10 L190 54 L146 54 Z" fill="#FBF1E2" opacity=".65"/><circle cx="66" cy="86" r="9" fill="#B84B29"/><circle cx="130" cy="86" r="9" fill="#B84B29"/><path d="M56 120 Q100 158 142 120" stroke="#B84B29" stroke-width="16" stroke-linecap="round" fill="none"/></svg>
-            <span class="pc-wordmark">Suggestions<em>Box</em></span>
-          </div>
-          <h2>Help us! Could we be doing something better?</h2>
-          <p>Leave an anonymous note, or back someone else's — takes 20 seconds.</p>
-          <div class="pc-qr-box"><img src="${qrDataUrl}" alt="QR code"></div>
-          <div class="pc-biz-name">${escapeHtml(biz.businessName)}</div>
-        </div>
+        <img id="card-img" src="${cardDataUrl}" alt="Print card">
         <script>
-          var qrImg = document.querySelector('.pc-qr-box img');
-          function triggerPrint() {
-            window.focus();
-            window.print();
-          }
-          function whenReady() {
-            // Wait for both the QR image and web fonts to be fully ready,
-            // not just a guessed delay — a fixed timeout can fire before
-            // Google Fonts finishes loading on a slower connection, which
-            // produces a print preview with fallback fonts / an unfinished
-            // image, even though the DOM technically looks "loaded."
-            var fontsReady = document.fonts && document.fonts.ready ? document.fonts.ready : Promise.resolve();
-            var imgReady = new Promise(function(resolve) {
-              if (qrImg.complete) resolve();
-              else { qrImg.onload = resolve; qrImg.onerror = resolve; }
-            });
-            Promise.all([fontsReady, imgReady]).then(function() {
-              setTimeout(triggerPrint, 150); // small buffer for final paint
-            });
-          }
-          if (document.readyState === 'complete') whenReady();
-          else window.onload = whenReady;
+          var img = document.getElementById('card-img');
+          function triggerPrint() { window.focus(); window.print(); }
+          if (img.complete) triggerPrint();
+          else { img.onload = triggerPrint; img.onerror = triggerPrint; }
         <\/script>
       </body>
       </html>
@@ -3053,23 +3029,190 @@ var qrcode = function() {
     printWindow.document.close();
   }
 
-  // Renders a QR code to a canvas using the embedded qrcode-generator
-  // library (no external requests at runtime), with branded corner
-  // squares and an optional logo composited into the center. Once
-  // finished, caches a PNG data URL for the print window to use.
-  function renderQrCodeCanvas(containerId, url, logoDataUrl, idSuffix) {
+  // Draws a simple filled rounded rect (roundRect isn't universally available
+  // on older canvas implementations, but is used elsewhere in this file —
+  // kept identical here for consistency).
+  function roundRectPath(ctx, x, y, w, h, r) {
+    ctx.beginPath();
+    ctx.roundRect(x, y, w, h, r);
+  }
+
+  // Wraps text to a max width, returns the lines drawn and total height used.
+  function wrapAndDrawText(ctx, text, cx, startY, maxWidth, lineHeight) {
+    const words = text.split(' ');
+    let line = '';
+    let y = startY;
+    for (let i = 0; i < words.length; i++) {
+      const testLine = line ? `${line} ${words[i]}` : words[i];
+      if (ctx.measureText(testLine).width > maxWidth && line) {
+        ctx.fillText(line, cx, y);
+        line = words[i];
+        y += lineHeight;
+      } else {
+        line = testLine;
+      }
+    }
+    ctx.fillText(line, cx, y);
+    return y + lineHeight;
+  }
+
+  const LOGO_MARK_SVG = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200"><path d="M56 10 L146 10 L190 54 L190 144 A46 46 0 0 1 144 190 L56 190 A46 46 0 0 1 10 144 L10 56 A46 46 0 0 1 56 10 Z" fill="#FBF1E2" stroke="#FBF1E2" stroke-width="10"/><path d="M146 10 L190 54 L146 54 Z" fill="#FBF1E2" opacity=".65"/><circle cx="66" cy="86" r="9" fill="#B84B29"/><circle cx="130" cy="86" r="9" fill="#B84B29"/><path d="M56 120 Q100 158 142 120" stroke="#B84B29" stroke-width="16" stroke-linecap="round" fill="none"/></svg>`;
+
+  function loadImage(src) {
+    return new Promise((resolve, reject) => {
+      const img = new Image();
+      img.onload = () => resolve(img);
+      img.onerror = reject;
+      img.src = src;
+    });
+  }
+
+  // Renders the ENTIRE printable card — background, wordmark, headline,
+  // subtext, QR code, business name — onto a single canvas, then returns
+  // it as one flattened PNG data URL. Explicitly waits for the exact fonts
+  // used before drawing any text, since canvas text rendering has its own
+  // font-loading race separate from normal DOM layout.
+  async function renderFullCardImage(biz, boardUrl) {
+    if (document.fonts && document.fonts.load) {
+      await Promise.all([
+        document.fonts.load('600 76px Fredoka'),
+        document.fonts.load('600 32px Fredoka'),
+        document.fonts.load('500 26px "Work Sans"'),
+        document.fonts.load('400 22px "Space Mono"'),
+      ]).catch(() => {}); // proceed with fallback fonts rather than fail the whole card
+    }
+
+    const logoMarkImg = await loadImage('data:image/svg+xml;base64,' + btoa(LOGO_MARK_SVG));
+    const bizLogoImg = biz.logoDataUrl ? await loadImage(biz.logoDataUrl).catch(() => null) : null;
+
+    const W = 680;
+    const padX = 56;
+    let y = 72;
+
+    // Pre-measure QR so we can size the canvas correctly before drawing.
+    const qr = qrcode(0, 'H');
+    qr.addData(boardUrl);
+    qr.make();
+    const moduleCount = qr.getModuleCount();
+    const qrSize = 440;
+    const qrBoxPad = 32;
+    const qrBoxSize = qrSize + qrBoxPad * 2;
+
+    const canvas = document.createElement('canvas');
+    const ctx = canvas.getContext('2d');
+
+    // Estimate height with a first dry-run pass using a tall scratch canvas,
+    // since word-wrapped line counts depend on measured text width.
+    canvas.width = W;
+    canvas.height = 2000;
+
+    ctx.textAlign = 'center';
+
+    // Logo lockup
+    const markSize = 60;
+    ctx.font = '600 32px Fredoka, sans-serif';
+    const wordmarkWidth = ctx.measureText('SuggestionsBox').width;
+    const lockupWidth = markSize + 14 + wordmarkWidth;
+    const lockupStartX = W / 2 - lockupWidth / 2;
+    ctx.drawImage(logoMarkImg, lockupStartX, y, markSize, markSize);
+    ctx.textAlign = 'left';
+    ctx.fillStyle = '#FBF1E2';
+    ctx.fillText('Suggestions', lockupStartX + markSize + 14, y + markSize / 2 + 11);
+    const suggestionsWidth = ctx.measureText('Suggestions').width;
+    ctx.fillStyle = 'rgba(251,241,226,.7)';
+    ctx.fillText('Box', lockupStartX + markSize + 14 + suggestionsWidth, y + markSize / 2 + 11);
+    ctx.textAlign = 'center';
+    y += markSize + 40;
+
+    // Headline
+    ctx.font = '600 38px Fredoka, sans-serif';
+    ctx.fillStyle = '#FBF1E2';
+    y = wrapAndDrawText(ctx, 'Help us! Could we be doing something better?', W / 2, y, W - padX * 2, 48) + 8;
+
+    // Subtext
+    ctx.font = '500 26px "Work Sans", sans-serif';
+    ctx.fillStyle = 'rgba(251,241,226,.88)';
+    y = wrapAndDrawText(ctx, "Leave an anonymous note, or back someone else's — takes 20 seconds.", W / 2, y, W - padX * 2, 36) + 24;
+
+    // QR box
+    const qrBoxX = W / 2 - qrBoxSize / 2;
+    ctx.fillStyle = '#FBF1E2';
+    roundRectPath(ctx, qrBoxX, y, qrBoxSize, qrBoxSize, 28);
+    ctx.fill();
+
+    const qrX = qrBoxX + qrBoxPad;
+    const qrY = y + qrBoxPad;
+    const cell = qrSize / moduleCount;
+    const isFinderPattern = (row, col) => {
+      const inTopLeft = row < 7 && col < 7;
+      const inTopRight = row < 7 && col >= moduleCount - 7;
+      const inBottomLeft = row >= moduleCount - 7 && col < 7;
+      return inTopLeft || inTopRight || inBottomLeft;
+    };
+    for (let row = 0; row < moduleCount; row++) {
+      for (let col = 0; col < moduleCount; col++) {
+        if (!qr.isDark(row, col)) continue;
+        ctx.fillStyle = isFinderPattern(row, col) ? '#B84B29' : '#254240';
+        const px = qrX + col * cell;
+        const py = qrY + row * cell;
+        const pad = cell * 0.08;
+        roundRectPath(ctx, px + pad, py + pad, cell - pad * 2, cell - pad * 2, cell * 0.25);
+        ctx.fill();
+      }
+    }
+    if (bizLogoImg) {
+      const logoSize = qrSize * 0.24;
+      const patchSize = logoSize * 1.35;
+      const cx = qrX + qrSize / 2;
+      const cy = qrY + qrSize / 2;
+      ctx.fillStyle = '#FBF1E2';
+      roundRectPath(ctx, cx - patchSize / 2, cy - patchSize / 2, patchSize, patchSize, patchSize * 0.2);
+      ctx.fill();
+      ctx.save();
+      roundRectPath(ctx, cx - logoSize / 2, cy - logoSize / 2, logoSize, logoSize, logoSize * 0.18);
+      ctx.clip();
+      ctx.drawImage(bizLogoImg, cx - logoSize / 2, cy - logoSize / 2, logoSize, logoSize);
+      ctx.restore();
+    }
+    y += qrBoxSize + 40;
+
+    // Business name
+    ctx.font = '400 22px "Space Mono", monospace';
+    ctx.fillStyle = 'rgba(251,241,226,.75)';
+    ctx.fillText(biz.businessName.toUpperCase(), W / 2, y);
+    y += 60;
+
+    const H = y;
+
+    // Now that we know the real height, redraw everything onto a
+    // correctly-sized final canvas with the rounded card background.
+    const finalCanvas = document.createElement('canvas');
+    finalCanvas.width = W;
+    finalCanvas.height = H;
+    const fctx = finalCanvas.getContext('2d');
+    fctx.fillStyle = '#E2653A';
+    roundRectPath(fctx, 0, 0, W, H, 40);
+    fctx.fill();
+    fctx.drawImage(canvas, 0, 0, W, H, 0, 0, W, H);
+
+    return finalCanvas.toDataURL('image/png');
+  }
+
+  // Renders a small QR preview inside the dashboard panel itself (not used
+  // for printing — that's handled by renderFullCardImage above).
+  function renderQrCodeCanvas(containerId, url, logoDataUrl) {
     const container = document.getElementById(containerId);
     if (typeof qrcode === 'undefined') {
       container.innerHTML = `<div style="width:220px;height:220px;display:flex;align-items:center;justify-content:center;font-size:11px;color:var(--ink-soft);text-align:center;padding:10px;">QR code library failed to load.</div>`;
       return;
     }
 
-    const qr = qrcode(0, 'H'); // type 0 = auto-size, H = highest error correction (needed since we overlay a logo)
+    const qr = qrcode(0, 'H');
     qr.addData(url);
     qr.make();
 
     const moduleCount = qr.getModuleCount();
-    const size = 480; // rendered at 2x for print sharpness, displayed smaller via CSS
+    const size = 480;
     const cell = size / moduleCount;
 
     const canvas = document.createElement('canvas');
@@ -3104,8 +3247,6 @@ var qrcode = function() {
       }
     }
 
-    const captureDataUrl = () => { qrImageCache[idSuffix] = canvas.toDataURL('image/png'); };
-
     if (logoDataUrl) {
       const img = new Image();
       img.onload = () => {
@@ -3123,12 +3264,8 @@ var qrcode = function() {
         ctx.clip();
         ctx.drawImage(img, cx - logoSize / 2, cy - logoSize / 2, logoSize, logoSize);
         ctx.restore();
-        captureDataUrl();
       };
-      img.onerror = captureDataUrl; // still print the plain QR if the logo fails to load
       img.src = logoDataUrl;
-    } else {
-      captureDataUrl();
     }
   }
 
