@@ -6,9 +6,9 @@
 <meta name="color-scheme" content="light">
 <meta name="supported-color-schemes" content="light">
 <title>Log in — Suggestions Box</title>
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 viewBox=%270 0 200 200%27%3E%3Cpath d=%27M56 10 L146 10 L190 54 L190 144 A46 46 0 0 1 144 190 L56 190 A46 46 0 0 1 10 144 L10 56 A46 46 0 0 1 56 10 Z%27 fill=%27%23FBF1E2%27 stroke=%27%23E2653A%27 stroke-width=%2710%27/%3E%3Cpath d=%27M146 10 L190 54 L146 54 Z%27 fill=%27%23E2653A%27/%3E%3Cpath d=%27M146 10 L146 54 L190 54%27 fill=%27none%27 stroke=%27%23B84B29%27 stroke-width=%274%27 stroke-linejoin=%27round%27/%3E%3Ccircle cx=%2766%27 cy=%2786%27 r=%279%27 fill=%27%23E2653A%27/%3E%3Ccircle cx=%27130%27 cy=%2786%27 r=%279%27 fill=%27%23E2653A%27/%3E%3Cpath d=%27M56 120 Q100 158 142 120%27 stroke=%27%23E2653A%27 stroke-width=%2716%27 stroke-linecap=%27round%27 fill=%27none%27/%3E%3C/svg%3E">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600;700&family=Work+Sans:wght@400;500;600;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
-<script src="https://accounts.google.com/gsi/client" async defer></script>
 <style>
   :root{
     color-scheme: light;
@@ -96,7 +96,7 @@
   <p class="sub">Log in to reply to notes, update statuses, and see what your customers and team are saying.</p>
 
   <div class="card">
-    <div class="btn-social" id="google-btn">
+    <div class="btn-social">
       <svg viewBox="0 0 24 24" width="16" height="16"><path fill="#E2653A" d="M12 2L2 7l10 5 10-5-10-5z"/></svg>
       Continue with Google
     </div>
@@ -126,41 +126,6 @@
 <script>
   // Change this to your deployed server URL once it's live (see README).
   const API_BASE = 'https://api.suggestionsbox.com.au';
-
-  // Google Sign-In
-  const GOOGLE_CLIENT_ID = '84971942559-b3287j5jg35h6h3sveccle2n6d28admc.apps.googleusercontent.com';
-
-  async function handleGoogleCredential(response) {
-    try {
-      const res = await fetch(`${API_BASE}/api/auth/google`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ credential: response.credential }),
-      });
-      const data = await res.json();
-      if (!res.ok) {
-        alert(data.error || 'Google sign-in failed. Please try again.');
-        return;
-      }
-      localStorage.setItem('sb_token', data.token);
-      localStorage.setItem('sb_business', JSON.stringify(data.business));
-      window.location.href = 'dashboard.html';
-    } catch (err) {
-      alert("Couldn't reach the server. Is the API running?");
-    }
-  }
-
-  window.addEventListener('load', () => {
-    if (window.google?.accounts?.id) {
-      google.accounts.id.initialize({
-        client_id: GOOGLE_CLIENT_ID,
-        callback: handleGoogleCredential,
-      });
-      document.getElementById('google-btn').addEventListener('click', () => {
-        google.accounts.id.prompt();
-      });
-    }
-  });
 
   const errorBox = document.getElementById('form-error');
   const submitBtn = document.getElementById('submit-btn');

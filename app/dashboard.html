@@ -234,7 +234,7 @@
     <nav class="sb-nav" id="sbNav">
       <button type="button" id="navOverview" onclick="showOverview()"><span class="dot"></span>Overview</button>
       <button type="button" id="navNotes" onclick="showNotes()"><span class="dot"></span>Customer Notes</button>
-      <button type="button" id="navTeamBoard" onclick="showTeamBoard()"><span class="dot"></span>Team Board</button>
+      <button type="button" id="navTeamBoard" onclick="showTeamBoard()"><span class="dot"></span>Team Notes</button>
       <button type="button" id="navBilling" onclick="showBilling()"><span class="dot"></span>Plan &amp; Billing</button>
       <button type="button" id="navSettings" onclick="showSettings()"><span class="dot"></span>Settings</button>
     </nav>
@@ -2691,7 +2691,7 @@ var qrcode = function() {
 
     if (!ME.employeeNotesEnabled) {
       app.innerHTML = `
-        <div class="topbar"><h1>Team Board</h1></div>
+        <div class="topbar"><h1>Team Notes</h1></div>
         <div class="panel">
           <h2>Not on your current plan</h2>
           <p>Private feedback from your staff — separate from the public customer board — comes with Growth and Business plans.</p>
@@ -2703,7 +2703,7 @@ var qrcode = function() {
 
     currentNotesScope = 'employee';
     currentNoteFilter = 'all';
-    renderNotesView('Team Board', 'employee', true);
+    renderNotesView('Team Notes', 'employee', true);
   }
 
   function renderNotesView(title, scope, showLink) {
@@ -3067,7 +3067,7 @@ var qrcode = function() {
         ${ME.employeeNotesEnabled ? `
           <div class="board-link-box" style="background:#FBEBD9; border-color:#F0C9A8; margin-bottom:0;">
             <div>
-              <b style="color:#B84B29;">Team board (private — staff only)</b>
+              <b style="color:#B84B29;">Team notes (private — staff only)</b>
               <div class="board-url">${window.location.origin}${window.location.pathname.replace('dashboard.html','')}board.html?business=${ME.id}&staff=1</div>
             </div>
             <a href="board.html?business=${ME.id}&staff=1" target="_blank" class="board-link-btn" style="background:#B84B29;">Open →</a>

@@ -572,6 +572,7 @@ app.get('/api/board/:businessId', async (req, res) => {
   res.json({
     id: business.id,
     name: business.businessName,
+    logoDataUrl: business.logoDataUrl || null,
     employeeNotesEnabled: planIncludesEmployeeNotes(business.plan),
   });
 });
