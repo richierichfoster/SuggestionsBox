@@ -6,12 +6,14 @@
 <meta name="color-scheme" content="light">
 <meta name="supported-color-schemes" content="light">
 <title>Suggestions Box</title>
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 200 200'%3E%3Cpath d='M56 10 L146 10 L190 54 L190 144 A46 46 0 0 1 144 190 L56 190 A46 46 0 0 1 10 144 L10 56 A46 46 0 0 1 56 10 Z' fill='%23FBF1E2' stroke='%23E2653A' stroke-width='10'/%3E%3Cpath d='M146 10 L190 54 L146 54 Z' fill='%23E2653A'/%3E%3Cpath d='M146 10 L146 54 L190 54' fill='none' stroke='%23B84B29' stroke-width='4' stroke-linejoin='round'/%3E%3Ccircle cx='66' cy='86' r='9' fill='%23E2653A'/%3E%3Ccircle cx='130' cy='86' r='9' fill='%23E2653A'/%3E%3Cpath d='M56 120 Q100 158 142 120' stroke='%23E2653A' stroke-width='16' stroke-linecap='round' fill='none'/%3E%3C/svg%3E">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600;700&family=Work+Sans:wght@400;500;600;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
 <style>
   :root{
     color-scheme: light;
     --cream:#FBF1E2; --card:#FFFCF6; --terra:#E2653A; --terra-deep:#B84B29;
+    --gold:#D9A441; --teal-deep:#254240; --teal-tint:#E3EDEB;
     --ink:#2E2B28; --ink-soft:#6E6A63; --line:#EDE0CC; --good:#EFF4DE; --good-ink:#5E7A1F;
     --alert:#C4432A; --alert-tint:#FBE3DD;
   }
@@ -27,17 +29,48 @@
     position:sticky; top:0; background:rgba(251,241,226,0.94); backdrop-filter:blur(6px); z-index:10; border-bottom:1px solid var(--line);
   }
   .topbar h1{font-size:17px;}
+  .topbar-brand{display:flex; align-items:center; gap:9px;}
+  .topbar-brand svg{width:26px; height:26px; flex-shrink:0;}
   .icon-btn{width:34px; height:34px; border-radius:10px; background:var(--card); border:1px solid var(--line); display:flex; align-items:center; justify-content:center; cursor:pointer;}
   .icon-btn svg{width:16px; height:16px;}
   .page{padding:16px 18px;}
 
-  .note-card{background:var(--card); border:1px solid var(--line); border-radius:14px; padding:14px; margin-bottom:10px; display:flex; gap:12px; align-items:flex-start;}
-  .vote-btn{flex:none; width:44px; height:44px; border-radius:10px; background:var(--cream); border:1px solid var(--line); display:flex; flex-direction:column; align-items:center; justify-content:center; cursor:pointer; font-family:'Space Mono',monospace; font-weight:700; gap:1px;}
+  .note-card{
+    background:var(--card); border:1px solid var(--line); border-radius:14px; padding:16px;
+    margin-bottom:12px; display:flex; gap:13px; align-items:flex-start;
+    transition:transform .15s ease, box-shadow .15s ease;
+  }
+  .note-card:hover{transform:translateY(-1px); box-shadow:0 8px 18px rgba(46,38,32,.07);}
+  .vote-btn{
+    flex:none; width:46px; height:52px; border-radius:12px; background:var(--cream); border:1px solid var(--line);
+    display:flex; flex-direction:column; align-items:center; justify-content:center; cursor:pointer;
+    font-family:'Space Mono',monospace; font-weight:700; gap:2px; padding:0;
+  }
+  .vote-btn svg{width:16px; height:16px; fill:none; stroke:var(--gold); stroke-width:1.6;}
   .vote-btn.voted{background:var(--terra); border-color:var(--terra); color:var(--card);}
-  .vote-btn .vlabel{font-size:7px; text-transform:uppercase; opacity:.7; font-weight:400;}
+  .vote-btn.voted svg{fill:var(--card); stroke:var(--card);}
+  .vote-btn .vlabel{font-size:14px;}
   .note-body{flex:1; min-width:0;}
-  .note-body .ntext{font-size:13.5px; line-height:1.5; margin-bottom:6px;}
-  .note-meta{display:flex; align-items:center; gap:6px; font-family:'Space Mono',monospace; font-size:10px; color:var(--ink-soft); flex-wrap:wrap;}
+  .note-body .ntext{font-size:14px; line-height:1.5; margin-bottom:8px; color:var(--ink);}
+  .note-meta{display:flex; align-items:center; gap:7px; font-family:'Space Mono',monospace; font-size:10px; color:var(--ink-soft); flex-wrap:wrap; margin-bottom:2px;}
+  .tag-pill{
+    font-family:'Space Mono',monospace; font-size:10px; text-transform:uppercase; letter-spacing:.03em;
+    color:var(--terra-deep); background:#FBEFE7; padding:3px 8px; border-radius:6px;
+  }
+
+  .response-box{
+    background:var(--cream); border-radius:9px; padding:11px 13px; margin-top:10px;
+    border-left:3px solid var(--gold);
+  }
+  .response-box .rb-status{
+    display:inline-flex; align-items:center; gap:5px; font-family:'Fredoka',sans-serif; font-weight:600;
+    font-size:11.5px; color:var(--terra-deep); margin-bottom:4px;
+  }
+  .response-box .rb-status::before{
+    content:"✓"; display:inline-flex; align-items:center; justify-content:center;
+    width:14px; height:14px; border-radius:50%; background:var(--terra); color:#fff; font-size:9px;
+  }
+  .response-box p{margin:0; font-size:12.5px; line-height:1.5; color:var(--ink);}
 
   .status-pill{padding:2px 8px; border-radius:6px; font-size:9.5px;}
   .status-pill.sent{background:#EFEAE3; color:var(--ink-soft);}
@@ -159,7 +192,13 @@
       </div>
     ` : '';
     root.innerHTML = `
-      <div class="topbar"><h1>${escapeHtml(businessName)}${isStaffMode ? ' · Team' : ''}</h1><div style="width:34px;"></div></div>
+      <div class="topbar">
+        <div class="topbar-brand">
+          <svg viewBox="0 0 200 200"><path d="M56 10 L146 10 L190 54 L190 144 A46 46 0 0 1 144 190 L56 190 A46 46 0 0 1 10 144 L10 56 A46 46 0 0 1 56 10 Z" fill="#FBF1E2" stroke="#E2653A" stroke-width="10"/><path d="M146 10 L190 54 L146 54 Z" fill="#E2653A"/><path d="M146 10 L146 54 L190 54" fill="none" stroke="#B84B29" stroke-width="4" stroke-linejoin="round"/><circle cx="66" cy="86" r="9" fill="#E2653A"/><circle cx="130" cy="86" r="9" fill="#E2653A"/><path d="M56 120 Q100 158 142 120" stroke="#E2653A" stroke-width="16" stroke-linecap="round" fill="none"/></svg>
+          <h1>${escapeHtml(businessName)}${isStaffMode ? ' · Team' : ''}</h1>
+        </div>
+        <div style="width:34px;"></div>
+      </div>
       ${staffBanner}
       <div class="page" id="notes-page"><div class="empty">Loading notes…</div></div>
       <button class="fab" id="fab">+</button>
@@ -183,15 +222,21 @@
       page.innerHTML = notes.map((n) => `
         <div class="note-card" data-id="${n.id}">
           <button class="vote-btn ${n.hasVoted ? 'voted' : ''}" data-vote="${n.id}">
-            <span>${n.voteCount}</span><span class="vlabel">votes</span>
+            <svg viewBox="0 0 20 20"><path d="M10 17s-6.5-4.1-8.5-8.2C.3 6.1 1.7 3 4.7 3c1.7 0 3 .9 3.7 2.1C9.1 3.9 10.4 3 12.1 3c3 0 4.4 3.1 3.2 5.8C14.5 12.9 10 17 10 17z"/></svg>
+            <span class="vlabel">${n.voteCount}</span>
           </button>
           <div class="note-body" data-open="${n.id}">
-            <div class="ntext">${escapeHtml(n.text)}</div>
+            <div class="ntext">"${escapeHtml(n.text)}"</div>
             <div class="note-meta">
-              <span class="status-pill ${n.status}">${STATUS_LABELS[n.status]}</span>
-              <span>·</span><span>${escapeHtml(n.category)}</span>
+              <span class="tag-pill">${escapeHtml(n.category)}</span>
               <span>·</span><span>${escapeHtml(n.displayName)}</span>
             </div>
+            ${n.response ? `
+              <div class="response-box">
+                <div class="rb-status">${STATUS_LABELS[n.status]}</div>
+                <p>${escapeHtml(n.response)}</p>
+              </div>
+            ` : `<span class="status-pill ${n.status}">${STATUS_LABELS[n.status]}</span>`}
           </div>
         </div>
       `).join('');
@@ -328,10 +373,13 @@
       const note = await api(`/api/board/${businessId}/notes/${noteId}?deviceId=${getDeviceId()}`);
       document.getElementById('detail-page').innerHTML = `
         <div class="note-card" style="margin-bottom:18px;">
-          <button class="vote-btn ${note.hasVoted ? 'voted' : ''}" id="vote-btn"><span>${note.voteCount}</span><span class="vlabel">votes</span></button>
+          <button class="vote-btn ${note.hasVoted ? 'voted' : ''}" id="vote-btn">
+            <svg viewBox="0 0 20 20"><path d="M10 17s-6.5-4.1-8.5-8.2C.3 6.1 1.7 3 4.7 3c1.7 0 3 .9 3.7 2.1C9.1 3.9 10.4 3 12.1 3c3 0 4.4 3.1 3.2 5.8C14.5 12.9 10 17 10 17z"/></svg>
+            <span class="vlabel">${note.voteCount}</span>
+          </button>
           <div class="note-body">
-            <div class="ntext">${escapeHtml(note.text)}</div>
-            <div class="note-meta"><span>${escapeHtml(note.category)}</span><span>·</span><span>${escapeHtml(note.displayName)}</span></div>
+            <div class="ntext">"${escapeHtml(note.text)}"</div>
+            <div class="note-meta"><span class="tag-pill">${escapeHtml(note.category)}</span><span>·</span><span>${escapeHtml(note.displayName)}</span></div>
           </div>
         </div>
         <h3 style="font-size:14px; margin-bottom:4px;">Status</h3>

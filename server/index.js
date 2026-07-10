@@ -588,17 +588,22 @@ app.get('/api/board/:businessId/notes', async (req, res) => {
 
   const notes = business.notes
     .filter((n) => (n.lane || 'customer') === laneFilter)
-    .map((n) => ({
-      id: n.id,
-      text: n.text,
-      category: n.category,
-      lane: n.lane || 'customer',
-      displayName: n.isAnonymous ? 'Anonymous customer' : n.authorName || 'Customer',
-      voteCount: n.votes.length,
-      hasVoted: deviceId ? n.votes.includes(deviceId) : false,
-      status: n.status,
-      createdAt: n.createdAt,
-    }))
+    .map((n) => {
+      const latestEntry = [...n.statusHistory].reverse().find((h) => h.message);
+      return {
+        id: n.id,
+        text: n.text,
+        category: n.category,
+        lane: n.lane || 'customer',
+        displayName: n.isAnonymous ? 'Anonymous customer' : n.authorName || 'Customer',
+        voteCount: n.votes.length,
+        hasVoted: deviceId ? n.votes.includes(deviceId) : false,
+        status: n.status,
+        response: latestEntry?.message || null,
+        respondedAt: latestEntry?.at || null,
+        createdAt: n.createdAt,
+      };
+    })
     .sort((a, b) => b.voteCount - a.voteCount);
 
   res.json(notes);
