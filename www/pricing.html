@@ -159,12 +159,12 @@
       <span>Suggestions<em>Box</em></span>
     </a>
     <div class="nav-links nav-mobile-hide">
-      <a href="index.html#business">For your business</a>
-      <a href="index.html#customers">From customers</a>
-      <a href="index.html#employees">From your team</a>
+      <a href="index.html#how">How it works</a>
+      <a href="index.html#features">Features</a>
       <a href="pricing.html">Pricing</a>
     </div>
     <div class="nav-right">
+      <a href="https://app.suggestionsbox.com.au/find.html" class="nav-login nav-mobile-hide">Find a business</a>
       <a href="https://app.suggestionsbox.com.au/login.html" class="nav-login nav-mobile-hide">Log in</a>
       <a href="https://app.suggestionsbox.com.au/signup.html" class="nav-cta">Get early access</a>
     </div>
@@ -174,13 +174,13 @@
 <section class="p-hero">
   <div class="wrap">
     <span class="eyebrow">Pricing</span>
-    <h1>Priced per location, not per idea.</h1>
-    <p>Customers and staff always post for free. You pay for the dashboard that turns their notes into a ranked list of what to fix next — billed simply, per location.</p>
+    <h1>Simple pricing, one real choice.</h1>
+    <p>Customers and staff always post for free. You pay for the dashboard that turns their notes into a ranked list of what to fix next — the only real decision is whether you want your team's feedback too.</p>
 
     <div class="toggle-row">
       <div class="toggle-pill">
-        <div class="toggle-opt active">Monthly</div>
-        <div class="toggle-opt">Annual</div>
+        <div class="toggle-opt active" id="toggle-monthly">Monthly</div>
+        <div class="toggle-opt" id="toggle-annual">Annual</div>
       </div>
       <span class="save-badge">Save 20% annually</span>
     </div>
@@ -193,9 +193,9 @@
 
       <div class="price-card">
         <div class="tier-name">Starter</div>
-        <div class="tier-desc">One location, getting started.</div>
-        <div class="price-row"><span class="price-num">$0</span><span class="price-unit">/month</span></div>
-        <div class="price-note">1 location included</div>
+        <div class="tier-desc">Customer feedback, nothing else yet.</div>
+        <div class="price-row"><span class="price-num" data-monthly="$0" data-annual="$0">$0</span><span class="price-unit">/month</span></div>
+        <div class="price-note">No card required</div>
         <a href="https://app.suggestionsbox.com.au/signup.html?plan=starter" class="tier-cta" style="display:block; text-decoration:none;">Start free</a>
         <ul class="feature-list">
           <li><svg viewBox="0 0 24 24" fill="none"><path d="M20 6L9 17l-5-5" stroke="#5E7A1F" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg>Unlimited customer notes &amp; voting</li>
@@ -210,9 +210,9 @@
       <div class="price-card featured">
         <div class="popular-flag">Most popular</div>
         <div class="tier-name">Growth</div>
-        <div class="tier-desc">For a location that's outgrown "hope they mention it."</div>
-        <div class="price-row"><span class="price-num">$59</span><span class="price-unit">/month</span></div>
-        <div class="price-note">per location</div>
+        <div class="tier-desc">For a business ready to hear from their team too.</div>
+        <div class="price-row"><span class="price-num" data-monthly="$59" data-annual="$47">$59</span><span class="price-unit">/month</span></div>
+        <div class="price-note" id="growth-price-note" style="display:none;"></div>
         <a href="https://app.suggestionsbox.com.au/signup.html?plan=growth" class="tier-cta" style="display:block; text-decoration:none;">Start 14-day trial</a>
         <ul class="feature-list">
           <li><svg viewBox="0 0 24 24" fill="none"><path d="M20 6L9 17l-5-5" stroke="#FFFCF6" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg>Everything in Starter</li>
@@ -327,8 +327,8 @@
     </div>
     <div class="faq-grid">
       <div class="faq-item">
-        <h3>Why per location instead of per employee?</h3>
-        <p>Charging per seat means a manager hesitates before inviting the whole team. Location-based pricing means once you're on a plan with team notes, every staff member at that location can use it without adding to the bill one by one.</p>
+        <h3>Why per business instead of per employee?</h3>
+        <p>Charging per seat means a manager hesitates before inviting the whole team. Once you're on a plan with team notes, every staff member can use it without adding to the bill one by one.</p>
       </div>
       <div class="faq-item">
         <h3>Do customers or employees ever pay?</h3>
@@ -336,11 +336,11 @@
       </div>
       <div class="faq-item">
         <h3>What happens if I go over on Starter?</h3>
-        <p>There's no note or vote limit to hit. Starter is capped by feature depth (no Trends, no multi-location), not by usage — so a busy single location never gets throttled.</p>
+        <p>There's no note or vote limit to hit. Starter is capped by feature depth (no team notes, no Trends), not by usage — so a busy business never gets throttled.</p>
       </div>
       <div class="faq-item">
-        <h3>Can I add locations one at a time?</h3>
-        <p>Yes — each new site is added and billed individually from the location switcher, so you're never paying for locations you haven't opened yet.</p>
+        <h3>Can I upgrade later?</h3>
+        <p>Yes — move from Starter to Growth whenever your team's ready for a private feedback channel too. Nothing about your existing customer notes changes.</p>
       </div>
     </div>
   </div>
@@ -348,7 +348,7 @@
 
 <section class="final-cta" id="cta">
   <div class="wrap">
-    <h2>Try it free on one location</h2>
+    <h2>Try it free</h2>
     <p>No card required for Starter. Upgrade whenever Trends or a second site makes sense.</p>
     <a href="#" class="btn-primary">Start free →</a>
   </div>
@@ -360,5 +360,30 @@
   </div>
 </footer>
 
+<script>
+  const monthlyBtn = document.getElementById('toggle-monthly');
+  const annualBtn = document.getElementById('toggle-annual');
+  const priceNums = document.querySelectorAll('.price-num[data-monthly]');
+  const growthNote = document.getElementById('growth-price-note');
+
+  function setBilling(period) {
+    monthlyBtn.classList.toggle('active', period === 'monthly');
+    annualBtn.classList.toggle('active', period === 'annual');
+    priceNums.forEach((el) => {
+      el.textContent = period === 'annual' ? el.dataset.annual : el.dataset.monthly;
+    });
+    if (period === 'annual') {
+      const yearly = parseInt(priceNums[1].dataset.annual.replace('$', ''), 10) * 12;
+      growthNote.textContent = `$${yearly} billed annually`;
+      growthNote.style.display = 'block';
+    } else {
+      growthNote.textContent = '';
+      growthNote.style.display = 'none';
+    }
+  }
+
+  monthlyBtn.addEventListener('click', () => setBilling('monthly'));
+  annualBtn.addEventListener('click', () => setBilling('annual'));
+</script>
 </body>
 </html>
