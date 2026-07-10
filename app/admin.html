@@ -174,7 +174,7 @@
   .nh-filter{white-space:nowrap;}
 
   @media (max-width:900px){
-    body{flex-direction:column;}
+    body, #appShell{flex-direction:column;}
     .sidebar{
       width:100%;height:auto;position:relative;
       flex-direction:row;align-items:center;justify-content:space-between;
@@ -324,7 +324,7 @@
   </div>
 </div>
 
-<div id="appShell" style="display:none;">
+<div id="appShell" style="display:none;flex:1;min-width:0;">
 <aside class="sidebar">
   <div class="sb-brand">
     <svg class="sb-mark" viewBox="0 0 200 200">
@@ -568,7 +568,7 @@ async function init(){
   document.getElementById('settingsEmail').textContent = me.email;
 
   document.getElementById('authGate').style.display = 'none';
-  document.getElementById('appShell').style.display = 'block';
+  document.getElementById('appShell').style.display = 'flex';
 
   await showOverview();
 }
