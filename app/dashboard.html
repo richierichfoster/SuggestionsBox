@@ -170,9 +170,7 @@
     </div>
     <nav class="sb-nav" id="sbNav">
       <button type="button" id="navOverview" onclick="showOverview()"><span class="dot"></span>Overview</button>
-      <a id="navBoardLink" href="#" target="_blank" style="display:none;"><span class="dot"></span><span class="link-label">View Board</span><svg class="ext-icon" viewBox="0 0 24 24" fill="none"><path d="M7 17L17 7M17 7H9M17 7v8" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></a>
-      <a id="navTeamBoardLink" href="#" target="_blank" style="display:none;"><span class="dot"></span><span class="link-label">View Team Board</span><svg class="ext-icon" viewBox="0 0 24 24" fill="none"><path d="M7 17L17 7M17 7H9M17 7v8" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></a>
-      <button type="button" id="navNotes" onclick="showNotes()"><span class="dot"></span>Notes</button>
+      <button type="button" id="navNotes" onclick="showNotes()"><span class="dot"></span>Customer Notes</button>
       <button type="button" id="navTeamBoard" onclick="showTeamBoard()"><span class="dot"></span>Team Board</button>
       <button type="button" id="navBilling" onclick="showBilling()"><span class="dot"></span>Plan &amp; Billing</button>
       <button type="button" id="navSettings" onclick="showSettings()"><span class="dot"></span>Settings</button>
@@ -242,18 +240,6 @@
     }
     document.getElementById('loggedOutShell').style.display = 'none';
     document.getElementById('appShell').style.display = 'flex';
-
-    const boardUrl = `board.html?business=${ME.id}`;
-    const navBoardLink = document.getElementById('navBoardLink');
-    navBoardLink.href = boardUrl;
-    navBoardLink.style.display = 'flex';
-
-    if (ME.employeeNotesEnabled) {
-      const navTeamBoardLink = document.getElementById('navTeamBoardLink');
-      navTeamBoardLink.href = `board.html?business=${ME.id}&staff=1`;
-      navTeamBoardLink.style.display = 'flex';
-    }
-
     showOverview();
   }
 
@@ -532,6 +518,27 @@
 
     app.innerHTML = `
       <div class="topbar"><h1>Settings</h1></div>
+
+      <div class="settings-panel">
+        <h2>Your board links</h2>
+        <p class="desc">Share these however works for you — a QR code, a link on your website, a note by the till.</p>
+        <div class="board-link-box" style="margin-bottom:${ME.employeeNotesEnabled ? '10px' : '0'};">
+          <div>
+            <b>Customer board</b>
+            <div class="board-url">${window.location.origin}${window.location.pathname.replace('dashboard.html','')}board.html?business=${ME.id}</div>
+          </div>
+          <a href="board.html?business=${ME.id}" target="_blank" class="board-link-btn">Open →</a>
+        </div>
+        ${ME.employeeNotesEnabled ? `
+          <div class="board-link-box" style="background:#FBEBD9; border-color:#F0C9A8; margin-bottom:0;">
+            <div>
+              <b style="color:#B84B29;">Team board (private — staff only)</b>
+              <div class="board-url">${window.location.origin}${window.location.pathname.replace('dashboard.html','')}board.html?business=${ME.id}&staff=1</div>
+            </div>
+            <a href="board.html?business=${ME.id}&staff=1" target="_blank" class="board-link-btn" style="background:#B84B29;">Open →</a>
+          </div>
+        ` : ''}
+      </div>
 
       <div class="settings-panel">
         <h2>Business profile</h2>
