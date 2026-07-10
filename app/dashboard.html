@@ -50,6 +50,15 @@
   .sb-nav button.active{background:var(--terra); color:#fff;}
   .sb-nav .dot{width:6px; height:6px; border-radius:50%; background:currentColor; opacity:.6; flex-shrink:0;}
 
+  .sb-nav a{
+    display:flex; align-items:center; gap:10px;
+    font-family:'Work Sans',sans-serif; font-size:13px; font-weight:500;
+    color:#7FA69F; padding:9px 10px; border-radius:8px; text-decoration:none;
+  }
+  .sb-nav a:hover{background:#2F4F4C; color:#E3EDEB;}
+  .sb-nav a .link-label{flex:1;}
+  .sb-nav a .ext-icon{width:12px; height:12px; flex-shrink:0; opacity:.7;}
+
   .hamburger-btn{display:none; background:none; border:1px solid #3E5D59; border-radius:8px; padding:8px 10px; margin-left:auto;}
   @media (max-width:900px){ .hamburger-btn{display:flex; flex-direction:column; gap:3px; width:34px; height:34px; align-items:center; justify-content:center;} }
   .hamburger-btn span{width:16px; height:2px; background:#E3EDEB; margin:0 auto; border-radius:1px;}
@@ -161,6 +170,8 @@
     </div>
     <nav class="sb-nav" id="sbNav">
       <button type="button" id="navOverview" onclick="showOverview()"><span class="dot"></span>Overview</button>
+      <a id="navBoardLink" href="#" target="_blank" style="display:none;"><span class="dot"></span><span class="link-label">View Board</span><svg class="ext-icon" viewBox="0 0 24 24" fill="none"><path d="M7 17L17 7M17 7H9M17 7v8" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></a>
+      <a id="navTeamBoardLink" href="#" target="_blank" style="display:none;"><span class="dot"></span><span class="link-label">View Team Board</span><svg class="ext-icon" viewBox="0 0 24 24" fill="none"><path d="M7 17L17 7M17 7H9M17 7v8" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></a>
       <button type="button" id="navNotes" onclick="showNotes()"><span class="dot"></span>Notes</button>
       <button type="button" id="navTeamBoard" onclick="showTeamBoard()"><span class="dot"></span>Team Board</button>
       <button type="button" id="navBilling" onclick="showBilling()"><span class="dot"></span>Plan &amp; Billing</button>
@@ -231,6 +242,18 @@
     }
     document.getElementById('loggedOutShell').style.display = 'none';
     document.getElementById('appShell').style.display = 'flex';
+
+    const boardUrl = `board.html?business=${ME.id}`;
+    const navBoardLink = document.getElementById('navBoardLink');
+    navBoardLink.href = boardUrl;
+    navBoardLink.style.display = 'flex';
+
+    if (ME.employeeNotesEnabled) {
+      const navTeamBoardLink = document.getElementById('navTeamBoardLink');
+      navTeamBoardLink.href = `board.html?business=${ME.id}&staff=1`;
+      navTeamBoardLink.style.display = 'flex';
+    }
+
     showOverview();
   }
 
@@ -263,10 +286,6 @@
     hideAllNav();
     document.getElementById('navOverview').classList.add('active');
 
-    const boardUrl = `board.html?business=${ME.id}`;
-    const staffBoardUrl = `board.html?business=${ME.id}&staff=1`;
-    const basePath = `${window.location.origin}${window.location.pathname.replace('dashboard.html','')}`;
-
     const totalVotes = MY_NOTES.reduce((sum, n) => sum + (n.voteCount || 0), 0);
     const actioned = MY_NOTES.filter((n) => n.status === 'actioned').length;
     const employeeNotes = MY_NOTES.filter((n) => n.lane === 'employee').length;
@@ -277,24 +296,6 @@
         <h1>Welcome, ${escapeHtml(ME.businessName)}</h1>
         <span class="plan-badge">${escapeHtml(ME.plan)} plan</span>
       </div>
-
-      <div class="board-link-box">
-        <div>
-          <b>Your live board</b>
-          <div class="board-url">${basePath}${boardUrl}</div>
-        </div>
-        <a href="${boardUrl}" target="_blank" class="board-link-btn">Open board →</a>
-      </div>
-
-      ${ME.employeeNotesEnabled ? `
-        <div class="board-link-box" style="background:#FBEBD9; border-color:#F0C9A8;">
-          <div>
-            <b style="color:#B84B29;">Your team's board</b>
-            <div class="board-url">${basePath}${staffBoardUrl}</div>
-          </div>
-          <a href="${staffBoardUrl}" target="_blank" class="board-link-btn" style="background:#B84B29;">Open team board →</a>
-        </div>
-      ` : ''}
 
       <div class="stat-row">
         <div class="stat-card"><div class="stat-num">${MY_NOTES.length}</div><div class="stat-label">Notes received</div></div>
@@ -309,7 +310,7 @@
         </div>
       ` : ''}
 
-      ${MY_NOTES.length === 0 ? emptyState("No notes yet — that's normal on day one", 'Share your board link above with customers and your team. Notes will show up here, ranked by votes, as soon as the first one comes in.') : ''}
+      ${MY_NOTES.length === 0 ? emptyState("No notes yet — that's normal on day one", 'Share your board link from the menu with customers and your team. Notes will show up here, ranked by votes, as soon as the first one comes in.') : ''}
     `;
   }
 
