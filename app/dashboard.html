@@ -122,6 +122,12 @@
   .status-msg{width:100%; margin-bottom:10px; padding:9px 11px; border-radius:8px; border:1px solid var(--line); font-size:12.5px; background:var(--cream); font-family:'Work Sans',sans-serif;}
   .status-save{background:transparent; border:1px solid var(--line); color:var(--ink); font-family:'Fredoka',sans-serif; font-weight:600; font-size:12.5px; padding:9px 16px; border-radius:9px; cursor:pointer;}
 
+  .wall-toggle-row{display:flex; align-items:center; gap:9px; margin-top:12px; padding-top:12px; border-top:1px solid var(--line); font-size:12.5px; color:var(--ink-soft); cursor:pointer; user-select:none;}
+  .wall-toggle{width:34px; height:19px; border-radius:10px; background:var(--line); position:relative; flex-shrink:0; transition:background .15s ease;}
+  .wall-toggle::after{content:""; position:absolute; top:2px; left:2px; width:15px; height:15px; border-radius:50%; background:#fff; transition:transform .15s ease; box-shadow:0 1px 2px rgba(0,0,0,.2);}
+  .wall-toggle.on{background:var(--teal-deep);}
+  .wall-toggle.on::after{transform:translateX(15px);}
+
   .filter-row{display:flex; gap:8px; flex-wrap:wrap; margin-bottom:18px;}
   .filter-chip{font-size:12px; padding:7px 13px; border-radius:14px; border:1px solid var(--line); background:var(--card); cursor:pointer; font-weight:500;}
   .filter-chip.active{background:var(--ink); border-color:var(--ink); color:var(--cream);}
@@ -412,6 +418,12 @@
         </div>
         <input class="status-msg" data-msg="${n.id}" placeholder="Optional message with this update">
         <button class="status-save" data-save="${n.id}">Update status</button>
+        ${n.status === 'actioned' && n.lane !== 'employee' ? `
+          <label class="wall-toggle-row">
+            <span class="wall-toggle ${n.showOnWall ? 'on' : ''}" data-wall-toggle="${n.id}"></span>
+            Show on public response wall
+          </label>
+        ` : ''}
       </div>
     `).join('') + `</div>`;
   }
@@ -444,6 +456,23 @@
         } catch {
           btn.textContent = 'Update status';
           btn.disabled = false;
+        }
+      });
+    });
+    document.querySelectorAll('[data-wall-toggle]').forEach((toggle) => {
+      toggle.addEventListener('click', async (e) => {
+        e.stopPropagation();
+        const noteId = toggle.dataset.wallToggle;
+        const newValue = !toggle.classList.contains('on');
+        toggle.classList.toggle('on', newValue);
+        try {
+          await apiFetch(`/api/my-notes/${noteId}/wall-visibility`, {
+            method: 'POST',
+            body: JSON.stringify({ showOnWall: newValue }),
+          });
+          MY_NOTES = await apiFetch('/api/my-notes');
+        } catch {
+          toggle.classList.toggle('on', !newValue); // revert on failure
         }
       });
     });

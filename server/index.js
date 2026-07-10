@@ -530,6 +530,26 @@ app.post('/api/my-notes/:id/status', requireSession, async (req, res) => {
   res.json({ ok: true });
 });
 
+// Lets the business explicitly opt a note in or out of the public response
+// wall — independent of status or whether it has a written response, so an
+// owner can action something without necessarily publicizing it.
+app.post('/api/my-notes/:id/wall-visibility', requireSession, async (req, res) => {
+  const { showOnWall } = req.body;
+  if (typeof showOnWall !== 'boolean') {
+    return res.status(400).json({ error: 'showOnWall must be true or false' });
+  }
+
+  await db.read();
+  const business = db.data.businesses.find((b) => b.id === req.business.id);
+  const note = business.notes.find((n) => n.id === req.params.id);
+  if (!note) return res.status(404).json({ error: 'not found' });
+
+  note.showOnWall = showOnWall;
+  await db.write();
+
+  res.json({ ok: true, showOnWall: note.showOnWall });
+});
+
 // ============================================================
 // Public board — this is what links the two systems together.
 // Anyone with a business's ID (from their signup) can browse,
@@ -582,6 +602,50 @@ app.get('/api/board/:businessId/notes', async (req, res) => {
     .sort((a, b) => b.voteCount - a.voteCount);
 
   res.json(notes);
+});
+
+// Public — the "response wall": actioned customer notes paired with the
+// message the business wrote when marking them actioned, plus real
+// aggregate stats. This is a trust/showcase page, separate from the
+// interactive voting board — no auth, no deviceId needed.
+app.get('/api/board/:businessId/wall', async (req, res) => {
+  await db.read();
+  const business = db.data.businesses.find((b) => b.id === req.params.businessId);
+  if (!business) return res.status(404).json({ error: 'business not found' });
+
+  const customerNotes = business.notes.filter((n) => (n.lane || 'customer') === 'customer');
+  const actionedNotes = customerNotes.filter((n) => n.status === 'actioned' && n.showOnWall === true);
+
+  const wallItems = actionedNotes
+    .map((n) => {
+      const actionedEntry = [...n.statusHistory].reverse().find((h) => h.status === 'actioned');
+      return {
+        id: n.id,
+        text: n.text,
+        category: n.category,
+        voteCount: n.votes.length,
+        response: actionedEntry?.message || null,
+        respondedAt: actionedEntry?.at || null,
+      };
+    })
+    .sort((a, b) => b.voteCount - a.voteCount);
+
+  // Average time from a note being sent to its first status change away
+  // from "sent" — i.e. how long before the business first acknowledged it.
+  const responseTimes = customerNotes
+    .filter((n) => n.statusHistory.length > 1)
+    .map((n) => new Date(n.statusHistory[1].at) - new Date(n.statusHistory[0].at));
+  const avgResponseDays = responseTimes.length
+    ? Math.round((responseTimes.reduce((a, b) => a + b, 0) / responseTimes.length / 86400000) * 10) / 10
+    : null;
+
+  res.json({
+    businessName: business.businessName,
+    totalNotes: customerNotes.length,
+    actionedCount: actionedNotes.length,
+    avgResponseDays,
+    items: wallItems,
+  });
 });
 
 app.get('/api/board/:businessId/notes/:noteId', async (req, res) => {
@@ -645,6 +709,7 @@ app.post('/api/board/:businessId/notes', async (req, res) => {
     votes: [deviceId],
     status: 'sent',
     statusHistory: [{ status: 'sent', message: null, at: new Date().toISOString() }],
+    showOnWall: false, // owner opts a note in to the public response wall explicitly
     createdAt: new Date().toISOString(),
   };
   business.notes.push(note);
