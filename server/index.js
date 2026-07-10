@@ -263,6 +263,7 @@ app.get('/api/me', requireSession, (req, res) => {
     email: req.business.email,
     plan: req.business.plan,
     isAdmin: !!req.business.isAdmin,
+    employeeNotesEnabled: planIncludesEmployeeNotes(req.business.plan),
     createdAt: req.business.createdAt,
   });
 });
@@ -303,11 +304,23 @@ app.post('/api/my-notes/:id/status', requireSession, async (req, res) => {
 // Fix It Right Plumbing pilot, just scoped per signed-up business.
 // ============================================================
 
+// Employee (staff) notes are a Growth/Business plan feature, not
+// available on Starter. This is the single source of truth for
+// that check — used both when accepting a note and when telling
+// board.html whether to honor a ?staff=1 link at all.
+function planIncludesEmployeeNotes(plan) {
+  return plan === 'growth' || plan === 'business';
+}
+
 app.get('/api/board/:businessId', async (req, res) => {
   await db.read();
   const business = db.data.businesses.find((b) => b.id === req.params.businessId);
   if (!business) return res.status(404).json({ error: 'business not found' });
-  res.json({ id: business.id, name: business.businessName });
+  res.json({
+    id: business.id,
+    name: business.businessName,
+    employeeNotesEnabled: planIncludesEmployeeNotes(business.plan),
+  });
 });
 
 app.get('/api/board/:businessId/notes', async (req, res) => {
@@ -316,11 +329,17 @@ app.get('/api/board/:businessId/notes', async (req, res) => {
   if (!business) return res.status(404).json({ error: 'business not found' });
 
   const deviceId = req.query.deviceId || null;
+  // lane filter keeps the public customer board and the private staff
+  // board from ever showing each other's notes on the same list.
+  const laneFilter = req.query.lane === 'employee' ? 'employee' : 'customer';
+
   const notes = business.notes
+    .filter((n) => (n.lane || 'customer') === laneFilter)
     .map((n) => ({
       id: n.id,
       text: n.text,
       category: n.category,
+      lane: n.lane || 'customer',
       displayName: n.isAnonymous ? 'Anonymous customer' : n.authorName || 'Customer',
       voteCount: n.votes.length,
       hasVoted: deviceId ? n.votes.includes(deviceId) : false,
@@ -345,6 +364,7 @@ app.get('/api/board/:businessId/notes/:noteId', async (req, res) => {
     id: note.id,
     text: note.text,
     category: note.category,
+    lane: note.lane || 'customer',
     displayName: note.isAnonymous ? 'Anonymous customer' : note.authorName || 'Customer',
     voteCount: note.votes.length,
     hasVoted: deviceId ? note.votes.includes(deviceId) : false,
@@ -355,7 +375,7 @@ app.get('/api/board/:businessId/notes/:noteId', async (req, res) => {
 });
 
 app.post('/api/board/:businessId/notes', async (req, res) => {
-  const { text, category, isAnonymous, authorName, deviceId, skipModerationCheck } = req.body;
+  const { text, category, isAnonymous, authorName, deviceId, skipModerationCheck, isEmployee } = req.body;
 
   if (typeof text !== 'string' || !text.trim()) {
     return res.status(400).json({ error: 'text is required' });
@@ -375,10 +395,18 @@ app.post('/api/board/:businessId/notes', async (req, res) => {
   const business = db.data.businesses.find((b) => b.id === req.params.businessId);
   if (!business) return res.status(404).json({ error: 'business not found' });
 
+  // Employee notes require a Growth/Business plan. This is checked
+  // server-side, not just hidden in the UI, so a shared staff link
+  // can't be used to bypass the plan gate.
+  if (isEmployee && !planIncludesEmployeeNotes(business.plan)) {
+    return res.status(403).json({ error: "Employee feedback isn't available on this business's plan" });
+  }
+
   const note = {
     id: newId(),
     text: text.trim(),
     category: category || 'general',
+    lane: isEmployee ? 'employee' : 'customer',
     isAnonymous: !!isAnonymous,
     authorName: isAnonymous ? null : (authorName || '').trim() || null,
     votes: [deviceId],
@@ -454,6 +482,7 @@ const PLAN_PRICES = { starter: 0, growth: 59 }; // 'business' plan is custom-pri
 function businessSummary(b) {
   const notes = b.notes || [];
   const actionedCount = notes.filter((n) => n.status === 'actioned').length;
+  const employeeNotes = notes.filter((n) => n.lane === 'employee').length;
   const lastNoteAt = notes.reduce((latest, n) => {
     const at = n.statusHistory?.[n.statusHistory.length - 1]?.at || n.createdAt;
     return !latest || at > latest ? at : latest;
@@ -466,6 +495,9 @@ function businessSummary(b) {
     plan: b.plan,
     createdAt: b.createdAt,
     notesReceived: notes.length,
+    customerNotes: notes.length - employeeNotes,
+    employeeNotes,
+    employeeNotesEnabled: planIncludesEmployeeNotes(b.plan),
     actionedRate: notes.length ? Math.round((actionedCount / notes.length) * 100) : 0,
     lastActivity: lastNoteAt || b.createdAt,
   };

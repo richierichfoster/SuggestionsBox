@@ -8,7 +8,6 @@
 <title>Sign up — Suggestions Box</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600;700&family=Work+Sans:wght@400;500;600;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
-<script src="https://accounts.google.com/gsi/client" async defer></script>
 <style>
   :root{
     color-scheme: light;
@@ -106,10 +105,10 @@
 
   <span class="eyebrow">Get started</span>
   <h1>Create your business account.</h1>
-  <p class="sub">Free on Starter — no card required. Customers and staff always post for free, on every plan.</p>
+  <p class="sub">Free on Starter — no card required. Customer notes on every plan; team notes on Growth and up.</p>
 
   <div class="card">
-    <div class="btn-social" id="google-btn">
+    <div class="btn-social">
       <svg viewBox="0 0 24 24" width="16" height="16"><path fill="#E2653A" d="M12 2L2 7l10 5 10-5-10-5z"/></svg>
       Continue with Google
     </div>
@@ -155,7 +154,7 @@
 
   <div class="trust-line">
     <svg viewBox="0 0 24 24" fill="none"><path d="M9 12l2 2 4-4M21 12a9 9 0 11-18 0 9 9 0 0118 0z" stroke="#5E7A1F" stroke-width="1.8"/></svg>
-    Team notes included free, on every plan — always.
+    Team notes come with Growth and Business plans.
   </div>
 </div>
 
@@ -180,41 +179,6 @@
 
   // Change this to your deployed server URL once it's live (see README).
   const API_BASE = 'https://api.suggestionsbox.com.au';
-
-  // Google Sign-In
-  const GOOGLE_CLIENT_ID = '84971942559-b3287j5jg35h6h3sveccle2n6d28admc.apps.googleusercontent.com';
-
-  async function handleGoogleCredential(response) {
-    try {
-      const res = await fetch(`${API_BASE}/api/auth/google`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ credential: response.credential }),
-      });
-      const data = await res.json();
-      if (!res.ok) {
-        alert(data.error || 'Google sign-in failed. Please try again.');
-        return;
-      }
-      localStorage.setItem('sb_token', data.token);
-      localStorage.setItem('sb_business', JSON.stringify(data.business));
-      window.location.href = 'dashboard.html';
-    } catch (err) {
-      alert("Couldn't reach the server. Is the API running?");
-    }
-  }
-
-  window.addEventListener('load', () => {
-    if (window.google?.accounts?.id) {
-      google.accounts.id.initialize({
-        client_id: GOOGLE_CLIENT_ID,
-        callback: handleGoogleCredential,
-      });
-      document.getElementById('google-btn').addEventListener('click', () => {
-        google.accounts.id.prompt();
-      });
-    }
-  });
 
   const errorBox = document.getElementById('form-error');
   const submitBtn = document.getElementById('submit-btn');

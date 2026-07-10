@@ -107,7 +107,7 @@
 </div>
 
 <script>
-  const API_BASE = 'https://suggestionsbox-production.up.railway.app';
+  const API_BASE = 'https://api.suggestionsbox.com.au';
   const app = document.getElementById('app');
   const token = localStorage.getItem('sb_token');
 
@@ -151,6 +151,11 @@
     const totalVotes = notes.reduce((sum, n) => sum + (n.voteCount || 0), 0);
     const actioned = notes.filter((n) => n.status === 'actioned').length;
     const boardUrl = `board.html?business=${business.id}`;
+    const staffBoardUrl = `board.html?business=${business.id}&staff=1`;
+    const basePath = `${window.location.origin}${window.location.pathname.replace('dashboard.html','')}`;
+
+    const employeeNotes = notes.filter((n) => n.lane === 'employee').length;
+    const customerNotes = notes.length - employeeNotes;
 
     app.innerHTML = `
       <div class="welcome-row">
@@ -161,16 +166,41 @@
       <div class="board-link-box">
         <div>
           <b>Your live board</b>
-          <div class="board-url">${window.location.origin}${window.location.pathname.replace('dashboard.html','')}${boardUrl}</div>
+          <div class="board-url">${basePath}${boardUrl}</div>
         </div>
         <a href="${boardUrl}" target="_blank" class="board-link-btn">Open board →</a>
       </div>
+
+      ${business.employeeNotesEnabled ? `
+        <div class="board-link-box" style="background:#FBEBD9; border-color:#F0C9A8;">
+          <div>
+            <b style="color:#B84B29;">Your team's board</b>
+            <div class="board-url">${basePath}${staffBoardUrl}</div>
+            <div style="font-size:11px; color:var(--ink-soft); margin-top:4px;">Share this privately with staff only — not the public one above.</div>
+          </div>
+          <a href="${staffBoardUrl}" target="_blank" class="board-link-btn" style="background:#B84B29;">Open team board →</a>
+        </div>
+      ` : `
+        <div class="board-link-box" style="opacity:.7;">
+          <div>
+            <b>Team notes</b>
+            <div style="font-size:11px; color:var(--ink-soft); margin-top:4px;">Available on Growth and Business plans — collect private feedback from your staff.</div>
+          </div>
+        </div>
+      `}
 
       <div class="stat-row">
         <div class="stat-card"><div class="stat-num">${notes.length}</div><div class="stat-label">Notes received</div></div>
         <div class="stat-card"><div class="stat-num">${totalVotes}</div><div class="stat-label">Total votes</div></div>
         <div class="stat-card"><div class="stat-num">${actioned}</div><div class="stat-label">Actioned</div></div>
       </div>
+
+      ${business.employeeNotesEnabled ? `
+        <div class="stat-row">
+          <div class="stat-card"><div class="stat-num">${customerNotes}</div><div class="stat-label">From customers</div></div>
+          <div class="stat-card"><div class="stat-num">${employeeNotes}</div><div class="stat-label">From your team</div></div>
+        </div>
+      ` : ''}
 
       ${notes.length === 0 ? emptyState() : notesList(notes)}
     `;
@@ -184,7 +214,7 @@
     return `<div class="notes-list">` + notes.map((n) => `
       <div class="owner-note-row" data-id="${n.id}">
         <div class="note-text">${escapeHtml(n.text)}</div>
-        <div class="note-meta">${n.voteCount} votes · ${escapeHtml(n.category)} · ${n.isAnonymous ? 'Anonymous' : escapeHtml(n.authorName || 'Customer')}</div>
+        <div class="note-meta">${n.lane === 'employee' ? '<b style="color:#B84B29;">Team ·</b> ' : ''}${n.voteCount} votes · ${escapeHtml(n.category)} · ${n.isAnonymous ? 'Anonymous' : escapeHtml(n.authorName || 'Customer')}</div>
         <div class="status-row">
           ${STATUSES.map((s) => `<div class="status-opt ${n.status === s ? 'selected' : ''}" data-status="${s}" data-note="${n.id}">${s.replace('_',' ')}</div>`).join('')}
         </div>

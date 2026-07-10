@@ -66,6 +66,12 @@
   .nudge{display:flex; gap:8px; align-items:flex-start; background:var(--alert-tint); color:var(--alert); border-radius:10px; padding:10px; font-size:12px; line-height:1.4; margin-bottom:14px;}
   .nudge button{background:var(--card); border:1px solid var(--line); border-radius:8px; padding:6px 10px; font-size:11.5px; font-family:'Fredoka',sans-serif; font-weight:600; cursor:pointer; margin-top:6px; margin-right:6px;}
 
+  .staff-banner{
+    display:flex; align-items:center; gap:8px; background:#E3EDEB; color:#254240;
+    border-radius:10px; padding:10px 12px; font-size:12px; line-height:1.4; margin:0 18px 4px;
+  }
+  .staff-banner svg{width:15px; height:15px; flex:none;}
+
   .timeline{position:relative; padding-left:22px; margin-top:16px;}
   .timeline::before{content:""; position:absolute; left:5px; top:4px; bottom:4px; width:2px; background:var(--line);}
   .tstep{position:relative; padding-bottom:18px;}
@@ -85,10 +91,11 @@
 <div id="root"><div class="empty">Loading…</div></div>
 
 <script>
-  const API_BASE = 'https://suggestionsbox-production.up.railway.app';
+  const API_BASE = 'https://api.suggestionsbox.com.au';
   const root = document.getElementById('root');
   const params = new URLSearchParams(window.location.search);
   const businessId = params.get('business');
+  const wantsStaffView = params.get('staff') === '1';
 
   function getDeviceId() {
     let id = localStorage.getItem('sb_board_device_id');
@@ -100,6 +107,7 @@
   }
 
   let businessName = '';
+  let isStaffMode = false;
   let view = { name: 'home' };
 
   async function api(path, options = {}) {
@@ -133,6 +141,10 @@
     try {
       const biz = await api(`/api/board/${businessId}`);
       businessName = biz.name;
+      // Staff mode only activates if the link asked for it AND the
+      // business's plan actually includes employee notes — a shared
+      // staff link on a Starter business just falls back to customer view.
+      isStaffMode = wantsStaffView && !!biz.employeeNotesEnabled;
       renderHome();
     } catch (err) {
       root.innerHTML = `<div class="empty">Couldn't find that business board.<br>Double check the link.</div>`;
@@ -140,8 +152,15 @@
   }
 
   async function renderHome() {
+    const staffBanner = isStaffMode ? `
+      <div class="staff-banner">
+        <svg viewBox="0 0 24 24" fill="none"><path d="M9 12l2 2 4-4M21 12a9 9 0 11-18 0 9 9 0 0118 0z" stroke="#254240" stroke-width="1.6"/></svg>
+        <span>You're viewing as a team member — notes here are private to ${escapeHtml(businessName)}'s staff, separate from the public customer board.</span>
+      </div>
+    ` : '';
     root.innerHTML = `
-      <div class="topbar"><h1>${escapeHtml(businessName)}</h1><div style="width:34px;"></div></div>
+      <div class="topbar"><h1>${escapeHtml(businessName)}${isStaffMode ? ' · Team' : ''}</h1><div style="width:34px;"></div></div>
+      ${staffBanner}
       <div class="page" id="notes-page"><div class="empty">Loading notes…</div></div>
       <button class="fab" id="fab">+</button>
       <div class="footer-brand">Powered by <a href="https://www.suggestionsbox.com.au/">Suggestions Box</a></div>
@@ -153,9 +172,12 @@
   async function loadNotes() {
     const page = document.getElementById('notes-page');
     try {
-      const notes = await api(`/api/board/${businessId}/notes?deviceId=${getDeviceId()}`);
+      const lane = isStaffMode ? 'employee' : 'customer';
+      const notes = await api(`/api/board/${businessId}/notes?deviceId=${getDeviceId()}&lane=${lane}`);
       if (notes.length === 0) {
-        page.innerHTML = `<div class="empty">No notes yet.<br>Be the first to say something — tap the + button below.</div>`;
+        page.innerHTML = isStaffMode
+          ? `<div class="empty">No team notes yet.<br>Be the first to say something — tap the + button below.</div>`
+          : `<div class="empty">No notes yet.<br>Be the first to say something — tap the + button below.</div>`;
         return;
       }
       page.innerHTML = notes.map((n) => `
@@ -198,6 +220,7 @@
         <div class="icon-btn" id="back"><svg viewBox="0 0 24 24" fill="none"><path d="M15 18l-6-6 6-6" stroke="#2E2B28" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
         <h1>New note</h1><div style="width:34px;"></div>
       </div>
+      ${isStaffMode ? `<div class="staff-banner" style="margin:14px 18px 0;">This note will go to your team's private feed.</div>` : ''}
       <div class="page">
         <div class="field"><label>What's this about</label>
           <div class="chip-row" id="cat-row">
@@ -274,12 +297,14 @@
       try {
         await api(`/api/board/${businessId}/notes`, {
           method: 'POST',
-          body: JSON.stringify({ text, category, isAnonymous, authorName, deviceId: getDeviceId() }),
+          body: JSON.stringify({ text, category, isAnonymous, authorName, deviceId: getDeviceId(), isEmployee: isStaffMode }),
         });
         renderHome();
       } catch (err) {
         if (err.status === 422 && err.data?.moderation) {
           modBox.innerHTML = `<div class="nudge">${escapeHtml(err.data.moderation.message)}</div>`;
+        } else if (err.status === 403) {
+          errBox.textContent = "This business's plan doesn't include team notes right now.";
         } else {
           errBox.textContent = err.message;
         }

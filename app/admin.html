@@ -635,6 +635,7 @@ async function showBusiness(id){
     <div class="stat-card"><div class="label">Total notes</div><div class="num">${biz.notesReceived}</div></div>
     <div class="stat-card"><div class="label">Actioned rate</div><div class="num">${biz.actionedRate}%</div></div>
     <div class="stat-card"><div class="label">Last activity</div><div class="num" style="font-size:15px;">${timeAgo(biz.lastActivity)}</div></div>
+    ${biz.employeeNotesEnabled ? `<div class="stat-card"><div class="label">From team</div><div class="num">${biz.employeeNotes} <span style="font-size:13px;color:var(--ink-soft);">/ ${biz.customerNotes} customer</span></div></div>` : ''}
   `;
 
   const filters = ['all','sent','seen','acknowledged','in_progress','actioned','not_planned'];
@@ -660,6 +661,7 @@ function renderNotes(){
       <div class="note-main">
         <div class="note-text">${escapeHtml(n.text)}</div>
         <div class="note-meta-row">
+          ${n.lane === 'employee' ? '<span class="note-tag" style="background:var(--terracotta,#E2653A);color:#fff;">Team</span>' : ''}
           <span class="note-tag">${escapeHtml(n.category)}</span>
           <span class="note-votes">${heartSvg()} ${n.voteCount}</span>
           <span class="note-date">${timeAgo(n.createdAt)}</span>
