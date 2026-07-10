@@ -80,12 +80,12 @@ app.get('/api/business', async (req, res) => {
 });
 
 // --- Public: check tone before submitting (used live as the person types) ---
-app.post('/api/moderate', (req, res) => {
+app.post('/api/moderate', async (req, res) => {
   const { text } = req.body;
   if (typeof text !== 'string' || !text.trim()) {
     return res.status(400).json({ error: 'text is required' });
   }
-  res.json(checkTone(text));
+  res.json(await checkTone(text));
 });
 
 // --- Public: list notes, sorted by vote count (most-backed first) ---
@@ -143,7 +143,7 @@ app.post('/api/notes', async (req, res) => {
   // Re-check tone server-side even if the client already checked, unless
   // the person explicitly chose to send their own edited version through.
   if (!skipModerationCheck) {
-    const toneResult = checkTone(text);
+    const toneResult = await checkTone(text);
     if (!toneResult.ok) {
       return res.status(422).json({ moderation: toneResult });
     }
@@ -689,7 +689,7 @@ app.post('/api/board/:businessId/notes', async (req, res) => {
   }
 
   if (!skipModerationCheck) {
-    const toneResult = checkTone(text);
+    const toneResult = await checkTone(text);
     if (!toneResult.ok) {
       return res.status(422).json({ moderation: toneResult });
     }

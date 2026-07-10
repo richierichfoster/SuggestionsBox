@@ -1,7 +1,10 @@
-// Lightweight tone moderation. This is intentionally simple for the pilot —
-// flags common insult patterns and suggests removing them, rather than
-// silently blocking. A production version could swap this for an AI-based
-// check (e.g. calling the Anthropic API) without changing the calling code.
+// Tone moderation. Tries an AI-based check first (via the Anthropic API,
+// if ANTHROPIC_API_KEY is configured) since it can tell the difference
+// between a genuine personal attack and blunt-but-legitimate feedback far
+// better than keyword matching. Falls back to the keyword check below if
+// the API key isn't set, the call fails, or it times out — so a note is
+// never blocked from being submitted just because the AI call had a bad
+// moment.
 
 const INSULT_PATTERNS = [
   /\bidiots?\b/i,
@@ -16,7 +19,7 @@ const INSULT_PATTERNS = [
   /\bscam(mer)?s?\b/i,
 ];
 
-export function checkTone(text) {
+function checkToneKeywords(text) {
   const flagged = [];
   for (const pattern of INSULT_PATTERNS) {
     const match = text.match(pattern);
@@ -39,4 +42,71 @@ export function checkTone(text) {
     suggestion: rewrite,
     message: "That reads as an attack rather than feedback about the issue. Here's a version without it — or you can edit it yourself.",
   };
+}
+
+const MODERATION_SYSTEM_PROMPT = `You moderate short feedback notes on a customer/staff feedback platform for small local businesses.
+
+Flag ONLY genuine personal attacks, insults, hate speech, threats, or harassment directed at a specific person (an employee, the owner, another customer, etc).
+
+Do NOT flag feedback that is simply negative, blunt, harsh, or critical about the business, its service, staff performance, pricing, or experience — that is exactly the kind of feedback this platform exists to collect, and should always be allowed through, however strongly worded. "The wait was way too long and the food was cold" is allowed even if annoyed-sounding. "The chef is a lazy idiot who should be fired" is not, because it attacks a person.
+
+Respond with ONLY raw JSON, no markdown formatting, no code fences, no explanation outside the JSON. Use exactly one of these two shapes:
+
+If the note is fine: {"ok": true}
+
+If the note should be flagged: {"ok": false, "message": "<one short sentence, spoken directly to the person writing the note, explaining why>", "suggestion": "<a rewritten version that keeps their underlying feedback but removes the personal attack>"}`;
+
+async function checkToneAI(text) {
+  const apiKey = process.env.ANTHROPIC_API_KEY;
+  if (!apiKey) return null; // not configured — caller falls back to keyword check
+
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), 8000);
+
+  try {
+    const res = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-api-key': apiKey,
+        'anthropic-version': '2023-06-01',
+      },
+      body: JSON.stringify({
+        model: 'claude-haiku-4-5-20251001',
+        max_tokens: 300,
+        temperature: 0.2,
+        system: MODERATION_SYSTEM_PROMPT,
+        messages: [{ role: 'user', content: text }],
+      }),
+      signal: controller.signal,
+    });
+
+    if (!res.ok) {
+      console.error(`[moderation] Anthropic API returned ${res.status}`);
+      return null;
+    }
+
+    const data = await res.json();
+    const raw = data.content?.[0]?.text?.trim();
+    if (!raw) return null;
+
+    // Defensive parsing — strip markdown code fences if the model adds them
+    // despite instructions not to, then parse.
+    const cleaned = raw.replace(/^```(json)?/i, '').replace(/```$/, '').trim();
+    const parsed = JSON.parse(cleaned);
+
+    if (typeof parsed.ok !== 'boolean') return null;
+    return parsed;
+  } catch (err) {
+    console.error('[moderation] AI tone check failed:', err.message);
+    return null;
+  } finally {
+    clearTimeout(timeout);
+  }
+}
+
+export async function checkTone(text) {
+  const aiResult = await checkToneAI(text);
+  if (aiResult) return aiResult;
+  return checkToneKeywords(text);
 }
