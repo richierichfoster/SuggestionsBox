@@ -8,6 +8,7 @@
 <title>Dashboard — Suggestions Box</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600;700&family=Work+Sans:wght@400;500;600;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/qr-code-styling@1.6.0-rc.1/lib/qr-code-styling.js"></script>
 <style>
   :root{
     color-scheme: light;
@@ -174,6 +175,41 @@
   .form-msg{font-size:12.5px; margin-top:10px;}
   .form-msg.error{color:var(--danger);}
   .form-msg.success{color:var(--good-ink);}
+
+  /* ---- print card ---- */
+  .print-card-wrap{display:flex; gap:32px; flex-wrap:wrap; align-items:flex-start;}
+  .print-card{
+    width:340px; background:var(--terra); border-radius:20px; padding:36px 28px;
+    text-align:center; box-shadow:0 14px 34px rgba(46,38,32,.16); flex-shrink:0;
+  }
+  .print-card .pc-mark{width:44px; height:44px; margin:0 auto 16px;}
+  .print-card h2{
+    font-family:'Fredoka',sans-serif; font-weight:600; font-size:19px; color:#FBF1E2;
+    margin-bottom:8px; line-height:1.3;
+  }
+  .print-card p{color:rgba(251,241,226,.88); font-size:13px; line-height:1.5; margin-bottom:22px;}
+  .print-card .pc-qr-box{
+    background:#FBF1E2; border-radius:14px; padding:16px; display:inline-block; margin-bottom:16px;
+  }
+  .print-card .pc-qr-box #qr-canvas{display:flex; align-items:center; justify-content:center;}
+  .print-card .pc-biz-name{
+    font-family:'Space Mono',monospace; font-size:11px; letter-spacing:.04em; text-transform:uppercase;
+    color:rgba(251,241,226,.75);
+  }
+
+  .print-side-panel{flex:1; min-width:260px;}
+  .print-side-panel .settings-panel{margin-bottom:0;}
+  .no-logo-note{
+    background:var(--teal-tint); border:1px solid #CBE0DC; border-radius:10px; padding:12px 14px;
+    font-size:12.5px; color:var(--teal-deep); line-height:1.5; margin-bottom:16px;
+  }
+
+  @media print{
+    body *{visibility:hidden;}
+    #print-card-area, #print-card-area *{visibility:visible;}
+    #print-card-area{position:fixed; top:0; left:0; right:0; display:flex; align-items:center; justify-content:center; height:100vh;}
+    .print-card{box-shadow:none;}
+  }
 </style>
 </head>
 <body>
@@ -192,6 +228,7 @@
       <button type="button" id="navNotes" onclick="showNotes()"><span class="dot"></span>Customer Notes</button>
       <button type="button" id="navTeamBoard" onclick="showTeamBoard()"><span class="dot"></span>Team Board</button>
       <button type="button" id="navBilling" onclick="showBilling()"><span class="dot"></span>Plan &amp; Billing</button>
+      <button type="button" id="navPrintCard" onclick="showPrintCard()"><span class="dot"></span>Print Card</button>
       <button type="button" id="navSettings" onclick="showSettings()"><span class="dot"></span>Settings</button>
     </nav>
     <div class="sb-footer">
@@ -288,7 +325,7 @@
   });
 
   function hideAllNav() {
-    ['navOverview','navNotes','navTeamBoard','navBilling','navSettings'].forEach((id) => {
+    ['navOverview','navNotes','navTeamBoard','navBilling','navPrintCard','navSettings'].forEach((id) => {
       document.getElementById(id).classList.remove('active');
     });
   }
@@ -569,6 +606,65 @@
   }
 
   // ---------- Settings ----------
+  // ---------- Print Card ----------
+  function showPrintCard() {
+    closeMobileNav();
+    hideAllNav();
+    document.getElementById('navPrintCard').classList.add('active');
+
+    const boardUrl = `${window.location.origin}${window.location.pathname.replace('dashboard.html','')}board.html?business=${ME.id}`;
+
+    app.innerHTML = `
+      <div class="topbar"><h1>Print Card</h1></div>
+      <div class="print-card-wrap">
+        <div id="print-card-area">
+          <div class="print-card">
+            <svg class="pc-mark" viewBox="0 0 200 200"><path d="M56 10 L146 10 L190 54 L190 144 A46 46 0 0 1 144 190 L56 190 A46 46 0 0 1 10 144 L10 56 A46 46 0 0 1 56 10 Z" fill="#FBF1E2" stroke="#FBF1E2" stroke-width="10"/><path d="M146 10 L190 54 L146 54 Z" fill="#FBF1E2" opacity=".7"/><circle cx="66" cy="86" r="9" fill="#E2653A"/><circle cx="130" cy="86" r="9" fill="#E2653A"/><path d="M56 120 Q100 158 142 120" stroke="#E2653A" stroke-width="16" stroke-linecap="round" fill="none"/></svg>
+            <h2>Help us! Could we be doing something better?</h2>
+            <p>Leave an anonymous note, or back someone else's — takes 20 seconds.</p>
+            <div class="pc-qr-box"><div id="qr-canvas"></div></div>
+            <div class="pc-biz-name">${escapeHtml(ME.businessName)}</div>
+          </div>
+        </div>
+        <div class="print-side-panel">
+          ${!ME.logoDataUrl ? `<div class="no-logo-note">No logo uploaded yet — the QR code will print without one in the center. Add one in Settings for a more branded card.</div>` : ''}
+          <div class="settings-panel">
+            <h2>Print this out</h2>
+            <p class="desc">Sits nicely by the till, on tables, or anywhere customers wait.</p>
+            <button class="btn-primary" id="print-card-btn">Print / Save as PDF</button>
+          </div>
+        </div>
+      </div>
+    `;
+
+    document.getElementById('print-card-btn').addEventListener('click', () => window.print());
+
+    renderQrCode(boardUrl);
+  }
+
+  function renderQrCode(url) {
+    const container = document.getElementById('qr-canvas');
+    if (typeof QRCodeStyling === 'undefined') {
+      container.innerHTML = `<div style="width:220px;height:220px;display:flex;align-items:center;justify-content:center;font-size:11px;color:var(--ink-soft);text-align:center;padding:10px;">QR code library didn't load — check your connection and refresh.</div>`;
+      return;
+    }
+    const qr = new QRCodeStyling({
+      width: 220,
+      height: 220,
+      type: 'canvas',
+      data: url,
+      image: ME.logoDataUrl || undefined,
+      margin: 4,
+      qrOptions: { errorCorrectionLevel: 'H' },
+      imageOptions: { crossOrigin: 'anonymous', margin: 4, imageSize: 0.35 },
+      dotsOptions: { color: '#254240', type: 'rounded' },
+      cornersSquareOptions: { color: '#B84B29', type: 'extra-rounded' },
+      cornersDotOptions: { color: '#B84B29' },
+      backgroundOptions: { color: '#FBF1E2' },
+    });
+    qr.append(container);
+  }
+
   function showSettings() {
     closeMobileNav();
     hideAllNav();
