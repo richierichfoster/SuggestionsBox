@@ -191,6 +191,10 @@
   .onboard-optional-pill{font-family:'Space Mono',monospace; font-size:8.5px; text-transform:uppercase; color:var(--ink-soft); background:var(--cream); padding:3px 7px; border-radius:5px; white-space:nowrap; flex:none;}
   .onboard-action{margin-top:8px; display:inline-flex; align-items:center; gap:5px; font-family:'Work Sans',sans-serif; font-size:12px; font-weight:600; color:var(--terra-deep); background:#FBEFE7; border:none; padding:6px 12px; border-radius:7px; cursor:pointer;}
   .onboard-step.done .onboard-action{display:none;}
+  .onboard-collapsed{padding:16px 22px; cursor:pointer; transition:background .15s ease;}
+  .onboard-collapsed:hover{background:var(--cream);}
+  .onboard-collapsed .onboard-head{padding-right:0;}
+  .onboard-expand-icon{width:16px; height:16px; flex:none;}
 
   .chart-panel{background:var(--card); border:1px solid var(--line); border-radius:16px; padding:20px; margin-bottom:20px;}
   .chart-panel-head{display:flex; align-items:center; justify-content:space-between; margin-bottom:14px;}
@@ -2736,7 +2740,7 @@ var qrcode = function() {
     return `${days.toFixed(1)}d`;
   }
 
-  const ONBOARD_DISMISS_KEY = () => `sb_onboarding_dismissed_${ME.id}`;
+  const ONBOARD_COLLAPSE_KEY = () => `sb_onboarding_collapsed_${ME.id}`;
 
   function renderOnboardingChecklist() {
     const container = document.getElementById('onboard-container');
@@ -2746,14 +2750,31 @@ var qrcode = function() {
     const required = steps.filter((s) => !s.optional);
     const requiredDone = required.filter((s) => s.done).length;
     const allRequiredDone = required.length > 0 && requiredDone === required.length;
-    const dismissed = localStorage.getItem(ONBOARD_DISMISS_KEY()) === '1';
 
-    if (steps.length === 0 || dismissed || allRequiredDone) {
+    if (steps.length === 0 || allRequiredDone) {
       container.innerHTML = '';
       return;
     }
 
     const pct = required.length ? Math.round((requiredDone / required.length) * 100) : 0;
+    const collapsed = localStorage.getItem(ONBOARD_COLLAPSE_KEY()) === '1';
+
+    if (collapsed) {
+      container.innerHTML = `
+        <div class="onboard-panel onboard-collapsed" id="onboard-collapsed-bar">
+          <div class="onboard-head" style="margin-bottom:0;">
+            <div class="onboard-progress-track"><div class="onboard-progress-fill" style="width:${pct}%;"></div></div>
+            <div class="onboard-progress-label">${requiredDone} of ${required.length}</div>
+            <svg class="onboard-expand-icon" viewBox="0 0 24 24" fill="none"><path d="M6 9l6 6 6-6" stroke="#6E6A63" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          </div>
+        </div>
+      `;
+      document.getElementById('onboard-collapsed-bar').addEventListener('click', () => {
+        localStorage.setItem(ONBOARD_COLLAPSE_KEY(), '0');
+        renderOnboardingChecklist();
+      });
+      return;
+    }
 
     const stepActions = {
       address: () => showSettings(),
@@ -2770,8 +2791,8 @@ var qrcode = function() {
 
     container.innerHTML = `
       <div class="onboard-panel">
-        <button class="onboard-dismiss" id="onboard-dismiss-btn" title="Dismiss" aria-label="Dismiss">
-          <svg viewBox="0 0 24 24" fill="none"><path d="M18 6L6 18M6 6l12 12" stroke="#2E2B28" stroke-width="2" stroke-linecap="round"/></svg>
+        <button class="onboard-dismiss" id="onboard-collapse-btn" title="Minimise" aria-label="Minimise">
+          <svg viewBox="0 0 24 24" fill="none"><path d="M18 15l-6-6-6 6" stroke="#2E2B28" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
         </button>
         <div class="onboard-head">
           <div class="onboard-progress-track"><div class="onboard-progress-fill" style="width:${pct}%;"></div></div>
@@ -2793,9 +2814,9 @@ var qrcode = function() {
       </div>
     `;
 
-    document.getElementById('onboard-dismiss-btn').addEventListener('click', () => {
-      localStorage.setItem(ONBOARD_DISMISS_KEY(), '1');
-      container.innerHTML = '';
+    document.getElementById('onboard-collapse-btn').addEventListener('click', () => {
+      localStorage.setItem(ONBOARD_COLLAPSE_KEY(), '1');
+      renderOnboardingChecklist();
     });
     container.querySelectorAll('[data-onboard-step]').forEach((btn) => {
       btn.addEventListener('click', () => {
