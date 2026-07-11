@@ -50,10 +50,17 @@
     .sb-w-card-top{display:flex; justify-content:space-between; align-items:flex-start; gap:10px;}
     .sb-w-tag{font-family:'Space Mono',monospace; font-size:10px; text-transform:uppercase; letter-spacing:.04em; color:var(--sb-w-terra-deep); background:#FBEFE7; padding:4px 9px; border-radius:6px;}
     .sb-w-votes{display:flex; align-items:center; gap:4px; color:var(--sb-w-ink-soft); font-family:'Space Mono',monospace; font-size:12px; flex-shrink:0;}
+    .sb-w-meta{font-family:'Space Mono',monospace; font-size:10.5px; color:var(--sb-w-ink-soft);}
+    .sb-w-status-pill{display:inline-block; padding:3px 9px; border-radius:6px; font-size:9.5px; font-family:'Fredoka',Arial,sans-serif; font-weight:600; margin-bottom:6px;}
+    .sb-w-status-pill.sent{background:#EFEAE3; color:var(--sb-w-ink-soft);}
+    .sb-w-status-pill.seen{background:#E4EEFB; color:#3A5F8A;}
+    .sb-w-status-pill.acknowledged{background:#FBEBD9; color:var(--sb-w-terra-deep);}
+    .sb-w-status-pill.in_progress{background:#FBF1D0; color:#9A7A15;}
+    .sb-w-status-pill.actioned{background:#EFF4DE; color:var(--sb-w-good-ink);}
+    .sb-w-status-pill.not_planned{background:#EFEAE3; color:var(--sb-w-ink-soft);}
     .sb-w-votes svg{width:11px; height:11px; fill:var(--sb-w-gold);}
     .sb-w-quote{font-size:13.5px; line-height:1.5; color:var(--sb-w-ink);}
     .sb-w-resp{background:var(--sb-w-cream); border-radius:9px; padding:12px 13px; border-left:3px solid var(--sb-w-gold);}
-    .sb-w-resp .sb-w-status{font-family:'Fredoka',Arial,sans-serif; font-weight:600; font-size:11.5px; color:var(--sb-w-terra-deep); margin-bottom:5px;}
     .sb-w-resp p{margin:0; font-size:12.5px; line-height:1.45; color:var(--sb-w-ink);}
     .sb-w-arrow{
       position:absolute; top:50%; transform:translateY(-50%); width:32px; height:32px; border-radius:50%;
@@ -77,6 +84,20 @@
     const div = document.createElement('div');
     div.textContent = str == null ? '' : str;
     return div.innerHTML;
+  }
+
+  function timeAgo(iso) {
+    if (!iso) return '';
+    const mins = Math.floor((Date.now() - new Date(iso).getTime()) / 60000);
+    if (mins < 1) return 'just now';
+    if (mins < 60) return `${mins}m ago`;
+    const hrs = Math.floor(mins / 60);
+    if (hrs < 24) return `${hrs}h ago`;
+    const days = Math.floor(hrs / 24);
+    if (days < 30) return `${days}d ago`;
+    const months = Math.floor(days / 30);
+    if (months < 12) return `${months}mo ago`;
+    return `${Math.floor(months / 12)}y ago`;
   }
 
   function heartSvg() {
@@ -126,8 +147,9 @@
                   <span class="sb-w-votes">${heartSvg()} ${i.voteCount}</span>
                 </div>
                 <div class="sb-w-quote">"${escapeHtml(i.text)}"</div>
+                <div class="sb-w-meta">${escapeHtml(i.displayName)} · ${timeAgo(i.createdAt)}</div>
                 <div class="sb-w-resp">
-                  <div class="sb-w-status">${STATUS_LABELS[i.status] || i.status}</div>
+                  <span class="sb-w-status-pill ${i.status}">${STATUS_LABELS[i.status] || i.status}</span>
                   <p>${i.response ? escapeHtml(i.response) : "No written response yet."}</p>
                 </div>
               </div>

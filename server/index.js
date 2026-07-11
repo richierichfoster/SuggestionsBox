@@ -1056,10 +1056,12 @@ app.get('/api/board/:businessId/wall', async (req, res) => {
         id: n.id,
         text: n.text,
         category: n.category,
+        displayName: n.isAnonymous ? 'Anonymous customer' : n.authorName || 'Customer',
         voteCount: n.votes.length,
         status: n.status,
         response: latestEntry?.message || null,
         respondedAt: latestEntry?.at || null,
+        createdAt: n.createdAt,
       };
     })
     .sort((a, b) => b.voteCount - a.voteCount);
