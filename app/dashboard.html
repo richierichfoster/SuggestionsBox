@@ -117,7 +117,12 @@
   }
 
   .notes-list{display:flex; flex-direction:column; gap:12px;}
-  .owner-note-row{background:var(--card); border:1px solid var(--line); border-radius:16px; padding:16px; position:relative;}
+  .owner-note-row{background:var(--card); border:1px solid var(--line); border-radius:16px; padding:20px 16px 16px; position:relative; overflow:hidden;}
+  .owner-note-row::before{
+    content:""; position:absolute; top:0; left:0; right:0; height:10px;
+    background-image: radial-gradient(circle at 6px 6px, var(--cream) 3px, transparent 3.5px);
+    background-size: 12px 10px; background-repeat:repeat-x; background-position:top center;
+  }
   .note-delete-btn{
     position:absolute; top:14px; right:14px; width:28px; height:28px; border-radius:8px;
     background:transparent; border:1px solid var(--line); color:var(--ink-soft); cursor:pointer;
@@ -241,6 +246,7 @@
     width:340px; background:var(--terra); border-radius:20px; padding:36px 28px;
     text-align:center; box-shadow:0 14px 34px rgba(46,38,32,.16); flex-shrink:0;
   }
+  .print-card.team-variant{background:var(--teal-deep);}
   .print-card .pc-mark{width:44px; height:44px; margin:0 auto 16px;}
   .pc-logo-lockup{display:flex; align-items:center; justify-content:center; gap:8px; margin-bottom:18px;}
   .pc-logo-lockup .pc-mark{width:30px; height:30px; margin:0;}
@@ -3182,6 +3188,11 @@ var qrcode = function() {
   // ---------- Settings ----------
   // ---------- Print Card (embedded within Customer Notes / Team Board) ----------
   function printCardPanel(boardUrl, biz, idSuffix) {
+    const isTeam = idSuffix === 'team';
+    const headline = isTeam ? 'Got feedback for the team?' : 'Help us! Could we be doing something better?';
+    const subtext = isTeam
+      ? "Leave an anonymous note, or back a colleague's — takes 20 seconds."
+      : "Leave an anonymous note, or back someone else's — takes 20 seconds.";
     return `
       <div class="settings-panel">
         <div class="print-card-toggle-head" id="print-card-toggle-${idSuffix}">
@@ -3189,16 +3200,16 @@ var qrcode = function() {
           <span class="pc-chevron">▾</span>
         </div>
         <div id="print-card-body-${idSuffix}" style="display:none; margin-top:16px;">
-          <p class="desc">A QR code card to sit by the till, on tables, or anywhere customers wait.</p>
+          <p class="desc">A QR code card to sit by the till, on tables, or anywhere ${isTeam ? 'staff' : 'customers'} wait.</p>
           <div class="print-card-wrap">
             <div id="print-card-area-${idSuffix}">
-              <div class="print-card">
+              <div class="print-card ${isTeam ? 'team-variant' : ''}">
                 <div class="pc-logo-lockup">
                   <svg class="pc-mark" viewBox="0 0 200 200"><path d="M56 10 L146 10 L190 54 L190 144 A46 46 0 0 1 144 190 L56 190 A46 46 0 0 1 10 144 L10 56 A46 46 0 0 1 56 10 Z" fill="#FBF1E2" stroke="#FBF1E2" stroke-width="10"/><path d="M146 10 L190 54 L146 54 Z" fill="#FBF1E2" opacity=".65"/><circle cx="66" cy="86" r="9" fill="#B84B29"/><circle cx="130" cy="86" r="9" fill="#B84B29"/><path d="M56 120 Q100 158 142 120" stroke="#B84B29" stroke-width="16" stroke-linecap="round" fill="none"/></svg>
                   <span class="pc-wordmark">Suggestions<em>Box</em></span>
                 </div>
-                <h2>Help us! Could we be doing something better?</h2>
-                <p>Leave an anonymous note, or back someone else's — takes 20 seconds.</p>
+                <h2>${headline}</h2>
+                <p>${subtext}</p>
                 <div class="pc-qr-box"><div id="qr-canvas-${idSuffix}"></div></div>
                 <div class="pc-biz-name">${escapeHtml(biz.businessName)}</div>
               </div>
@@ -3236,7 +3247,7 @@ var qrcode = function() {
       btn.disabled = true;
       btn.textContent = 'Preparing…';
       try {
-        const cardDataUrl = await renderFullCardImage(biz, boardUrl);
+        const cardDataUrl = await renderFullCardImage(biz, boardUrl, idSuffix);
         cardImageCache[idSuffix] = cardDataUrl;
         openPrintWindow(idSuffix, biz);
       } catch (err) {
@@ -3341,7 +3352,13 @@ var qrcode = function() {
   // it as one flattened PNG data URL. Explicitly waits for the exact fonts
   // used before drawing any text, since canvas text rendering has its own
   // font-loading race separate from normal DOM layout.
-  async function renderFullCardImage(biz, boardUrl) {
+  async function renderFullCardImage(biz, boardUrl, idSuffix) {
+    const isTeam = idSuffix === 'team';
+    const headlineText = isTeam ? 'Got feedback for the team?' : 'Help us! Could we be doing something better?';
+    const subtextText = isTeam
+      ? "Leave an anonymous note, or back a colleague's — takes 20 seconds."
+      : "Leave an anonymous note, or back someone else's — takes 20 seconds.";
+
     if (document.fonts && document.fonts.load) {
       await Promise.all([
         document.fonts.load('600 76px Fredoka'),
@@ -3396,12 +3413,12 @@ var qrcode = function() {
     // Headline
     ctx.font = '600 38px Fredoka, sans-serif';
     ctx.fillStyle = '#FBF1E2';
-    y = wrapAndDrawText(ctx, 'Help us! Could we be doing something better?', W / 2, y, W - padX * 2, 48) + 8;
+    y = wrapAndDrawText(ctx, headlineText, W / 2, y, W - padX * 2, 48) + 8;
 
     // Subtext
     ctx.font = '500 26px "Work Sans", sans-serif';
     ctx.fillStyle = 'rgba(251,241,226,.88)';
-    y = wrapAndDrawText(ctx, "Leave an anonymous note, or back someone else's — takes 20 seconds.", W / 2, y, W - padX * 2, 36) + 24;
+    y = wrapAndDrawText(ctx, subtextText, W / 2, y, W - padX * 2, 36) + 24;
 
     // QR box
     const qrBoxX = W / 2 - qrBoxSize / 2;
@@ -3459,7 +3476,7 @@ var qrcode = function() {
     finalCanvas.width = W;
     finalCanvas.height = H;
     const fctx = finalCanvas.getContext('2d');
-    fctx.fillStyle = '#E2653A';
+    fctx.fillStyle = isTeam ? '#254240' : '#E2653A';
     roundRectPath(fctx, 0, 0, W, H, 40);
     fctx.fill();
     fctx.drawImage(canvas, 0, 0, W, H, 0, 0, W, H);
