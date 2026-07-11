@@ -108,6 +108,42 @@
   }
   .staff-banner svg{width:15px; height:15px; flex:none;}
 
+  .tone-badge{
+    display:flex; align-items:center; gap:7px; font-size:11.5px; color:var(--ink-soft);
+    margin-bottom:14px; line-height:1.4;
+  }
+  .tone-badge svg{width:14px; height:14px; flex:none; color:var(--gold,#D9A441);}
+  .tone-status{font-size:11.5px; margin:-8px 0 14px; display:flex; align-items:center; gap:6px;}
+  .tone-status.checking{color:var(--ink-soft);}
+  .tone-status.passed{color:var(--good-ink);}
+  .tone-spinner{width:11px; height:11px; border:2px solid var(--line); border-top-color:var(--ink-soft); border-radius:50%; animation:tone-spin .7s linear infinite; flex:none;}
+  @keyframes tone-spin{to{transform:rotate(360deg);}}
+
+  .thankyou-overlay{
+    position:fixed; inset:0; background:rgba(46,38,32,.45); z-index:50;
+    display:flex; align-items:center; justify-content:center; padding:20px;
+  }
+  .thankyou-modal{
+    background:var(--cream); border-radius:18px; padding:32px 26px; max-width:340px; width:100%;
+    text-align:center; box-shadow:0 20px 50px rgba(46,38,32,.25); position:relative;
+  }
+  .thankyou-close{
+    position:absolute; top:12px; right:12px; width:28px; height:28px; border-radius:8px;
+    background:var(--card); border:1px solid var(--line); display:flex; align-items:center; justify-content:center; cursor:pointer;
+  }
+  .thankyou-close svg{width:13px; height:13px;}
+  .thankyou-icon{width:52px; height:52px; margin:0 auto 16px; background:var(--good); border-radius:50%; display:flex; align-items:center; justify-content:center;}
+  .thankyou-icon svg{width:24px; height:24px; color:var(--good-ink);}
+  .thankyou-modal h2{font-size:18px; margin-bottom:8px;}
+  .thankyou-modal p{font-size:13px; color:var(--ink-soft); line-height:1.6; margin-bottom:18px;}
+  .app-soon-box{
+    background:var(--card); border:1px dashed var(--line); border-radius:12px; padding:14px;
+    text-align:left; display:flex; gap:10px; align-items:flex-start; margin-bottom:18px;
+  }
+  .app-soon-box svg{width:17px; height:17px; flex:none; color:var(--terra-deep); margin-top:1px;}
+  .app-soon-box .ast{font-family:'Fredoka',sans-serif; font-weight:600; font-size:12.5px; margin-bottom:3px;}
+  .app-soon-box .asd{font-size:11.5px; color:var(--ink-soft); line-height:1.5;}
+
   .timeline{position:relative; padding-left:22px; margin-top:16px;}
   .timeline::before{content:""; position:absolute; left:5px; top:4px; bottom:4px; width:2px; background:var(--line);}
   .tstep{position:relative; padding-bottom:18px;}
@@ -264,6 +300,34 @@
     }
   }
 
+  function showThankYouModal() {
+    const overlay = document.createElement('div');
+    overlay.className = 'thankyou-overlay';
+    overlay.innerHTML = `
+      <div class="thankyou-modal">
+        <button class="thankyou-close" id="thankyou-close" aria-label="Dismiss">
+          <svg viewBox="0 0 24 24" fill="none"><path d="M18 6L6 18M6 6l12 12" stroke="#2E2B28" stroke-width="2" stroke-linecap="round"/></svg>
+        </button>
+        <div class="thankyou-icon">
+          <svg viewBox="0 0 24 24" fill="none"><path d="M9 12l2 2 4-4M21 12a9 9 0 11-18 0 9 9 0 0118 0z" stroke="currentColor" stroke-width="1.8"/></svg>
+        </div>
+        <h2>Thank you!</h2>
+        <p>That helps make this business better. Your note is on its way to the owner now.</p>
+        <div class="app-soon-box">
+          <svg viewBox="0 0 24 24" fill="none"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" stroke="currentColor" stroke-width="1.6"/></svg>
+          <div>
+            <div class="ast">Track your note's progress</div>
+            <div class="asd">An app to follow along as your note gets picked up is coming soon.</div>
+          </div>
+        </div>
+      </div>
+    `;
+    document.body.appendChild(overlay);
+    const dismiss = () => overlay.remove();
+    document.getElementById('thankyou-close').addEventListener('click', dismiss);
+    overlay.addEventListener('click', (e) => { if (e.target === overlay) dismiss(); });
+  }
+
   function renderCompose() {
     root.innerHTML = `
       <div class="topbar">
@@ -278,6 +342,11 @@
           </div>
         </div>
         <div class="field"><label>Your note</label><textarea id="note-text" placeholder="What's working, or what isn't?"></textarea></div>
+        <div class="tone-badge">
+          <svg viewBox="0 0 24 24" fill="none"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" stroke="currentColor" stroke-width="1.6"/></svg>
+          Every note is quickly reviewed for tone before it posts.
+        </div>
+        <div id="tone-status" class="tone-status" style="display:none;"></div>
         <div id="mod-check"></div>
         <div class="checkbox-row"><input type="checkbox" id="anon" checked><label for="anon" style="margin:0; text-transform:none; font-family:'Work Sans';">Post anonymously</label></div>
         <div class="field" id="name-field" style="display:none;"><label>Your name (optional)</label><input id="author-name" placeholder="e.g. Priya"></div>
@@ -296,27 +365,47 @@
       });
     });
 
-    document.getElementById('anon').addEventListener('change', (e) => {
-      document.getElementById('name-field').style.display = e.target.checked ? 'none' : 'block';
-    });
-
     const textarea = document.getElementById('note-text');
     const submitBtn = document.getElementById('submit-note');
     const modBox = document.getElementById('mod-check');
-    let moderation = null;
+    const toneStatusEl = document.getElementById('tone-status');
+    let moderationStatus = 'unchecked'; // unchecked | checking | passed | flagged
     let debounceTimer;
 
-    textarea.addEventListener('input', () => {
-      submitBtn.disabled = !textarea.value.trim();
-      moderation = null;
-      modBox.innerHTML = '';
+    function updateSubmitState() {
+      const hasText = !!textarea.value.trim();
+      submitBtn.disabled = !hasText || moderationStatus !== 'passed';
+
+      if (!hasText) {
+        toneStatusEl.style.display = 'none';
+      } else if (moderationStatus === 'checking') {
+        toneStatusEl.style.display = 'flex';
+        toneStatusEl.className = 'tone-status checking';
+        toneStatusEl.innerHTML = `<span class="tone-spinner"></span>Checking tone…`;
+      } else if (moderationStatus === 'passed') {
+        toneStatusEl.style.display = 'flex';
+        toneStatusEl.className = 'tone-status passed';
+        toneStatusEl.innerHTML = `✓ Looks good`;
+      } else {
+        toneStatusEl.style.display = 'none';
+      }
+    }
+
+    function runToneCheck() {
       clearTimeout(debounceTimer);
+      moderationStatus = 'unchecked';
+      modBox.innerHTML = '';
+      updateSubmitState();
       if (!textarea.value.trim()) return;
+      moderationStatus = 'checking';
+      updateSubmitState();
       debounceTimer = setTimeout(async () => {
         try {
           const result = await api('/api/moderate', { method: 'POST', body: JSON.stringify({ text: textarea.value }) });
-          if (!result.ok) {
-            moderation = result;
+          if (result.ok) {
+            moderationStatus = 'passed';
+          } else {
+            moderationStatus = 'flagged';
             modBox.innerHTML = `
               <div class="nudge"><div>${escapeHtml(result.message)}
                 <div style="margin-top:8px;">
@@ -326,32 +415,45 @@
               </div></div>`;
             document.getElementById('use-rewrite').addEventListener('click', () => {
               textarea.value = result.suggestion;
-              moderation = null;
-              modBox.innerHTML = '';
+              runToneCheck();
             });
             document.getElementById('edit-myself').addEventListener('click', () => { modBox.innerHTML = ''; });
           }
-        } catch {}
+        } catch {
+          // Can't reach the moderation endpoint at all — fail open rather than
+          // permanently block posting; the server re-checks tone on submit
+          // regardless, so this is just the live client-side preview failing.
+          moderationStatus = 'passed';
+        }
+        updateSubmitState();
       }, 500);
+    }
+
+    textarea.addEventListener('input', runToneCheck);
+
+    document.getElementById('anon').addEventListener('change', (e) => {
+      document.getElementById('name-field').style.display = e.target.checked ? 'none' : 'block';
     });
 
     submitBtn.addEventListener('click', async () => {
       const text = textarea.value.trim();
-      if (!text) return;
+      if (!text || moderationStatus !== 'passed') return;
       const isAnonymous = document.getElementById('anon').checked;
       const authorName = document.getElementById('author-name').value;
       const errBox = document.getElementById('submit-error');
       errBox.textContent = '';
       submitBtn.disabled = true;
       submitBtn.textContent = 'Sending…';
+
       try {
         await api(`/api/board/${businessId}/notes`, {
           method: 'POST',
           body: JSON.stringify({ text, category, isAnonymous, authorName, deviceId: getDeviceId(), isEmployee: isStaffMode }),
         });
-        renderHome();
       } catch (err) {
+        // A real submission failure — the note was NOT saved, so let them retry.
         if (err.status === 422 && err.data?.moderation) {
+          moderationStatus = 'flagged';
           modBox.innerHTML = `<div class="nudge">${escapeHtml(err.data.moderation.message)}</div>`;
         } else if (err.status === 403) {
           errBox.textContent = "This business's plan doesn't include team notes right now.";
@@ -360,7 +462,15 @@
         }
         submitBtn.disabled = false;
         submitBtn.textContent = 'Tear off & send';
+        updateSubmitState();
+        return;
       }
+
+      // The note was saved successfully at this point. Anything past here is
+      // just updating the UI — if it hiccups, the person shouldn't see a
+      // "failed to send" message for a note that actually went through.
+      try { await renderHome(); } catch {}
+      try { showThankYouModal(); } catch {}
     });
   }
 
