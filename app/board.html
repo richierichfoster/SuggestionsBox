@@ -149,6 +149,18 @@
   .detail-node.filled{background:var(--teal-deep);}
   .detail-labels{display:flex; justify-content:space-between; font-family:'Space Mono',monospace; font-size:8px; color:var(--ink-soft); margin-bottom:16px;}
 
+  .detail-back-row{
+    margin-top:20px; display:flex; align-items:center; justify-content:space-between;
+    background:var(--teal-tint); border:1px solid #CBE0DC; border-radius:10px; padding:14px 16px;
+  }
+  .detail-back-row .count{font-family:'Fredoka',sans-serif; font-weight:600; font-size:19px; color:var(--teal-deep); line-height:1;}
+  .detail-back-row .count-label{font-size:10.5px; color:var(--ink-soft); margin-top:2px;}
+  .detail-back-btn{
+    background:var(--teal-deep); color:#fff; border:none; padding:11px 18px; border-radius:9px;
+    font-family:'Work Sans',sans-serif; font-weight:600; font-size:13px; cursor:pointer;
+  }
+  .detail-back-btn:disabled{opacity:.7; cursor:default;}
+
   .anon-lock-note{
     display:flex; align-items:center; gap:8px; background:var(--teal-tint); color:var(--teal-deep);
     border-radius:10px; padding:11px 12px; font-size:12px; line-height:1.4; margin-bottom:14px;
@@ -814,8 +826,22 @@
             </div>
           `).join('')}
         </div>
+        ${note.lane === 'employee' ? `
+          <div class="detail-back-row">
+            <div>
+              <div class="count">${note.voteCount}</div>
+              <div class="count-label">backing this</div>
+            </div>
+            <button class="detail-back-btn" id="detail-back-btn" ${note.hasVoted ? 'disabled' : ''}>${note.hasVoted ? '✓ Backed' : '+ Back this too'}</button>
+          </div>
+        ` : ''}
       `;
       document.getElementById('vote-btn').addEventListener('click', async () => {
+        await api(`/api/board/${businessId}/notes/${noteId}/vote`, { method: 'POST', body: JSON.stringify({ deviceId: getDeviceId() }) });
+        renderDetail(noteId);
+      });
+      document.getElementById('detail-back-btn')?.addEventListener('click', async () => {
+        if (note.hasVoted) return;
         await api(`/api/board/${businessId}/notes/${noteId}/vote`, { method: 'POST', body: JSON.stringify({ deviceId: getDeviceId() }) });
         renderDetail(noteId);
       });
