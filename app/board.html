@@ -90,6 +90,14 @@
 
   .chip-row{display:flex; gap:8px; flex-wrap:wrap; margin-bottom:14px;}
   .chip{font-size:12px; padding:8px 14px; border-radius:16px; border:1px solid var(--line); background:var(--card); cursor:pointer; font-weight:500;}
+
+  .filter-row{display:flex; gap:7px; flex-wrap:wrap; margin-bottom:16px;}
+  .filter-chip{
+    font-family:'Space Mono',monospace; font-size:10px; text-transform:uppercase; letter-spacing:.02em;
+    white-space:nowrap; padding:6px 12px; border-radius:20px; border:1px solid var(--line);
+    color:var(--ink-soft); background:var(--card); cursor:pointer;
+  }
+  .filter-chip.active{background:var(--teal-deep); border-color:var(--teal-deep); color:#fff;}
   .chip.active{background:var(--terra); border-color:var(--terra); color:var(--card);}
   .checkbox-row{display:flex; align-items:center; gap:8px; margin-bottom:14px; font-size:13px;}
 
