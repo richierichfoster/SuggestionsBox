@@ -1064,7 +1064,7 @@ app.get('/api/board/:businessId/notes', async (req, res) => {
         text: n.text,
         category: n.category,
         lane: n.lane || 'customer',
-        displayName: n.isAnonymous ? 'Anonymous customer' : n.authorName || 'Customer',
+        displayName: n.isAnonymous ? (n.lane === 'employee' ? 'Anonymous' : 'Anonymous customer') : n.authorName || 'Customer',
         voteCount: n.votes.length,
         hasVoted: deviceId ? n.votes.includes(deviceId) : false,
         status: n.status,
@@ -1134,15 +1134,19 @@ app.get('/api/board/:businessId/notes/:noteId', async (req, res) => {
   const note = business.notes.find((n) => n.id === req.params.noteId);
   if (!note) return res.status(404).json({ error: 'not found' });
 
+  const latestEntry = [...note.statusHistory].reverse().find((h) => h.message);
+
   res.json({
     id: note.id,
     text: note.text,
     category: note.category,
     lane: note.lane || 'customer',
-    displayName: note.isAnonymous ? 'Anonymous customer' : note.authorName || 'Customer',
+    displayName: note.isAnonymous ? (note.lane === 'employee' ? 'Anonymous' : 'Anonymous customer') : note.authorName || 'Customer',
     voteCount: note.votes.length,
     hasVoted: deviceId ? note.votes.includes(deviceId) : false,
     status: note.status,
+    response: latestEntry?.message || null,
+    respondedAt: latestEntry?.at || null,
     statusHistory: note.statusHistory,
     createdAt: note.createdAt,
   });

@@ -813,6 +813,11 @@
               <span>${escapeHtml(note.displayName)}</span><span>·</span><span>${timeAgo(note.createdAt)}</span>
               ${note.lane === 'employee' ? `<span>·</span><span>${escapeHtml(note.category)}</span>` : ''}
             </div>
+            ${note.response ? `
+              <div class="response-box">
+                <p>${escapeHtml(note.response)}</p>
+              </div>
+            ` : ''}
           </div>
         </div>
         ${note.lane === 'employee' && note.status !== 'not_planned' ? renderProgressTrack(note.status) : ''}
