@@ -3351,6 +3351,31 @@ var qrcode = function() {
       </div>
 
       <div class="settings-panel">
+        <h2>Email notifications</h2>
+        <p class="desc">A daily summary of that day's notes lands in your inbox at the end of each day — no need to log in just to see what came in.</p>
+
+        <label class="wall-toggle-row" style="margin-top:0; padding-top:0; border-top:none;">
+          <span class="wall-toggle ${ME.digestEnabled ? 'on' : ''}" id="digest-enabled-toggle"></span>
+          Send me the daily digest
+        </label>
+
+        <div id="digest-sub-options" style="${ME.digestEnabled ? '' : 'display:none;'} margin-top:16px;">
+          <div class="field">
+            <label>Send digest to</label>
+            <input id="set-digest-email" placeholder="${escapeHtml(ME.email)}" value="${escapeHtml(ME.digestEmail || '')}">
+            <div class="field-hint">Leave blank to use your login email (${escapeHtml(ME.email)}). Useful if you'd rather it go to a shared inbox instead.</div>
+          </div>
+          <label class="wall-toggle-row" style="margin-top:12px;">
+            <span class="wall-toggle ${ME.digestSkipEmpty ? 'on' : ''}" id="digest-skip-empty-toggle"></span>
+            Skip the email on quiet days with no new notes
+          </label>
+        </div>
+
+        <div id="email-prefs-msg" class="form-msg" style="display:none;"></div>
+        <button class="btn-primary" id="save-email-prefs-btn" style="margin-top:16px;">Save preferences</button>
+      </div>
+
+      <div class="settings-panel">
         <h2>Password</h2>
         <p class="desc">Change your login password.</p>
         <div class="field-row">
@@ -3444,6 +3469,45 @@ var qrcode = function() {
       }
       btn.disabled = false;
       btn.textContent = 'Update password';
+    });
+
+    // Email notification preferences
+    let pendingDigestEnabled = ME.digestEnabled;
+    let pendingDigestSkipEmpty = ME.digestSkipEmpty;
+
+    const digestEnabledToggle = document.getElementById('digest-enabled-toggle');
+    digestEnabledToggle.addEventListener('click', () => {
+      pendingDigestEnabled = !pendingDigestEnabled;
+      digestEnabledToggle.classList.toggle('on', pendingDigestEnabled);
+      document.getElementById('digest-sub-options').style.display = pendingDigestEnabled ? 'block' : 'none';
+    });
+
+    const digestSkipEmptyToggle = document.getElementById('digest-skip-empty-toggle');
+    digestSkipEmptyToggle.addEventListener('click', () => {
+      pendingDigestSkipEmpty = !pendingDigestSkipEmpty;
+      digestSkipEmptyToggle.classList.toggle('on', pendingDigestSkipEmpty);
+    });
+
+    document.getElementById('save-email-prefs-btn').addEventListener('click', async () => {
+      const btn = document.getElementById('save-email-prefs-btn');
+      btn.disabled = true;
+      btn.textContent = 'Saving…';
+      try {
+        await apiFetch('/api/business/email-preferences', {
+          method: 'POST',
+          body: JSON.stringify({
+            digestEnabled: pendingDigestEnabled,
+            digestEmail: document.getElementById('set-digest-email').value,
+            digestSkipEmpty: pendingDigestSkipEmpty,
+          }),
+        });
+        ME = await apiFetch('/api/me');
+        showFormMsg('email-prefs-msg', 'Saved.', 'success');
+      } catch (err) {
+        showFormMsg('email-prefs-msg', err.message, 'error');
+      }
+      btn.disabled = false;
+      btn.textContent = 'Save preferences';
     });
   }
 

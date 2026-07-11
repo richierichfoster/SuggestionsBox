@@ -128,20 +128,29 @@ async function sendEmail(to, subject, html) {
 // separately from the scheduler so it can be triggered manually (for
 // testing, or a "send now" admin action) without waiting for the clock.
 export async function sendDigestForBusiness(business, { startUtc, endUtc, dateLabel }) {
+  if (business.digestEnabled === false) {
+    return { businessId: business.id, businessName: business.businessName, ok: false, reason: 'disabled_by_business' };
+  }
+
   const notesToday = (business.notes || []).filter((n) => {
     const createdAt = new Date(n.createdAt);
     return createdAt >= startUtc && createdAt < endUtc;
   });
   const customerNotes = notesToday.filter((n) => (n.lane || 'customer') === 'customer');
   const teamNotes = notesToday.filter((n) => n.lane === 'employee');
+  const totalCount = customerNotes.length + teamNotes.length;
+
+  if (totalCount === 0 && business.digestSkipEmpty) {
+    return { businessId: business.id, businessName: business.businessName, notesCount: 0, ok: false, reason: 'skipped_empty_day' };
+  }
 
   const html = buildDigestHtml(business, customerNotes, teamNotes);
-  const totalCount = customerNotes.length + teamNotes.length;
   const subject = totalCount === 0
     ? `Your notes for ${dateLabel} — all quiet today`
     : `Your notes for ${dateLabel} — ${totalCount} new`;
 
-  const result = await sendEmail(business.email, subject, html);
+  const recipient = business.digestEmail || business.email;
+  const result = await sendEmail(recipient, subject, html);
   return { businessId: business.id, businessName: business.businessName, notesCount: totalCount, ...result };
 }
 

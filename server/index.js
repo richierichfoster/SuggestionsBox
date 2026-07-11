@@ -277,6 +277,9 @@ app.post('/api/auth/signup', async (req, res) => {
     lat: null,
     lng: null,
     logoDataUrl: null,
+    digestEnabled: true,
+    digestEmail: null, // null = falls back to the account's own email
+    digestSkipEmpty: false, // false = still send a "quiet day" email when there's nothing new
     createdAt: new Date().toISOString(),
     notes: [],
   };
@@ -337,6 +340,9 @@ app.get('/api/me', requireSession, (req, res) => {
     lat: req.business.lat ?? null,
     lng: req.business.lng ?? null,
     logoDataUrl: req.business.logoDataUrl || null,
+    digestEnabled: req.business.digestEnabled !== false, // undefined (older accounts) defaults to true
+    digestEmail: req.business.digestEmail || null,
+    digestSkipEmpty: !!req.business.digestSkipEmpty,
     createdAt: req.business.createdAt,
   });
 });
@@ -408,6 +414,36 @@ app.post('/api/business/profile', requireSession, async (req, res) => {
     lat: business.lat,
     lng: business.lng,
     logoDataUrl: business.logoDataUrl,
+  });
+});
+
+// Email notification preferences — separate from the main profile endpoint
+// since these are a distinct concern (digest sending), not business details.
+app.post('/api/business/email-preferences', requireSession, async (req, res) => {
+  const { digestEnabled, digestEmail, digestSkipEmpty } = req.body;
+
+  if (digestEmail) {
+    const trimmed = digestEmail.trim();
+    const validEmail = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(trimmed);
+    if (!validEmail) {
+      return res.status(400).json({ error: 'That doesn\'t look like a valid email address' });
+    }
+  }
+
+  await db.read();
+  const business = db.data.businesses.find((b) => b.id === req.business.id);
+
+  if (digestEnabled !== undefined) business.digestEnabled = !!digestEnabled;
+  if (digestEmail !== undefined) business.digestEmail = digestEmail.trim() || null;
+  if (digestSkipEmpty !== undefined) business.digestSkipEmpty = !!digestSkipEmpty;
+
+  await db.write();
+
+  res.json({
+    ok: true,
+    digestEnabled: business.digestEnabled,
+    digestEmail: business.digestEmail,
+    digestSkipEmpty: business.digestSkipEmpty,
   });
 });
 
