@@ -50,8 +50,9 @@
     background-size: 12px 10px; background-repeat:repeat-x; background-position:top center;
   }
   .note-card:hover{transform:translateY(-1px); box-shadow:0 8px 18px rgba(46,38,32,.07);}
+  .vote-col{display:flex; flex-direction:column; align-items:center; gap:6px; flex:none;}
   .vote-btn{
-    flex:none; width:46px; height:52px; border-radius:12px; background:var(--cream); border:1px solid var(--line);
+    width:46px; height:52px; border-radius:12px; background:var(--cream); border:1px solid var(--line);
     display:flex; flex-direction:column; align-items:center; justify-content:center; cursor:pointer;
     font-family:'Space Mono',monospace; font-weight:700; gap:2px; padding:0;
   }
@@ -62,26 +63,14 @@
   .note-body{flex:1; min-width:0;}
   .note-body .ntext{font-size:14px; line-height:1.5; margin-bottom:8px; color:var(--ink);}
   .note-meta{display:flex; align-items:center; gap:7px; font-family:'Space Mono',monospace; font-size:10px; color:var(--ink-soft); flex-wrap:wrap; margin-bottom:2px;}
-  .tag-pill{
-    font-family:'Space Mono',monospace; font-size:10px; text-transform:uppercase; letter-spacing:.03em;
-    color:var(--terra-deep); background:#FBEFE7; padding:3px 8px; border-radius:6px;
-  }
 
   .response-box{
     background:var(--cream); border-radius:9px; padding:11px 13px; margin-top:10px;
     border-left:3px solid var(--gold);
   }
-  .response-box .rb-status{
-    display:inline-flex; align-items:center; gap:5px; font-family:'Fredoka',sans-serif; font-weight:600;
-    font-size:11.5px; color:var(--terra-deep); margin-bottom:4px;
-  }
-  .response-box .rb-status::before{
-    content:"✓"; display:inline-flex; align-items:center; justify-content:center;
-    width:14px; height:14px; border-radius:50%; background:var(--terra); color:#fff; font-size:9px;
-  }
   .response-box p{margin:0; font-size:12.5px; line-height:1.5; color:var(--ink);}
 
-  .status-pill{padding:2px 8px; border-radius:6px; font-size:9.5px;}
+  .status-pill{padding:3px 9px; border-radius:6px; font-size:9px; text-align:center; white-space:nowrap;}
   .status-pill.sent{background:#EFEAE3; color:var(--ink-soft);}
   .status-pill.seen{background:#E4EEFB; color:#3A5F8A;}
   .status-pill.acknowledged{background:#FBEBD9; color:var(--terra-deep);}
@@ -278,22 +267,23 @@
       }
       page.innerHTML = notes.map((n) => `
         <div class="note-card" data-id="${n.id}">
-          <button class="vote-btn ${n.hasVoted ? 'voted' : ''}" data-vote="${n.id}">
-            <svg viewBox="0 0 20 20"><path d="M10 17s-6.5-4.1-8.5-8.2C.3 6.1 1.7 3 4.7 3c1.7 0 3 .9 3.7 2.1C9.1 3.9 10.4 3 12.1 3c3 0 4.4 3.1 3.2 5.8C14.5 12.9 10 17 10 17z"/></svg>
-            <span class="vlabel">${n.voteCount}</span>
-          </button>
+          <div class="vote-col">
+            <button class="vote-btn ${n.hasVoted ? 'voted' : ''}" data-vote="${n.id}">
+              <svg viewBox="0 0 20 20"><path d="M10 17s-6.5-4.1-8.5-8.2C.3 6.1 1.7 3 4.7 3c1.7 0 3 .9 3.7 2.1C9.1 3.9 10.4 3 12.1 3c3 0 4.4 3.1 3.2 5.8C14.5 12.9 10 17 10 17z"/></svg>
+              <span class="vlabel">${n.voteCount}</span>
+            </button>
+            <span class="status-pill ${n.status}">${STATUS_LABELS[n.status]}</span>
+          </div>
           <div class="note-body" data-open="${n.id}">
             <div class="ntext">"${escapeHtml(n.text)}"</div>
             <div class="note-meta">
-              <span class="tag-pill">${escapeHtml(n.category)}</span>
-              <span>·</span><span>${escapeHtml(n.displayName)}</span>
+              <span>${escapeHtml(n.displayName)}</span>
             </div>
             ${n.response ? `
               <div class="response-box">
-                <div class="rb-status">${STATUS_LABELS[n.status]}</div>
                 <p>${escapeHtml(n.response)}</p>
               </div>
-            ` : `<span class="status-pill ${n.status}">${STATUS_LABELS[n.status]}</span>`}
+            ` : ''}
           </div>
         </div>
       `).join('');
@@ -537,13 +527,16 @@
       const note = await api(`/api/board/${businessId}/notes/${noteId}?deviceId=${getDeviceId()}`);
       document.getElementById('detail-page').innerHTML = `
         <div class="note-card" style="margin-bottom:18px;">
-          <button class="vote-btn ${note.hasVoted ? 'voted' : ''}" id="vote-btn">
-            <svg viewBox="0 0 20 20"><path d="M10 17s-6.5-4.1-8.5-8.2C.3 6.1 1.7 3 4.7 3c1.7 0 3 .9 3.7 2.1C9.1 3.9 10.4 3 12.1 3c3 0 4.4 3.1 3.2 5.8C14.5 12.9 10 17 10 17z"/></svg>
-            <span class="vlabel">${note.voteCount}</span>
-          </button>
+          <div class="vote-col">
+            <button class="vote-btn ${note.hasVoted ? 'voted' : ''}" id="vote-btn">
+              <svg viewBox="0 0 20 20"><path d="M10 17s-6.5-4.1-8.5-8.2C.3 6.1 1.7 3 4.7 3c1.7 0 3 .9 3.7 2.1C9.1 3.9 10.4 3 12.1 3c3 0 4.4 3.1 3.2 5.8C14.5 12.9 10 17 10 17z"/></svg>
+              <span class="vlabel">${note.voteCount}</span>
+            </button>
+            <span class="status-pill ${note.status}">${STATUS_LABELS[note.status]}</span>
+          </div>
           <div class="note-body">
             <div class="ntext">"${escapeHtml(note.text)}"</div>
-            <div class="note-meta"><span class="tag-pill">${escapeHtml(note.category)}</span><span>·</span><span>${escapeHtml(note.displayName)}</span></div>
+            <div class="note-meta"><span>${escapeHtml(note.displayName)}</span></div>
           </div>
         </div>
         <h3 style="font-size:14px; margin-bottom:4px;">Status</h3>
