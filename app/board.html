@@ -110,32 +110,6 @@
   }
   .staff-banner svg{width:15px; height:15px; flex:none;}
 
-  .cta-card{border-radius:14px; padding:18px 16px; display:flex; align-items:center; gap:13px; cursor:pointer; margin-bottom:12px;}
-  .cta-card.primary{background:var(--terra); color:#fff;}
-  .cta-card.secondary{background:var(--teal-tint); border:1px solid #CBE0DC; color:var(--ink);}
-  .cta-icon{width:38px; height:38px; border-radius:10px; display:flex; align-items:center; justify-content:center; flex-shrink:0;}
-  .cta-card.primary .cta-icon{background:rgba(255,255,255,.18);}
-  .cta-card.secondary .cta-icon{background:#fff;}
-  .cta-icon svg{width:18px; height:18px;}
-  .cta-text .t{font-family:'Fredoka',sans-serif; font-size:14px; font-weight:600;}
-  .cta-text .d{font-size:11px; margin-top:2px;}
-  .cta-card.primary .d{color:rgba(255,255,255,.8);}
-  .cta-card.secondary .d{color:var(--ink-soft);}
-
-  .mini-head{font-family:'Space Mono',monospace; font-size:10px; text-transform:uppercase; letter-spacing:.04em; color:var(--ink-soft); margin:14px 0 8px;}
-  .mini-note{
-    background:var(--card); border:1px solid var(--line); border-radius:10px; padding:11px 13px;
-    font-size:12px; color:var(--ink-soft); display:flex; justify-content:space-between; gap:10px; align-items:center;
-    cursor:pointer; margin-bottom:8px;
-  }
-  .mini-pill{font-family:'Space Mono',monospace; font-size:9px; color:var(--teal-deep); background:var(--teal-tint); padding:3px 8px; border-radius:10px; white-space:nowrap; flex:none;}
-
-  .search-input{
-    width:100%; background:var(--card); border:1px solid var(--line); border-radius:10px;
-    padding:12px 14px; font-size:14px; font-family:'Work Sans',sans-serif; color:var(--ink); margin-bottom:14px;
-  }
-  .search-input:focus{outline:2px solid var(--terra); outline-offset:1px;}
-
   .detail-status-track{display:flex; align-items:center; gap:4px; margin:4px 0 6px;}
   .detail-node{flex:1; height:5px; border-radius:3px; background:var(--line);}
   .detail-node.filled{background:var(--teal-deep);}
@@ -331,175 +305,27 @@
   }
 
   async function renderHome() {
-    if (isStaffMode) return renderStaffHome();
-
+    const staffBanner = isStaffMode ? `
+      <div class="staff-banner">
+        <svg viewBox="0 0 24 24" fill="none"><path d="M9 12l2 2 4-4M21 12a9 9 0 11-18 0 9 9 0 0118 0z" stroke="#254240" stroke-width="1.6"/></svg>
+        <span>You're viewing as a team member — notes here are private to ${escapeHtml(businessName)}'s staff, separate from the public customer board.</span>
+      </div>
+    ` : '';
     root.innerHTML = `
       <div class="topbar">
         <div class="topbar-brand">
           <svg viewBox="0 0 200 200"><path d="M56 10 L146 10 L190 54 L190 144 A46 46 0 0 1 144 190 L56 190 A46 46 0 0 1 10 144 L10 56 A46 46 0 0 1 56 10 Z" fill="#FBF1E2" stroke="#E2653A" stroke-width="10"/><path d="M146 10 L190 54 L146 54 Z" fill="#E2653A"/><path d="M146 10 L146 54 L190 54" fill="none" stroke="#B84B29" stroke-width="4" stroke-linejoin="round"/><circle cx="66" cy="86" r="9" fill="#E2653A"/><circle cx="130" cy="86" r="9" fill="#E2653A"/><path d="M56 120 Q100 158 142 120" stroke="#E2653A" stroke-width="16" stroke-linecap="round" fill="none"/></svg>
-          <h1>${escapeHtml(businessName)}</h1>
+          <h1>${escapeHtml(businessName)}${isStaffMode ? ' · Team' : ''}</h1>
         </div>
         ${businessLogoUrl ? `<div class="topbar-logo"><img src="${businessLogoUrl}" alt=""></div>` : `<div style="width:34px;"></div>`}
       </div>
+      ${staffBanner}
       <div class="page" id="notes-page"><div class="empty">Loading notes…</div></div>
       <button class="fab" id="fab">+</button>
       <div class="footer-brand">Powered by <a href="https://www.suggestionsbox.com.au/">Suggestions Box</a></div>
     `;
     document.getElementById('fab').addEventListener('click', renderCompose);
     await loadNotes();
-  }
-
-  // Staff land on a choice screen — post something new, or search for
-  // something a colleague already raised — rather than straight into a
-  // note list. Matches the flow used for customer notes underneath via
-  // loadNotes()/renderSearch(), just with a landing step in front of it.
-  async function renderStaffHome() {
-    root.innerHTML = `
-      <div class="topbar">
-        <div class="topbar-brand">
-          <svg viewBox="0 0 200 200"><path d="M56 10 L146 10 L190 54 L190 144 A46 46 0 0 1 144 190 L56 190 A46 46 0 0 1 10 144 L10 56 A46 46 0 0 1 56 10 Z" fill="#FBF1E2" stroke="#E2653A" stroke-width="10"/><path d="M146 10 L190 54 L146 54 Z" fill="#E2653A"/><path d="M146 10 L146 54 L190 54" fill="none" stroke="#B84B29" stroke-width="4" stroke-linejoin="round"/><circle cx="66" cy="86" r="9" fill="#E2653A"/><circle cx="130" cy="86" r="9" fill="#E2653A"/><path d="M56 120 Q100 158 142 120" stroke="#E2653A" stroke-width="16" stroke-linecap="round" fill="none"/></svg>
-          <h1>${escapeHtml(businessName)} · Team</h1>
-        </div>
-        ${businessLogoUrl ? `<div class="topbar-logo"><img src="${businessLogoUrl}" alt=""></div>` : `<div style="width:34px;"></div>`}
-      </div>
-      <div class="staff-banner">
-        <svg viewBox="0 0 24 24" fill="none"><path d="M9 12l2 2 4-4M21 12a9 9 0 11-18 0 9 9 0 0118 0z" stroke="#254240" stroke-width="1.6"/></svg>
-        <span>You're viewing as a team member — notes here are private to ${escapeHtml(businessName)}'s staff, separate from the public customer board.</span>
-      </div>
-      <div class="page">
-        <div class="cta-card primary" id="goCompose">
-          <div class="cta-icon"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg></div>
-          <div class="cta-text"><div class="t">New note</div><div class="d">Something on your mind</div></div>
-        </div>
-        <div class="cta-card secondary" id="goSearch">
-          <div class="cta-icon"><svg viewBox="0 0 24 24" fill="none" stroke="#254240" stroke-width="2.2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.35-4.35"/></svg></div>
-          <div class="cta-text"><div class="t">Search notes</div><div class="d">See what's already been raised</div></div>
-        </div>
-        <div class="mini-head">Recently active</div>
-        <div id="recent-preview"><div class="empty">Loading…</div></div>
-      </div>
-      <div class="footer-brand">Powered by <a href="https://www.suggestionsbox.com.au/">Suggestions Box</a></div>
-    `;
-    document.getElementById('goCompose').addEventListener('click', renderCompose);
-    document.getElementById('goSearch').addEventListener('click', renderSearch);
-
-    try {
-      const notes = await api(`/api/board/${businessId}/notes?deviceId=${getDeviceId()}&lane=employee`);
-      const preview = notes.slice(0, 3);
-      const previewEl = document.getElementById('recent-preview');
-      previewEl.innerHTML = preview.length === 0
-        ? `<div class="empty">No team notes yet.<br>Be the first to say something.</div>`
-        : preview.map((n) => `
-            <div class="mini-note" data-open="${n.id}">
-              <span>${escapeHtml(n.text.length > 56 ? n.text.slice(0, 56) + '…' : n.text)}</span>
-              <span class="mini-pill">${STATUS_LABELS[n.status]}</span>
-            </div>
-          `).join('');
-      previewEl.querySelectorAll('[data-open]').forEach((el) => {
-        el.addEventListener('click', () => renderDetail(el.dataset.open));
-      });
-    } catch (err) {
-      document.getElementById('recent-preview').innerHTML = `<div class="empty">Couldn't load notes.</div>`;
-    }
-  }
-
-  // Search is only reachable from the staff landing screen right now —
-  // customers still get the straight list on their home screen.
-  async function renderSearch() {
-    root.innerHTML = `
-      <div class="topbar">
-        <div class="icon-btn" id="back"><svg viewBox="0 0 24 24" fill="none"><path d="M15 18l-6-6 6-6" stroke="#2E2B28" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
-        <h1>Search notes</h1><div style="width:34px;"></div>
-      </div>
-      <div class="page">
-        <input type="text" id="search-input" class="search-input" placeholder="Search team notes…">
-        <div class="filter-row" id="search-filter-row"></div>
-        <div id="search-results"><div class="empty">Loading…</div></div>
-      </div>
-    `;
-    document.getElementById('back').addEventListener('click', renderStaffHome);
-
-    let allNotes = [];
-    let statusFilter = 'all';
-    let searchText = '';
-
-    const filterOptions = ['all', 'sent', 'seen', 'acknowledged', 'in_progress', 'actioned', 'not_planned'];
-    document.getElementById('search-filter-row').innerHTML = filterOptions.map((s) => `
-      <div class="filter-chip ${s === 'all' ? 'active' : ''}" data-status="${s}">${s === 'all' ? 'All' : s.replace('_', ' ')}</div>
-    `).join('');
-    document.querySelectorAll('#search-filter-row .filter-chip').forEach((chip) => {
-      chip.addEventListener('click', () => {
-        statusFilter = chip.dataset.status;
-        document.querySelectorAll('#search-filter-row .filter-chip').forEach((c) => c.classList.remove('active'));
-        chip.classList.add('active');
-        renderResults();
-      });
-    });
-
-    document.getElementById('search-input').addEventListener('input', (e) => {
-      searchText = e.target.value.trim().toLowerCase();
-      renderResults();
-    });
-
-    function renderResults() {
-      const resultsEl = document.getElementById('search-results');
-      const filtered = allNotes.filter((n) => {
-        const matchesStatus = statusFilter === 'all' || n.status === statusFilter;
-        const matchesText = !searchText || n.text.toLowerCase().includes(searchText);
-        return matchesStatus && matchesText;
-      });
-      if (filtered.length === 0) {
-        resultsEl.innerHTML = `<div class="empty">No matching notes.</div>`;
-        return;
-      }
-      resultsEl.innerHTML = `
-        <div class="mini-head">${filtered.length} match${filtered.length === 1 ? '' : 'es'}</div>
-        ${filtered.map((n) => `
-          <div class="note-card" data-id="${n.id}">
-            <button class="vote-btn ${n.hasVoted ? 'voted' : ''}" data-vote="${n.id}">
-              <svg viewBox="0 0 20 20"><path d="M10 17s-6.5-4.1-8.5-8.2C.3 6.1 1.7 3 4.7 3c1.7 0 3 .9 3.7 2.1C9.1 3.9 10.4 3 12.1 3c3 0 4.4 3.1 3.2 5.8C14.5 12.9 10 17 10 17z"/></svg>
-              <span class="vlabel">${n.voteCount}</span>
-            </button>
-            <div class="note-body" data-open="${n.id}">
-              <span class="status-pill ${n.status}">${STATUS_LABELS[n.status]}</span>
-              <div class="ntext">"${escapeHtml(n.text)}"</div>
-              <div class="note-meta">
-                <span>${escapeHtml(n.displayName)}</span>
-                <span>·</span><span>${timeAgo(n.createdAt)}</span>
-              </div>
-              ${n.response ? `
-                <div class="response-box">
-                  <p>${escapeHtml(n.response)}</p>
-                </div>
-              ` : ''}
-            </div>
-          </div>
-        `).join('')}
-      `;
-      resultsEl.querySelectorAll('[data-vote]').forEach((btn) => {
-        btn.addEventListener('click', async (e) => {
-          e.stopPropagation();
-          const id = btn.dataset.vote;
-          try {
-            await api(`/api/board/${businessId}/notes/${id}/vote`, { method: 'POST', body: JSON.stringify({ deviceId: getDeviceId() }) });
-            const note = allNotes.find((n) => n.id === id);
-            note.voteCount++;
-            note.hasVoted = true;
-            renderResults();
-          } catch {}
-        });
-      });
-      resultsEl.querySelectorAll('[data-open]').forEach((el) => {
-        el.addEventListener('click', () => renderDetail(el.dataset.open));
-      });
-    }
-
-    try {
-      allNotes = await api(`/api/board/${businessId}/notes?deviceId=${getDeviceId()}&lane=employee`);
-      renderResults();
-    } catch (err) {
-      document.getElementById('search-results').innerHTML = `<div class="empty">Couldn't load notes.</div>`;
-    }
   }
 
   async function loadNotes() {
