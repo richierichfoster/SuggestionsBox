@@ -39,9 +39,15 @@
   .page{padding:16px 18px;}
 
   .note-card{
-    background:var(--card); border:1px solid var(--line); border-radius:14px; padding:16px;
+    background:var(--card); border:1px solid var(--line); border-radius:14px; padding:20px 16px 16px;
     margin-bottom:12px; display:flex; gap:13px; align-items:flex-start;
     transition:transform .15s ease, box-shadow .15s ease;
+    position:relative; overflow:hidden;
+  }
+  .note-card::before{
+    content:""; position:absolute; top:0; left:0; right:0; height:10px;
+    background-image: radial-gradient(circle at 6px 6px, var(--cream) 3px, transparent 3.5px);
+    background-size: 12px 10px; background-repeat:repeat-x; background-position:top center;
   }
   .note-card:hover{transform:translateY(-1px); box-shadow:0 8px 18px rgba(46,38,32,.07);}
   .vote-btn{
@@ -369,12 +375,13 @@
     const submitBtn = document.getElementById('submit-note');
     const modBox = document.getElementById('mod-check');
     const toneStatusEl = document.getElementById('tone-status');
-    let moderationStatus = 'unchecked'; // unchecked | checking | passed | flagged
+    let moderationStatus = 'unchecked'; // unchecked | checking | passed | blocked | nudged
     let debounceTimer;
 
     function updateSubmitState() {
       const hasText = !!textarea.value.trim();
-      submitBtn.disabled = !hasText || moderationStatus !== 'passed';
+      const canSubmit = moderationStatus === 'passed' || moderationStatus === 'nudged';
+      submitBtn.disabled = !hasText || !canSubmit;
 
       if (!hasText) {
         toneStatusEl.style.display = 'none';
@@ -404,19 +411,41 @@
           const result = await api('/api/moderate', { method: 'POST', body: JSON.stringify({ text: textarea.value }) });
           if (result.ok) {
             moderationStatus = 'passed';
+          } else if (result.severity === 'nudge') {
+            moderationStatus = 'nudged';
+            modBox.innerHTML = `
+              <div class="nudge"><div>${escapeHtml(result.message)}
+                ${result.suggestion ? `<div style="margin-top:6px; font-style:italic;">"${escapeHtml(result.suggestion)}"</div>` : ''}
+                <div style="margin-top:8px;">
+                  ${result.suggestion ? '<button id="use-rewrite">Use this instead</button>' : ''}
+                  <button id="send-as-is">Send as I wrote it</button>
+                </div>
+              </div></div>`;
+            if (result.suggestion) {
+              document.getElementById('use-rewrite').addEventListener('click', () => {
+                textarea.value = result.suggestion;
+                runToneCheck();
+              });
+            }
+            document.getElementById('send-as-is').addEventListener('click', () => {
+              modBox.innerHTML = '';
+              updateSubmitState();
+            });
           } else {
-            moderationStatus = 'flagged';
+            moderationStatus = 'blocked';
             modBox.innerHTML = `
               <div class="nudge"><div>${escapeHtml(result.message)}
                 <div style="margin-top:8px;">
-                  <button id="use-rewrite">Use rewrite</button>
+                  ${result.suggestion ? '<button id="use-rewrite">Use rewrite</button>' : ''}
                   <button id="edit-myself">I'll edit it myself</button>
                 </div>
               </div></div>`;
-            document.getElementById('use-rewrite').addEventListener('click', () => {
-              textarea.value = result.suggestion;
-              runToneCheck();
-            });
+            if (result.suggestion) {
+              document.getElementById('use-rewrite').addEventListener('click', () => {
+                textarea.value = result.suggestion;
+                runToneCheck();
+              });
+            }
             document.getElementById('edit-myself').addEventListener('click', () => { modBox.innerHTML = ''; });
           }
         } catch {
@@ -437,7 +466,7 @@
 
     submitBtn.addEventListener('click', async () => {
       const text = textarea.value.trim();
-      if (!text || moderationStatus !== 'passed') return;
+      if (!text || (moderationStatus !== 'passed' && moderationStatus !== 'nudged')) return;
       const isAnonymous = document.getElementById('anon').checked;
       const authorName = document.getElementById('author-name').value;
       const errBox = document.getElementById('submit-error');
@@ -453,7 +482,7 @@
       } catch (err) {
         // A real submission failure — the note was NOT saved, so let them retry.
         if (err.status === 422 && err.data?.moderation) {
-          moderationStatus = 'flagged';
+          moderationStatus = 'blocked';
           modBox.innerHTML = `<div class="nudge">${escapeHtml(err.data.moderation.message)}</div>`;
         } else if (err.status === 403) {
           errBox.textContent = "This business's plan doesn't include team notes right now.";

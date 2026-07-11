@@ -142,9 +142,12 @@ app.post('/api/notes', async (req, res) => {
 
   // Re-check tone server-side even if the client already checked, unless
   // the person explicitly chose to send their own edited version through.
+  // "nudge" severity is advisory only — the person may have already chosen
+  // to send it as-is, so only "block" (attacks/profanity) actually stops
+  // the note here.
   if (!skipModerationCheck) {
     const toneResult = await checkTone(text);
-    if (!toneResult.ok) {
+    if (!toneResult.ok && toneResult.severity !== 'nudge') {
       return res.status(422).json({ moderation: toneResult });
     }
   }
@@ -705,7 +708,7 @@ app.post('/api/board/:businessId/notes', async (req, res) => {
 
   if (!skipModerationCheck) {
     const toneResult = await checkTone(text);
-    if (!toneResult.ok) {
+    if (!toneResult.ok && toneResult.severity !== 'nudge') {
       return res.status(422).json({ moderation: toneResult });
     }
   }

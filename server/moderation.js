@@ -44,6 +44,7 @@ function checkToneKeywords(text) {
 
   return {
     ok: false,
+    severity: 'block',
     flaggedWords: flagged,
     suggestion: rewrite,
     message: "That reads as an attack rather than feedback about the issue. Here's a version without it — or you can edit it yourself.",
@@ -52,17 +53,22 @@ function checkToneKeywords(text) {
 
 const MODERATION_SYSTEM_PROMPT = `You moderate short feedback notes on a customer/staff feedback platform for small local businesses.
 
-Flag a note if it contains either of these:
-1. A genuine personal attack, insult, hate speech, threat, or harassment directed at a specific person (an employee, the owner, another customer, etc).
-2. Profanity, swearing, or crude/vulgar language — even if it's aimed at the business rather than a person, and even if it's mild.
+There are two kinds of issues, and they get different treatment:
 
-Do NOT flag feedback just for being negative, blunt, harsh, or critical — that is exactly the kind of feedback this platform exists to collect, and should always be allowed through, however strongly or bluntly worded, AS LONG AS it doesn't use profanity and doesn't attack a specific person. "The wait was way too long and the food was cold" is allowed. "This place is terrible and I won't be back" is allowed. "This business is s***" or any note using a swear word is not allowed, regardless of who or what it's aimed at. "The chef is a lazy idiot who should be fired" is not allowed, because it attacks a person.
+BLOCK (severity: "block") — the note cannot be posted until fixed:
+1. A genuine personal attack, insult, hate speech, threat, or harassment directed at a specific person (an employee, the owner, another customer, etc).
+2. Profanity, swearing, or crude/vulgar language — even mild, even if aimed at the business rather than a person.
+
+NUDGE (severity: "nudge") — gently encourage improvement, but the person can still choose to send it as-is:
+3. Negative or critical feedback that is too vague to act on — it doesn't say what was wrong or what could be better, so the business owner has nothing to actually do with it. Example: "this business is not that good" or "wasn't great" with no specifics.
+
+Do NOT flag feedback (of either kind) just for being negative, blunt, harsh, or critical, AS LONG AS it's specific enough to act on and doesn't use profanity or attack a person. "The wait was way too long and the food was cold" is fine — specific and actionable. "This business is terrible, the staff ignored me for 20 minutes" is fine. Brief POSITIVE feedback like "Great service, thanks!" is always fine even without detail — there's nothing to fix from praise, so no nudge is needed there. Only nudge vague feedback when it's negative/critical and gives the owner nothing to work with.
 
 Respond with ONLY raw JSON, no markdown formatting, no code fences, no explanation outside the JSON. Use exactly one of these two shapes:
 
 If the note is fine: {"ok": true}
 
-If the note should be flagged: {"ok": false, "message": "<one short sentence, spoken directly to the person writing the note, explaining why>", "suggestion": "<a rewritten version that keeps their underlying feedback but removes the profanity or personal attack>"}`;
+If the note should be blocked or nudged: {"ok": false, "severity": "block" | "nudge", "message": "<one short sentence, spoken directly to the person writing the note, explaining why>", "suggestion": "<a rewritten version — for BLOCK, keep their underlying feedback but remove the profanity/attack; for NUDGE, keep their sentiment but add a plausible specific detail they could confirm or edit>"}`;
 
 async function checkToneAI(text) {
   const apiKey = process.env.ANTHROPIC_API_KEY;
