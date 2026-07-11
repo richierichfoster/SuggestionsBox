@@ -39,18 +39,22 @@
     }
     .sb-w-cta:hover{background:var(--sb-w-terra); color:#fff;}
     .sb-w-track-wrap{position:relative;}
-    .sb-w-track{display:flex; gap:14px; overflow-x:auto; scroll-behavior:smooth; scroll-snap-type:x mandatory; padding-bottom:4px; -ms-overflow-style:none; scrollbar-width:none;}
+    .sb-w-track{display:flex; gap:16px; overflow-x:auto; scroll-behavior:smooth; scroll-snap-type:x mandatory; padding:4px 4px 10px; -ms-overflow-style:none; scrollbar-width:none;}
     .sb-w-track::-webkit-scrollbar{display:none;}
     .sb-w-card{
-      flex:0 0 260px; scroll-snap-align:start; background:var(--sb-w-cream); border:1px solid var(--sb-w-line);
-      border-radius:11px; padding:14px 15px 13px; display:flex; flex-direction:column; gap:8px;
+      flex:0 0 270px; scroll-snap-align:start; background:#fff; border:1px solid var(--sb-w-line);
+      border-radius:12px; padding:18px 18px 16px; display:flex; flex-direction:column; gap:12px;
+      box-shadow:0 1px 2px rgba(46,38,32,.04); transition:transform .15s ease, box-shadow .15s ease;
     }
-    .sb-w-votes{display:flex; align-items:center; gap:4px; color:var(--sb-w-ink-soft); font-family:'Space Mono',monospace; font-size:11px; align-self:flex-end;}
-    .sb-w-votes svg{width:10px; height:10px; fill:var(--sb-w-gold);}
-    .sb-w-quote{font-size:12.5px; line-height:1.45; color:var(--sb-w-ink); min-height:44px;}
-    .sb-w-resp{border-left:2.5px solid var(--sb-w-gold); padding-left:9px;}
-    .sb-w-resp .sb-w-status{font-family:'Fredoka',Arial,sans-serif; font-weight:600; font-size:10.5px; color:var(--sb-w-terra-deep); margin-bottom:3px;}
-    .sb-w-resp p{margin:0; font-size:11.5px; line-height:1.4; color:var(--sb-w-ink-soft);}
+    .sb-w-card:hover{transform:translateY(-2px); box-shadow:0 8px 20px rgba(46,38,32,.08);}
+    .sb-w-card-top{display:flex; justify-content:space-between; align-items:flex-start; gap:10px;}
+    .sb-w-tag{font-family:'Space Mono',monospace; font-size:10px; text-transform:uppercase; letter-spacing:.04em; color:var(--sb-w-terra-deep); background:#FBEFE7; padding:4px 9px; border-radius:6px;}
+    .sb-w-votes{display:flex; align-items:center; gap:4px; color:var(--sb-w-ink-soft); font-family:'Space Mono',monospace; font-size:12px; flex-shrink:0;}
+    .sb-w-votes svg{width:11px; height:11px; fill:var(--sb-w-gold);}
+    .sb-w-quote{font-size:13.5px; line-height:1.5; color:var(--sb-w-ink);}
+    .sb-w-resp{background:var(--sb-w-cream); border-radius:9px; padding:12px 13px; border-left:3px solid var(--sb-w-gold);}
+    .sb-w-resp .sb-w-status{font-family:'Fredoka',Arial,sans-serif; font-weight:600; font-size:11.5px; color:var(--sb-w-terra-deep); margin-bottom:5px;}
+    .sb-w-resp p{margin:0; font-size:12.5px; line-height:1.45; color:var(--sb-w-ink);}
     .sb-w-arrow{
       position:absolute; top:50%; transform:translateY(-50%); width:32px; height:32px; border-radius:50%;
       border:1px solid var(--sb-w-line); background:#fff; cursor:pointer; display:flex; align-items:center;
@@ -117,7 +121,10 @@
           <div class="sb-w-track" id="sbWidgetTrack">
             ${items.map((i) => `
               <div class="sb-w-card">
-                <span class="sb-w-votes">${heartSvg()} ${i.voteCount}</span>
+                <div class="sb-w-card-top">
+                  <span class="sb-w-tag">${escapeHtml(i.category)}</span>
+                  <span class="sb-w-votes">${heartSvg()} ${i.voteCount}</span>
+                </div>
                 <div class="sb-w-quote">"${escapeHtml(i.text)}"</div>
                 <div class="sb-w-resp">
                   <div class="sb-w-status">${STATUS_LABELS[i.status] || i.status}</div>
@@ -146,7 +153,7 @@
 
     function cardWidth() {
       const card = track.querySelector('.sb-w-card');
-      return card ? card.offsetWidth + 14 : 274;
+      return card ? card.offsetWidth + 16 : 286;
     }
     function updateDots() {
       dotsWrap.querySelectorAll('.sb-w-dot').forEach((d, i) => d.classList.toggle('sb-w-active', i === current));
