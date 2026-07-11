@@ -280,6 +280,7 @@ app.post('/api/auth/signup', async (req, res) => {
     digestEnabled: true,
     digestEmail: null, // null = falls back to the account's own email
     digestSkipEmpty: false, // false = still send a "quiet day" email when there's nothing new
+    onboarding: { qrViewed: false, teamBoardViewed: false, wallViewed: false },
     createdAt: new Date().toISOString(),
     notes: [],
   };
@@ -327,6 +328,68 @@ app.post('/api/auth/logout', requireSession, async (req, res) => {
   res.json({ ok: true });
 });
 
+// Computes the getting-started checklist for a business, mixing derived
+// signals (things we can tell from their real data) with a few explicit
+// flags for actions we can't detect any other way (e.g. whether they've
+// actually looked at their QR code — there's no server-side signal for
+// that beyond "did they open the panel that shows it").
+function computeOnboardingChecklist(business) {
+  const notes = business.notes || [];
+  const onboarding = business.onboarding || {};
+  const teamEnabled = planIncludesEmployeeNotes(business.plan);
+
+  const steps = [
+    {
+      id: 'address',
+      title: 'Add your business address',
+      desc: 'Lets customers find you in "search near me."',
+      optional: false,
+      done: !!business.address,
+    },
+    {
+      id: 'logo',
+      title: 'Upload your logo',
+      desc: 'Shows on your board, your QR card, and your emails.',
+      optional: false,
+      done: !!business.logoDataUrl,
+    },
+    {
+      id: 'qr',
+      title: 'Get your QR code',
+      desc: 'Print it on a table, till, or wall — this is how most notes come in.',
+      optional: false,
+      done: !!onboarding.qrViewed,
+    },
+    {
+      id: 'firstResponse',
+      title: 'Respond to your first note',
+      desc: 'Even a quick "thanks, looking into it" moves a note forward.',
+      optional: false,
+      done: notes.some((n) => (n.statusHistory || []).length > 1),
+    },
+  ];
+
+  if (teamEnabled) {
+    steps.splice(3, 0, {
+      id: 'teamBoard',
+      title: 'Share your team board',
+      desc: 'Gives staff a private, anonymous way to flag things too.',
+      optional: true,
+      done: !!onboarding.teamBoardViewed,
+    });
+  }
+
+  steps.push({
+    id: 'wall',
+    title: 'Share your response wall',
+    desc: 'Shows what you\'ve changed because of customer notes — good for trust.',
+    optional: true,
+    done: !!onboarding.wallViewed,
+  });
+
+  return steps;
+}
+
 app.get('/api/me', requireSession, (req, res) => {
   res.json({
     id: req.business.id,
@@ -343,6 +406,7 @@ app.get('/api/me', requireSession, (req, res) => {
     digestEnabled: req.business.digestEnabled !== false, // undefined (older accounts) defaults to true
     digestEmail: req.business.digestEmail || null,
     digestSkipEmpty: !!req.business.digestSkipEmpty,
+    onboardingChecklist: computeOnboardingChecklist(req.business),
     createdAt: req.business.createdAt,
   });
 });
@@ -445,6 +509,27 @@ app.post('/api/business/email-preferences', requireSession, async (req, res) => 
     digestEmail: business.digestEmail,
     digestSkipEmpty: business.digestSkipEmpty,
   });
+});
+
+const ONBOARDING_FLAGS = ['qrViewed', 'teamBoardViewed', 'wallViewed'];
+
+// Marks one of the "did they actually look at this" onboarding steps as
+// done — there's no data-driven way to detect these, so the frontend
+// calls this at the moment the relevant thing is shown (e.g. opening the
+// QR code panel, opening the team board section).
+app.post('/api/business/onboarding', requireSession, async (req, res) => {
+  const { step } = req.body;
+  if (!ONBOARDING_FLAGS.includes(step)) {
+    return res.status(400).json({ error: `step must be one of: ${ONBOARDING_FLAGS.join(', ')}` });
+  }
+
+  await db.read();
+  const business = db.data.businesses.find((b) => b.id === req.business.id);
+  business.onboarding = business.onboarding || {};
+  business.onboarding[step] = true;
+  await db.write();
+
+  res.json({ ok: true, onboardingChecklist: computeOnboardingChecklist(business) });
 });
 
 app.post('/api/business/password', requireSession, async (req, res) => {

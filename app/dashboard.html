@@ -169,6 +169,36 @@
   .field-row .field{flex:1; min-width:200px;}
   .field-hint{font-size:11px; color:var(--ink-soft); margin-top:5px; line-height:1.5;}
 
+  .onboard-panel{background:var(--card); border:1px solid var(--line); border-radius:16px; padding:22px; margin-bottom:20px; position:relative;}
+  .onboard-dismiss{position:absolute; top:16px; right:16px; width:26px; height:26px; border-radius:8px; background:var(--cream); border:1px solid var(--line); display:flex; align-items:center; justify-content:center; cursor:pointer;}
+  .onboard-dismiss svg{width:12px; height:12px;}
+  .onboard-head{display:flex; align-items:center; gap:12px; margin-bottom:16px; padding-right:32px;}
+  .onboard-progress-track{flex:1; height:8px; background:var(--line); border-radius:5px; overflow:hidden;}
+  .onboard-progress-fill{height:100%; background:var(--terra); border-radius:5px; transition:width .3s ease;}
+  .onboard-progress-label{font-family:'Space Mono',monospace; font-size:11.5px; color:var(--terra-deep); font-weight:700; white-space:nowrap;}
+  .onboard-step{display:flex; gap:13px; padding:13px 4px; border-top:1px solid var(--line);}
+  .onboard-step:first-of-type{border-top:none; padding-top:2px;}
+  .onboard-check{width:22px; height:22px; border-radius:50%; border:2px solid var(--line); background:var(--card); flex:none; display:flex; align-items:center; justify-content:center; margin-top:1px;}
+  .onboard-check svg{width:11px; height:11px; stroke:#fff; stroke-width:3; fill:none; opacity:0;}
+  .onboard-step.done .onboard-check{background:var(--good-ink); border-color:var(--good-ink);}
+  .onboard-step.done .onboard-check svg{opacity:1;}
+  .onboard-step-body{flex:1; min-width:0;}
+  .onboard-step-top{display:flex; justify-content:space-between; align-items:flex-start; gap:8px;}
+  .onboard-step-title{font-family:'Fredoka',sans-serif; font-size:13.5px; font-weight:600;}
+  .onboard-step.done .onboard-step-title{color:var(--ink-soft); text-decoration:line-through; text-decoration-color:var(--line);}
+  .onboard-step-desc{font-size:12px; color:var(--ink-soft); margin-top:3px; line-height:1.5;}
+  .onboard-step.done .onboard-step-desc{opacity:.6;}
+  .onboard-optional-pill{font-family:'Space Mono',monospace; font-size:8.5px; text-transform:uppercase; color:var(--ink-soft); background:var(--cream); padding:3px 7px; border-radius:5px; white-space:nowrap; flex:none;}
+  .onboard-action{margin-top:8px; display:inline-flex; align-items:center; gap:5px; font-family:'Work Sans',sans-serif; font-size:12px; font-weight:600; color:var(--terra-deep); background:#FBEFE7; border:none; padding:6px 12px; border-radius:7px; cursor:pointer;}
+  .onboard-step.done .onboard-action{display:none;}
+
+  .chart-panel{background:var(--card); border:1px solid var(--line); border-radius:16px; padding:20px; margin-bottom:20px;}
+  .chart-panel-head{display:flex; align-items:center; justify-content:space-between; margin-bottom:14px;}
+  .chart-panel-head h2{font-size:14px;}
+  .chart-legend{display:flex; gap:14px; font-size:11px; color:var(--ink-soft);}
+  .chart-legend span{display:inline-flex; align-items:center; gap:5px;}
+  .chart-legend i{width:9px; height:9px; border-radius:2px; display:inline-block;}
+
   .logo-row{display:flex; align-items:center; gap:16px; margin-bottom:16px;}
   .logo-preview{width:64px; height:64px; border-radius:14px; border:1.5px solid var(--line); background:var(--cream); display:flex; align-items:center; justify-content:center; overflow:hidden; flex-shrink:0;}
   .logo-preview img{width:100%; height:100%; object-fit:cover;}
@@ -2572,6 +2602,20 @@ var qrcode = function() {
     return div.innerHTML;
   }
 
+  // Marks a "did they actually look at this" onboarding step as done.
+  // Fire-and-forget — never blocks the action the person is actually
+  // trying to take, and quietly refreshes ME so the checklist updates
+  // next time Overview renders.
+  async function markOnboardingStep(step) {
+    try {
+      const result = await apiFetch('/api/business/onboarding', {
+        method: 'POST',
+        body: JSON.stringify({ step }),
+      });
+      ME.onboardingChecklist = result.onboardingChecklist;
+    } catch {}
+  }
+
   function showLoggedOut() {
     document.getElementById('appShell').style.display = 'none';
     document.getElementById('loggedOutShell').style.display = 'block';
@@ -2656,20 +2700,168 @@ var qrcode = function() {
         <span class="plan-badge">${escapeHtml(ME.plan)} plan</span>
       </div>
 
+      <div id="onboard-container"></div>
+
       <div class="stat-row">
         <div class="stat-card"><div class="stat-num">${MY_NOTES.length}</div><div class="stat-label">Notes received</div></div>
         <div class="stat-card"><div class="stat-num">${totalVotes}</div><div class="stat-label">Total votes</div></div>
         <div class="stat-card"><div class="stat-num">${actioned}</div><div class="stat-label">Actioned</div></div>
       </div>
 
-      ${ME.employeeNotesEnabled ? `
-        <div class="stat-row">
+      <div class="stat-row">
+        ${ME.employeeNotesEnabled ? `
           <div class="stat-card"><div class="stat-num">${customerNotes}</div><div class="stat-label">From customers</div></div>
           <div class="stat-card"><div class="stat-num">${employeeNotes}</div><div class="stat-label">From your team</div></div>
-        </div>
-      ` : ''}
+        ` : ''}
+        <div class="stat-card"><div class="stat-num">${avgResponseTimeLabel(MY_NOTES)}</div><div class="stat-label">Avg. time to first response</div></div>
+      </div>
 
-      ${MY_NOTES.length === 0 ? emptyState("No notes yet — that's normal on day one", 'Share your board link from the menu with customers and your team. Notes will show up here, ranked by votes, as soon as the first one comes in.') : ''}
+      ${MY_NOTES.length > 0 ? `<div id="volume-chart-container"></div>` : ''}
+
+      ${MY_NOTES.length === 0 ? emptyState("No notes yet — that's normal on day one", 'Share your board link from Settings with customers and your team. Notes will show up here, ranked by votes, as soon as the first one comes in.') : ''}
+    `;
+
+    renderOnboardingChecklist();
+    if (MY_NOTES.length > 0) renderVolumeChart();
+  }
+
+  function avgResponseTimeLabel(notes) {
+    const times = notes
+      .filter((n) => (n.statusHistory || []).length > 1)
+      .map((n) => new Date(n.statusHistory[1].at) - new Date(n.statusHistory[0].at));
+    if (times.length === 0) return '—';
+    const avgMs = times.reduce((a, b) => a + b, 0) / times.length;
+    const days = avgMs / 86400000;
+    if (days < 1) return `${Math.max(1, Math.round(days * 24))}h`;
+    return `${days.toFixed(1)}d`;
+  }
+
+  const ONBOARD_DISMISS_KEY = () => `sb_onboarding_dismissed_${ME.id}`;
+
+  function renderOnboardingChecklist() {
+    const container = document.getElementById('onboard-container');
+    if (!container) return;
+
+    const steps = ME.onboardingChecklist || [];
+    const required = steps.filter((s) => !s.optional);
+    const requiredDone = required.filter((s) => s.done).length;
+    const allRequiredDone = required.length > 0 && requiredDone === required.length;
+    const dismissed = localStorage.getItem(ONBOARD_DISMISS_KEY()) === '1';
+
+    if (steps.length === 0 || dismissed || allRequiredDone) {
+      container.innerHTML = '';
+      return;
+    }
+
+    const pct = required.length ? Math.round((requiredDone / required.length) * 100) : 0;
+
+    const stepActions = {
+      address: () => showSettings(),
+      logo: () => showSettings(),
+      qr: () => showNotes(),
+      teamBoard: () => showTeamBoard(),
+      firstResponse: () => showNotes(),
+      wall: () => showSettings(),
+    };
+    const actionLabels = {
+      address: 'Add address', logo: 'Upload logo', qr: 'Get my QR code',
+      teamBoard: 'Open team board', firstResponse: 'View notes', wall: 'Share my wall',
+    };
+
+    container.innerHTML = `
+      <div class="onboard-panel">
+        <button class="onboard-dismiss" id="onboard-dismiss-btn" title="Dismiss" aria-label="Dismiss">
+          <svg viewBox="0 0 24 24" fill="none"><path d="M18 6L6 18M6 6l12 12" stroke="#2E2B28" stroke-width="2" stroke-linecap="round"/></svg>
+        </button>
+        <div class="onboard-head">
+          <div class="onboard-progress-track"><div class="onboard-progress-fill" style="width:${pct}%;"></div></div>
+          <div class="onboard-progress-label">${requiredDone} of ${required.length}</div>
+        </div>
+        ${steps.map((s) => `
+          <div class="onboard-step ${s.done ? 'done' : ''}">
+            <div class="onboard-check"><svg viewBox="0 0 24 24"><path d="M4 12l6 6L20 6"/></svg></div>
+            <div class="onboard-step-body">
+              <div class="onboard-step-top">
+                <div class="onboard-step-title">${escapeHtml(s.title)}</div>
+                ${s.optional ? '<span class="onboard-optional-pill">Optional</span>' : ''}
+              </div>
+              <div class="onboard-step-desc">${escapeHtml(s.desc)}</div>
+              <button class="onboard-action" data-onboard-step="${s.id}">${actionLabels[s.id] || 'Go'} →</button>
+            </div>
+          </div>
+        `).join('')}
+      </div>
+    `;
+
+    document.getElementById('onboard-dismiss-btn').addEventListener('click', () => {
+      localStorage.setItem(ONBOARD_DISMISS_KEY(), '1');
+      container.innerHTML = '';
+    });
+    container.querySelectorAll('[data-onboard-step]').forEach((btn) => {
+      btn.addEventListener('click', () => {
+        const action = stepActions[btn.dataset.onboardStep];
+        if (action) action();
+      });
+    });
+  }
+
+  // Renders a lightweight SVG bar chart of note volume over the last 14
+  // days, split into customer/team where relevant — no charting library,
+  // consistent with how the QR code was built elsewhere in this file.
+  function renderVolumeChart() {
+    const container = document.getElementById('volume-chart-container');
+    if (!container) return;
+
+    const days = 14;
+    const buckets = [];
+    for (let i = days - 1; i >= 0; i--) {
+      const d = new Date();
+      d.setHours(0, 0, 0, 0);
+      d.setDate(d.getDate() - i);
+      buckets.push({ date: d, customer: 0, team: 0 });
+    }
+    MY_NOTES.forEach((n) => {
+      const created = new Date(n.createdAt);
+      created.setHours(0, 0, 0, 0);
+      const bucket = buckets.find((b) => b.date.getTime() === created.getTime());
+      if (bucket) {
+        if (n.lane === 'employee') bucket.team++;
+        else bucket.customer++;
+      }
+    });
+
+    const maxVal = Math.max(...buckets.map((b) => b.customer + b.team), 1);
+    const W = 640, H = 140, padBottom = 20, barGap = 4;
+    const barWidth = (W / days) - barGap;
+
+    const bars = buckets.map((b, i) => {
+      const x = i * (W / days) + barGap / 2;
+      const totalH = ((b.customer + b.team) / maxVal) * (H - padBottom);
+      const customerH = (b.customer / maxVal) * (H - padBottom);
+      const teamH = (b.team / maxVal) * (H - padBottom);
+      const yTop = H - padBottom - totalH;
+      const showLabel = i === 0 || i === days - 1 || i === Math.floor(days / 2);
+      const label = showLabel ? b.date.toLocaleDateString('en-AU', { day: 'numeric', month: 'short' }) : '';
+      return `
+        ${teamH > 0 ? `<rect x="${x}" y="${yTop}" width="${barWidth}" height="${teamH}" fill="#254240" rx="2"/>` : ''}
+        ${customerH > 0 ? `<rect x="${x}" y="${yTop + teamH}" width="${barWidth}" height="${customerH}" fill="#E2653A" rx="2"/>` : ''}
+        ${label ? `<text x="${x + barWidth / 2}" y="${H - 4}" font-size="9" fill="#6E6A63" text-anchor="middle" font-family="monospace">${label}</text>` : ''}
+      `;
+    }).join('');
+
+    container.innerHTML = `
+      <div class="chart-panel">
+        <div class="chart-panel-head">
+          <h2>Notes over the last 14 days</h2>
+          ${ME.employeeNotesEnabled ? `
+            <div class="chart-legend">
+              <span><i style="background:#E2653A;"></i>Customers</span>
+              <span><i style="background:#254240;"></i>Team</span>
+            </div>
+          ` : ''}
+        </div>
+        <svg viewBox="0 0 ${W} ${H}" style="width:100%; height:140px; display:block;">${bars}</svg>
+      </div>
     `;
   }
 
@@ -2983,6 +3175,7 @@ var qrcode = function() {
       if (!open && !rendered) {
         renderQrCodeCanvas(`qr-canvas-${idSuffix}`, boardUrl, biz.logoDataUrl); // small live preview inside the dashboard panel
         rendered = true;
+        markOnboardingStep(idSuffix === 'team' ? 'teamBoardViewed' : 'qrViewed');
       }
     });
 
@@ -3304,7 +3497,7 @@ var qrcode = function() {
       <div class="settings-panel">
         <h2>Your board links</h2>
         <p class="desc">Share these however works for you — a QR code, a link on your website, a note by the till.</p>
-        <div class="board-link-box" style="margin-bottom:${ME.employeeNotesEnabled ? '10px' : '0'};">
+        <div class="board-link-box" style="margin-bottom:10px;">
           <div>
             <b>Customer board</b>
             <div class="board-url">${window.location.origin}${window.location.pathname.replace('dashboard.html','')}board.html?business=${ME.id}</div>
@@ -3312,7 +3505,7 @@ var qrcode = function() {
           <a href="board.html?business=${ME.id}" target="_blank" class="board-link-btn">Open →</a>
         </div>
         ${ME.employeeNotesEnabled ? `
-          <div class="board-link-box" style="background:#FBEBD9; border-color:#F0C9A8; margin-bottom:0;">
+          <div class="board-link-box" style="background:#FBEBD9; border-color:#F0C9A8; margin-bottom:10px;">
             <div>
               <b style="color:#B84B29;">Team notes (private — staff only)</b>
               <div class="board-url">${window.location.origin}${window.location.pathname.replace('dashboard.html','')}board.html?business=${ME.id}&staff=1</div>
@@ -3320,6 +3513,13 @@ var qrcode = function() {
             <a href="board.html?business=${ME.id}&staff=1" target="_blank" class="board-link-btn" style="background:#B84B29;">Open →</a>
           </div>
         ` : ''}
+        <div class="board-link-box" id="wall-link-box" style="background:var(--teal-tint); border-color:#CBE0DC; margin-bottom:0;">
+          <div>
+            <b style="color:var(--teal-deep);">Response wall</b>
+            <div class="board-url">${window.location.origin}${window.location.pathname.replace('dashboard.html','')}wall.html?business=${ME.id}</div>
+          </div>
+          <a href="wall.html?business=${ME.id}" target="_blank" id="wall-link-open" class="board-link-btn" style="background:var(--teal-deep);">Open →</a>
+        </div>
       </div>
 
       <div class="settings-panel">
@@ -3394,6 +3594,9 @@ var qrcode = function() {
     let pendingLogoDataUrl; // undefined = no change, null = remove, string = new upload
     const logoInput = document.getElementById('logo-input');
     const logoPreview = document.getElementById('logo-preview');
+
+    const wallLinkOpen = document.getElementById('wall-link-open');
+    if (wallLinkOpen) wallLinkOpen.addEventListener('click', () => markOnboardingStep('wallViewed'));
 
     document.getElementById('logo-upload-btn').addEventListener('click', () => logoInput.click());
 
