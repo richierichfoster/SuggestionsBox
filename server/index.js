@@ -3,6 +3,44 @@ import cors from 'cors';
 import { db, initDb, newId } from './db.js';
 import { checkTone } from './moderation.js';
 import { sendDailyDigests, startDigestScheduler, getMelbourneDayBounds, sendEmail } from './digest.js';
+
+function safetyAlertHtml(business, note) {
+  return `
+<!DOCTYPE html>
+<html><body style="margin:0; padding:0; background:#FBF1E2; font-family:-apple-system,Segoe UI,Roboto,sans-serif;">
+  <table width="100%" cellpadding="0" cellspacing="0" style="background:#FBF1E2; padding:30px 0;">
+    <tr><td align="center">
+      <table width="100%" style="max-width:480px; background:#FFFCF6; border-radius:16px; overflow:hidden;" cellpadding="0" cellspacing="0">
+        <tr><td style="background:#B85C4A; padding:22px 26px;">
+          <div style="font-family:sans-serif; font-weight:700; font-size:16px; color:#fff;">⚠ Safety issue flagged</div>
+          <div style="font-family:sans-serif; font-size:13px; color:rgba(255,255,255,.85); margin-top:2px;">${escapeHtmlForEmail(business.businessName)} · Team notes</div>
+        </td></tr>
+        <tr><td style="padding:24px 26px;">
+          <div style="font-family:sans-serif; font-size:14px; color:#2E2B28; line-height:1.6; background:#FBEDE9; border-left:3px solid #B85C4A; border-radius:8px; padding:14px 16px; margin-bottom:20px;">
+            "${escapeHtmlForEmail(note.text)}"
+          </div>
+          <a href="https://app.suggestionsbox.com.au/dashboard.html" style="display:inline-block; background:#B85C4A; color:#fff; font-family:sans-serif; font-weight:600; font-size:14px; text-decoration:none; padding:12px 22px; border-radius:10px;">View in dashboard →</a>
+        </td></tr>
+      </table>
+    </td></tr>
+  </table>
+</body></html>`;
+}
+
+function escapeHtmlForEmail(str) {
+  return String(str ?? '')
+    .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+}
+
+async function sendSafetyIssueAlert(business, note) {
+  if (!business.email) return;
+  await sendEmail(
+    business.email,
+    `⚠ Safety issue flagged — ${business.businessName}`,
+    safetyAlertHtml(business, note)
+  );
+}
 import { hashPassword, verifyPassword, createToken } from './auth.js';
 
 const app = express();
@@ -908,7 +946,10 @@ app.get('/api/my-notes', requireSession, (req, res) => {
   const notes = req.business.notes
     .filter((n) => canAccessLane(req.actingUser.role, n.lane))
     .map((n) => ({ ...n, voteCount: n.votes.length }))
-    .sort((a, b) => b.voteCount - a.voteCount);
+    .sort((a, b) => {
+      if (!!b.isSafetyIssue !== !!a.isSafetyIssue) return b.isSafetyIssue ? 1 : -1;
+      return b.voteCount - a.voteCount;
+    });
   res.json(notes);
 });
 
@@ -1108,7 +1149,7 @@ app.get('/api/board/:businessId/notes/:noteId', async (req, res) => {
 });
 
 app.post('/api/board/:businessId/notes', async (req, res) => {
-  const { text, category, isAnonymous, authorName, deviceId, skipModerationCheck, isEmployee } = req.body;
+  const { text, category, isAnonymous, authorName, deviceId, skipModerationCheck, isEmployee, isSafetyIssue } = req.body;
 
   if (typeof text !== 'string' || !text.trim()) {
     return res.status(400).json({ error: 'text is required' });
@@ -1135,13 +1176,20 @@ app.post('/api/board/:businessId/notes', async (req, res) => {
     return res.status(403).json({ error: "Employee feedback isn't available on this business's plan" });
   }
 
+  // Employee notes are always anonymous — enforced here regardless of what
+  // the client sends, since staff need to trust this holds even if the
+  // frontend has a bug or someone tampers with the request directly.
+  const forcedAnonymous = isEmployee ? true : !!isAnonymous;
+  const resolvedAuthorName = isEmployee || isAnonymous ? null : (authorName || '').trim() || null;
+
   const note = {
     id: newId(),
     text: text.trim(),
     category: category || 'general',
     lane: isEmployee ? 'employee' : 'customer',
-    isAnonymous: !!isAnonymous,
-    authorName: isAnonymous ? null : (authorName || '').trim() || null,
+    isAnonymous: forcedAnonymous,
+    authorName: resolvedAuthorName,
+    isSafetyIssue: isEmployee ? !!isSafetyIssue : false,
     votes: [deviceId],
     status: 'sent',
     statusHistory: [{ status: 'sent', message: null, at: new Date().toISOString() }],
@@ -1150,6 +1198,12 @@ app.post('/api/board/:businessId/notes', async (req, res) => {
   };
   business.notes.push(note);
   await db.write();
+
+  if (note.isSafetyIssue) {
+    sendSafetyIssueAlert(business, note).catch((err) => {
+      console.error('[safety alert] Failed to send:', err.message);
+    });
+  }
 
   res.status(201).json({ id: note.id });
 });

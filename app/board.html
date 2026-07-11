@@ -102,6 +102,63 @@
   }
   .staff-banner svg{width:15px; height:15px; flex:none;}
 
+  .cta-card{border-radius:14px; padding:18px 16px; display:flex; align-items:center; gap:13px; cursor:pointer; margin-bottom:12px;}
+  .cta-card.primary{background:var(--terra); color:#fff;}
+  .cta-card.secondary{background:var(--teal-tint); border:1px solid #CBE0DC; color:var(--ink);}
+  .cta-icon{width:38px; height:38px; border-radius:10px; display:flex; align-items:center; justify-content:center; flex-shrink:0;}
+  .cta-card.primary .cta-icon{background:rgba(255,255,255,.18);}
+  .cta-card.secondary .cta-icon{background:#fff;}
+  .cta-icon svg{width:18px; height:18px;}
+  .cta-text .t{font-family:'Fredoka',sans-serif; font-size:14px; font-weight:600;}
+  .cta-text .d{font-size:11px; margin-top:2px;}
+  .cta-card.primary .d{color:rgba(255,255,255,.8);}
+  .cta-card.secondary .d{color:var(--ink-soft);}
+
+  .mini-head{font-family:'Space Mono',monospace; font-size:10px; text-transform:uppercase; letter-spacing:.04em; color:var(--ink-soft); margin:14px 0 8px;}
+  .mini-note{
+    background:var(--card); border:1px solid var(--line); border-radius:10px; padding:11px 13px;
+    font-size:12px; color:var(--ink-soft); display:flex; justify-content:space-between; gap:10px; align-items:center;
+    cursor:pointer; margin-bottom:8px;
+  }
+  .mini-pill{font-family:'Space Mono',monospace; font-size:9px; color:var(--teal-deep); background:var(--teal-tint); padding:3px 8px; border-radius:10px; white-space:nowrap; flex:none;}
+
+  .search-input{
+    width:100%; background:var(--card); border:1px solid var(--line); border-radius:10px;
+    padding:12px 14px; font-size:14px; font-family:'Work Sans',sans-serif; color:var(--ink); margin-bottom:14px;
+  }
+  .search-input:focus{outline:2px solid var(--terra); outline-offset:1px;}
+
+  .result-card{background:var(--teal-tint); border:1px solid #CBE0DC; border-radius:11px; padding:13px 14px; display:flex; flex-direction:column; gap:8px; margin-bottom:10px;}
+  .result-top{display:flex; justify-content:space-between; align-items:flex-start; gap:8px;}
+  .result-status{font-family:'Space Mono',monospace; font-size:9px; text-transform:uppercase; color:var(--teal-deep); background:#fff; padding:3px 8px; border-radius:6px;}
+  .result-votes{display:flex; align-items:center; gap:4px; font-family:'Space Mono',monospace; font-size:10.5px; color:var(--ink-soft);}
+  .result-votes svg{width:10px; height:10px; fill:var(--teal-deep);}
+  .result-text{font-size:12.5px; color:var(--ink); line-height:1.45;}
+  .back-btn{align-self:flex-start; font-family:'Work Sans',sans-serif; font-weight:600; font-size:11px; color:#fff; background:var(--teal-deep); border:none; padding:7px 13px; border-radius:20px; cursor:pointer;}
+
+  .detail-status-track{display:flex; align-items:center; gap:4px; margin:4px 0 6px;}
+  .detail-node{flex:1; height:5px; border-radius:3px; background:var(--line);}
+  .detail-node.filled{background:var(--teal-deep);}
+  .detail-labels{display:flex; justify-content:space-between; font-family:'Space Mono',monospace; font-size:8px; color:var(--ink-soft); margin-bottom:16px;}
+
+  .anon-lock-note{
+    display:flex; align-items:center; gap:8px; background:var(--teal-tint); color:var(--teal-deep);
+    border-radius:10px; padding:11px 12px; font-size:12px; line-height:1.4; margin-bottom:14px;
+  }
+  .anon-lock-note svg{width:15px; height:15px; flex:none;}
+
+  .safety-toggle-row{
+    display:flex; align-items:center; justify-content:space-between; gap:10px;
+    background:var(--alert-tint); border:1px solid #ECC9BE; border-radius:10px; padding:12px 14px; margin-bottom:8px;
+  }
+  .safety-toggle-label{display:flex; align-items:center; gap:8px; font-size:12.5px; font-weight:600; color:var(--alert);}
+  .safety-toggle-label svg{width:15px; height:15px; flex:none;}
+  .safety-switch{width:36px; height:20px; border-radius:20px; background:var(--line); position:relative; flex-shrink:0; cursor:pointer; transition:background .15s ease;}
+  .safety-switch::after{content:""; position:absolute; top:2px; left:2px; width:16px; height:16px; border-radius:50%; background:#fff; transition:transform .15s ease;}
+  .safety-switch.on{background:var(--alert);}
+  .safety-switch.on::after{transform:translateX(16px);}
+  .safety-toggle-note{font-size:11px; color:var(--ink-soft); margin:-2px 0 14px; line-height:1.4;}
+
   .tone-badge{
     display:flex; align-items:center; gap:7px; font-size:11.5px; color:var(--ink-soft);
     margin-bottom:14px; line-height:1.4;
@@ -208,6 +265,10 @@
     return div.innerHTML;
   }
 
+  function heartSvg() {
+    return '<svg viewBox="0 0 20 20"><path d="M10 17s-6.5-4.1-8.5-8.2C.3 6.1 1.7 3 4.7 3c1.7 0 3 .9 3.7 2.1C9.1 3.9 10.4 3 12.1 3c3 0 4.4 3.1 3.2 5.8C14.5 12.9 10 17 10 17z"/></svg>';
+  }
+
   function timeAgo(iso) {
     if (!iso) return '';
     const mins = Math.floor((Date.now() - new Date(iso).getTime()) / 60000);
@@ -224,6 +285,19 @@
   }
 
   const STATUS_LABELS = { sent:'Sent', seen:'Seen', acknowledged:'Acknowledged', in_progress:'In progress', actioned:'Actioned', not_planned:'Not planned' };
+
+  const PROGRESS_STEPS = ['sent', 'seen', 'acknowledged', 'in_progress', 'actioned'];
+  const PROGRESS_LABELS = ['Sent', 'Seen', 'Ack.', 'In Prog.', 'Actioned'];
+
+  function renderProgressTrack(status) {
+    const currentIndex = PROGRESS_STEPS.indexOf(status);
+    return `
+      <div class="detail-status-track">
+        ${PROGRESS_STEPS.map((s, i) => `<div class="detail-node ${i <= currentIndex ? 'filled' : ''}"></div>`).join('')}
+      </div>
+      <div class="detail-labels">${PROGRESS_LABELS.map((l) => `<span>${l}</span>`).join('')}</div>
+    `;
+  }
 
   async function boot() {
     if (!businessId) {
@@ -245,27 +319,163 @@
   }
 
   async function renderHome() {
-    const staffBanner = isStaffMode ? `
-      <div class="staff-banner">
-        <svg viewBox="0 0 24 24" fill="none"><path d="M9 12l2 2 4-4M21 12a9 9 0 11-18 0 9 9 0 0118 0z" stroke="#254240" stroke-width="1.6"/></svg>
-        <span>You're viewing as a team member — notes here are private to ${escapeHtml(businessName)}'s staff, separate from the public customer board.</span>
-      </div>
-    ` : '';
+    if (isStaffMode) return renderStaffHome();
+
     root.innerHTML = `
       <div class="topbar">
         <div class="topbar-brand">
           <svg viewBox="0 0 200 200"><path d="M56 10 L146 10 L190 54 L190 144 A46 46 0 0 1 144 190 L56 190 A46 46 0 0 1 10 144 L10 56 A46 46 0 0 1 56 10 Z" fill="#FBF1E2" stroke="#E2653A" stroke-width="10"/><path d="M146 10 L190 54 L146 54 Z" fill="#E2653A"/><path d="M146 10 L146 54 L190 54" fill="none" stroke="#B84B29" stroke-width="4" stroke-linejoin="round"/><circle cx="66" cy="86" r="9" fill="#E2653A"/><circle cx="130" cy="86" r="9" fill="#E2653A"/><path d="M56 120 Q100 158 142 120" stroke="#E2653A" stroke-width="16" stroke-linecap="round" fill="none"/></svg>
-          <h1>${escapeHtml(businessName)}${isStaffMode ? ' · Team' : ''}</h1>
+          <h1>${escapeHtml(businessName)}</h1>
         </div>
         ${businessLogoUrl ? `<div class="topbar-logo"><img src="${businessLogoUrl}" alt=""></div>` : `<div style="width:34px;"></div>`}
       </div>
-      ${staffBanner}
       <div class="page" id="notes-page"><div class="empty">Loading notes…</div></div>
       <button class="fab" id="fab">+</button>
       <div class="footer-brand">Powered by <a href="https://www.suggestionsbox.com.au/">Suggestions Box</a></div>
     `;
     document.getElementById('fab').addEventListener('click', renderCompose);
     await loadNotes();
+  }
+
+  // Staff land on a choice screen — post something new, or search for
+  // something a colleague already raised — rather than straight into a
+  // note list. Matches the flow used for customer notes underneath via
+  // loadNotes()/renderSearch(), just with a landing step in front of it.
+  async function renderStaffHome() {
+    root.innerHTML = `
+      <div class="topbar">
+        <div class="topbar-brand">
+          <svg viewBox="0 0 200 200"><path d="M56 10 L146 10 L190 54 L190 144 A46 46 0 0 1 144 190 L56 190 A46 46 0 0 1 10 144 L10 56 A46 46 0 0 1 56 10 Z" fill="#FBF1E2" stroke="#E2653A" stroke-width="10"/><path d="M146 10 L190 54 L146 54 Z" fill="#E2653A"/><path d="M146 10 L146 54 L190 54" fill="none" stroke="#B84B29" stroke-width="4" stroke-linejoin="round"/><circle cx="66" cy="86" r="9" fill="#E2653A"/><circle cx="130" cy="86" r="9" fill="#E2653A"/><path d="M56 120 Q100 158 142 120" stroke="#E2653A" stroke-width="16" stroke-linecap="round" fill="none"/></svg>
+          <h1>${escapeHtml(businessName)} · Team</h1>
+        </div>
+        ${businessLogoUrl ? `<div class="topbar-logo"><img src="${businessLogoUrl}" alt=""></div>` : `<div style="width:34px;"></div>`}
+      </div>
+      <div class="staff-banner">
+        <svg viewBox="0 0 24 24" fill="none"><path d="M9 12l2 2 4-4M21 12a9 9 0 11-18 0 9 9 0 0118 0z" stroke="#254240" stroke-width="1.6"/></svg>
+        <span>You're viewing as a team member — notes here are private to ${escapeHtml(businessName)}'s staff, separate from the public customer board.</span>
+      </div>
+      <div class="page">
+        <div class="cta-card primary" id="goCompose">
+          <div class="cta-icon"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg></div>
+          <div class="cta-text"><div class="t">New note</div><div class="d">Something on your mind</div></div>
+        </div>
+        <div class="cta-card secondary" id="goSearch">
+          <div class="cta-icon"><svg viewBox="0 0 24 24" fill="none" stroke="#254240" stroke-width="2.2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.35-4.35"/></svg></div>
+          <div class="cta-text"><div class="t">Search notes</div><div class="d">See what's already been raised</div></div>
+        </div>
+        <div class="mini-head">Recently active</div>
+        <div id="recent-preview"><div class="empty">Loading…</div></div>
+      </div>
+      <div class="footer-brand">Powered by <a href="https://www.suggestionsbox.com.au/">Suggestions Box</a></div>
+    `;
+    document.getElementById('goCompose').addEventListener('click', renderCompose);
+    document.getElementById('goSearch').addEventListener('click', renderSearch);
+
+    try {
+      const notes = await api(`/api/board/${businessId}/notes?deviceId=${getDeviceId()}&lane=employee`);
+      const preview = notes.slice(0, 3);
+      const previewEl = document.getElementById('recent-preview');
+      previewEl.innerHTML = preview.length === 0
+        ? `<div class="empty">No team notes yet.<br>Be the first to say something.</div>`
+        : preview.map((n) => `
+            <div class="mini-note" data-open="${n.id}">
+              <span>${escapeHtml(n.text.length > 56 ? n.text.slice(0, 56) + '…' : n.text)}</span>
+              <span class="mini-pill">${STATUS_LABELS[n.status]}</span>
+            </div>
+          `).join('');
+      previewEl.querySelectorAll('[data-open]').forEach((el) => {
+        el.addEventListener('click', () => renderDetail(el.dataset.open));
+      });
+    } catch (err) {
+      document.getElementById('recent-preview').innerHTML = `<div class="empty">Couldn't load notes.</div>`;
+    }
+  }
+
+  // Search is only reachable from the staff landing screen right now —
+  // customers still get the straight list on their home screen.
+  async function renderSearch() {
+    root.innerHTML = `
+      <div class="topbar">
+        <div class="icon-btn" id="back"><svg viewBox="0 0 24 24" fill="none"><path d="M15 18l-6-6 6-6" stroke="#2E2B28" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+        <h1>Search notes</h1><div style="width:34px;"></div>
+      </div>
+      <div class="page">
+        <input type="text" id="search-input" class="search-input" placeholder="Search team notes…">
+        <div class="filter-row" id="search-filter-row"></div>
+        <div id="search-results"><div class="empty">Loading…</div></div>
+      </div>
+    `;
+    document.getElementById('back').addEventListener('click', renderStaffHome);
+
+    let allNotes = [];
+    let statusFilter = 'all';
+    let searchText = '';
+
+    const filterOptions = ['all', 'sent', 'seen', 'acknowledged', 'in_progress', 'actioned', 'not_planned'];
+    document.getElementById('search-filter-row').innerHTML = filterOptions.map((s) => `
+      <div class="filter-chip ${s === 'all' ? 'active' : ''}" data-status="${s}">${s === 'all' ? 'All' : s.replace('_', ' ')}</div>
+    `).join('');
+    document.querySelectorAll('#search-filter-row .filter-chip').forEach((chip) => {
+      chip.addEventListener('click', () => {
+        statusFilter = chip.dataset.status;
+        document.querySelectorAll('#search-filter-row .filter-chip').forEach((c) => c.classList.remove('active'));
+        chip.classList.add('active');
+        renderResults();
+      });
+    });
+
+    document.getElementById('search-input').addEventListener('input', (e) => {
+      searchText = e.target.value.trim().toLowerCase();
+      renderResults();
+    });
+
+    function renderResults() {
+      const resultsEl = document.getElementById('search-results');
+      const filtered = allNotes.filter((n) => {
+        const matchesStatus = statusFilter === 'all' || n.status === statusFilter;
+        const matchesText = !searchText || n.text.toLowerCase().includes(searchText);
+        return matchesStatus && matchesText;
+      });
+      if (filtered.length === 0) {
+        resultsEl.innerHTML = `<div class="empty">No matching notes.</div>`;
+        return;
+      }
+      resultsEl.innerHTML = `
+        <div class="mini-head">${filtered.length} match${filtered.length === 1 ? '' : 'es'}</div>
+        ${filtered.map((n) => `
+          <div class="result-card">
+            <div class="result-top">
+              <span class="result-status">${STATUS_LABELS[n.status]}</span>
+              <span class="result-votes">${heartSvg()} ${n.voteCount}</span>
+            </div>
+            <div class="result-text">${escapeHtml(n.text)}</div>
+            <button class="back-btn" data-vote="${n.id}" data-voted="${n.hasVoted}">${n.hasVoted ? '✓ Backed' : 'Back this →'}</button>
+          </div>
+        `).join('')}
+      `;
+      resultsEl.querySelectorAll('[data-vote]').forEach((btn) => {
+        btn.addEventListener('click', async () => {
+          if (btn.dataset.voted === 'true') { renderDetail(btn.closest('.result-card').dataset.id); return; }
+          btn.disabled = true;
+          try {
+            await api(`/api/board/${businessId}/notes/${btn.dataset.vote}/vote`, { method: 'POST', body: JSON.stringify({ deviceId: getDeviceId() }) });
+            const note = allNotes.find((n) => n.id === btn.dataset.vote);
+            note.voteCount++;
+            note.hasVoted = true;
+            renderResults();
+          } catch {
+            btn.disabled = false;
+          }
+        });
+      });
+    }
+
+    try {
+      allNotes = await api(`/api/board/${businessId}/notes?deviceId=${getDeviceId()}&lane=employee`);
+      renderResults();
+    } catch (err) {
+      document.getElementById('search-results').innerHTML = `<div class="empty">Couldn't load notes.</div>`;
+    }
   }
 
   async function loadNotes() {
@@ -357,7 +567,11 @@
     overlay.addEventListener('click', (e) => { if (e.target === overlay) dismiss(); });
   }
 
+  const CUSTOMER_CATEGORIES = ['General', 'Service', 'Pricing', 'Scheduling', 'Quality'];
+  const TEAM_CATEGORIES = ['Facilities', 'Process', 'Culture', 'Safety'];
+
   function renderCompose() {
+    const categories = isStaffMode ? TEAM_CATEGORIES : CUSTOMER_CATEGORIES;
     root.innerHTML = `
       <div class="topbar">
         <div class="icon-btn" id="back"><svg viewBox="0 0 24 24" fill="none"><path d="M15 18l-6-6 6-6" stroke="#2E2B28" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
@@ -367,7 +581,7 @@
       <div class="page">
         <div class="field"><label>What's this about</label>
           <div class="chip-row" id="cat-row">
-            ${['General','Service','Pricing','Scheduling','Quality'].map((c,i) => `<div class="chip ${i===0?'active':''}" data-cat="${c.toLowerCase()}">${c}</div>`).join('')}
+            ${categories.map((c, i) => `<div class="chip ${i === 0 ? 'active' : ''}" data-cat="${c.toLowerCase()}">${c}</div>`).join('')}
           </div>
         </div>
         <div class="field"><label>Your note</label><textarea id="note-text" placeholder="What's working, or what isn't?"></textarea></div>
@@ -377,15 +591,30 @@
         </div>
         <div id="tone-status" class="tone-status" style="display:none;"></div>
         <div id="mod-check"></div>
-        <div class="checkbox-row"><input type="checkbox" id="anon" checked><label for="anon" style="margin:0; text-transform:none; font-family:'Work Sans';">Post anonymously</label></div>
-        <div class="field" id="name-field" style="display:none;"><label>Your name (optional)</label><input id="author-name" placeholder="e.g. Priya"></div>
+        ${isStaffMode ? `
+          <div class="anon-lock-note">
+            <svg viewBox="0 0 24 24" fill="none"><path d="M3 12s3.5-6 9-6 9 6 9 6-3.5 6-9 6-9-6-9-6z" stroke="currentColor" stroke-width="1.8"/><circle cx="12" cy="12" r="2.4" fill="currentColor"/></svg>
+            Always anonymous — your name is never attached to a team note.
+          </div>
+          <div class="safety-toggle-row">
+            <label class="safety-toggle-label">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M12 9v4M12 17h.01M10.3 3.9L2.7 18a2 2 0 0 0 1.7 3h15.2a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z"/></svg>
+              Safety issue
+            </label>
+            <span class="safety-switch" id="safety-toggle"></span>
+          </div>
+          <div class="safety-toggle-note" id="safety-toggle-note">Off — toggle on if this needs to reach management immediately.</div>
+        ` : `
+          <div class="checkbox-row"><input type="checkbox" id="anon" checked><label for="anon" style="margin:0; text-transform:none; font-family:'Work Sans';">Post anonymously</label></div>
+          <div class="field" id="name-field" style="display:none;"><label>Your name (optional)</label><input id="author-name" placeholder="e.g. Priya"></div>
+        `}
         <div id="submit-error" style="color:var(--alert); font-size:12px; margin-bottom:10px;"></div>
         <button class="btn-primary" id="submit-note" disabled>Tear off & send</button>
       </div>
     `;
     document.getElementById('back').addEventListener('click', renderHome);
 
-    let category = 'general';
+    let category = categories[0].toLowerCase();
     document.querySelectorAll('[data-cat]').forEach((chip) => {
       chip.addEventListener('click', () => {
         document.querySelectorAll('[data-cat]').forEach((c) => c.classList.remove('active'));
@@ -393,6 +622,18 @@
         category = chip.dataset.cat;
       });
     });
+
+    let isSafetyIssue = false;
+    const safetyToggle = document.getElementById('safety-toggle');
+    if (safetyToggle) {
+      safetyToggle.addEventListener('click', () => {
+        isSafetyIssue = !isSafetyIssue;
+        safetyToggle.classList.toggle('on', isSafetyIssue);
+        document.getElementById('safety-toggle-note').textContent = isSafetyIssue
+          ? 'On — the owner will get an immediate email about this.'
+          : 'Off — toggle on if this needs to reach management immediately.';
+      });
+    }
 
     const textarea = document.getElementById('note-text');
     const submitBtn = document.getElementById('submit-note');
@@ -483,15 +724,16 @@
 
     textarea.addEventListener('input', runToneCheck);
 
-    document.getElementById('anon').addEventListener('change', (e) => {
+    document.getElementById('anon')?.addEventListener('change', (e) => {
       document.getElementById('name-field').style.display = e.target.checked ? 'none' : 'block';
     });
 
     submitBtn.addEventListener('click', async () => {
       const text = textarea.value.trim();
       if (!text || (moderationStatus !== 'passed' && moderationStatus !== 'nudged')) return;
-      const isAnonymous = document.getElementById('anon').checked;
-      const authorName = document.getElementById('author-name').value;
+      const anonEl = document.getElementById('anon');
+      const isAnonymous = anonEl ? anonEl.checked : true; // staff notes have no toggle — always anonymous
+      const authorName = document.getElementById('author-name')?.value || '';
       const errBox = document.getElementById('submit-error');
       errBox.textContent = '';
       submitBtn.disabled = true;
@@ -500,7 +742,7 @@
       try {
         await api(`/api/board/${businessId}/notes`, {
           method: 'POST',
-          body: JSON.stringify({ text, category, isAnonymous, authorName, deviceId: getDeviceId(), isEmployee: isStaffMode }),
+          body: JSON.stringify({ text, category, isAnonymous, authorName, deviceId: getDeviceId(), isEmployee: isStaffMode, isSafetyIssue }),
         });
       } catch (err) {
         // A real submission failure — the note was NOT saved, so let them retry.
@@ -547,9 +789,13 @@
           <div class="note-body">
             <span class="status-pill ${note.status}">${STATUS_LABELS[note.status]}</span>
             <div class="ntext">"${escapeHtml(note.text)}"</div>
-            <div class="note-meta"><span>${escapeHtml(note.displayName)}</span><span>·</span><span>${timeAgo(note.createdAt)}</span></div>
+            <div class="note-meta">
+              <span>${escapeHtml(note.displayName)}</span><span>·</span><span>${timeAgo(note.createdAt)}</span>
+              ${note.lane === 'employee' ? `<span>·</span><span>${escapeHtml(note.category)}</span>` : ''}
+            </div>
           </div>
         </div>
+        ${note.lane === 'employee' && note.status !== 'not_planned' ? renderProgressTrack(note.status) : ''}
         <h3 style="font-size:14px; margin-bottom:4px;">Status</h3>
         <div class="timeline">
           ${note.statusHistory.map((h) => `
