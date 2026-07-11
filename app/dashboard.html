@@ -51,6 +51,12 @@
   .sb-nav button:hover{background:#2F4F4C; color:#E3EDEB;}
   .sb-nav button.active{background:var(--terra); color:#fff;}
   .sb-nav .dot{width:6px; height:6px; border-radius:50%; background:currentColor; opacity:.6; flex-shrink:0;}
+  .nav-badge{
+    margin-left:auto; background:var(--terra); color:#fff; font-family:'Space Mono',monospace;
+    font-size:10.5px; font-weight:700; padding:2px 7px; border-radius:10px; min-width:18px; text-align:center;
+    flex-shrink:0; display:none;
+  }
+  .sb-nav button.active .nav-badge{background:rgba(255,255,255,.28);}
 
   .sb-nav a{
     display:flex; align-items:center; gap:10px;
@@ -290,8 +296,8 @@
     </div>
     <nav class="sb-nav" id="sbNav">
       <button type="button" id="navOverview" onclick="showOverview()"><span class="dot"></span>Overview</button>
-      <button type="button" id="navNotes" onclick="showNotes()"><span class="dot"></span>Customer Notes</button>
-      <button type="button" id="navTeamBoard" onclick="showTeamBoard()"><span class="dot"></span>Team Notes</button>
+      <button type="button" id="navNotes" onclick="showNotes()"><span class="dot"></span>Customer Notes<span class="nav-badge" id="badge-customer"></span></button>
+      <button type="button" id="navTeamBoard" onclick="showTeamBoard()"><span class="dot"></span>Team Notes<span class="nav-badge" id="badge-team"></span></button>
       <button type="button" id="navBilling" onclick="showBilling()"><span class="dot"></span>Plan &amp; Billing</button>
       <button type="button" id="navSettings" onclick="showSettings()"><span class="dot"></span>Settings</button>
     </nav>
@@ -2663,11 +2669,44 @@ var qrcode = function() {
     return data;
   }
 
+  // A note counts as "new" once it's never had a written response — even
+  // if its status has moved along (e.g. marked Seen but nothing written
+  // yet still counts). Badges only show when there's actually something
+  // outstanding; hidden entirely once everything's been responded to.
+  function updateNavBadges() {
+    function countsFor(lane) {
+      const notes = MY_NOTES.filter((n) => (n.lane || 'customer') === lane);
+      const unresponded = notes.filter((n) => !(n.statusHistory || []).some((h) => h.message)).length;
+      return { total: notes.length, unresponded };
+    }
+
+    const customerCounts = countsFor('customer');
+    const customerBadge = document.getElementById('badge-customer');
+    if (customerBadge) {
+      customerBadge.textContent = customerCounts.unresponded;
+      customerBadge.style.display = customerCounts.unresponded > 0 ? 'inline-block' : 'none';
+    }
+
+    const teamCounts = countsFor('employee');
+    const teamBadge = document.getElementById('badge-team');
+    if (teamBadge) {
+      teamBadge.textContent = teamCounts.unresponded;
+      teamBadge.style.display = teamCounts.unresponded > 0 ? 'inline-block' : 'none';
+    }
+  }
+
+  async function reloadMyNotes() {
+    MY_NOTES = await apiFetch('/api/my-notes');
+    updateNavBadges();
+    return MY_NOTES;
+  }
+
   async function boot() {
     if (!token) { showLoggedOut(); return; }
     try {
       ME = await apiFetch('/api/me');
       MY_NOTES = await apiFetch('/api/my-notes');
+      updateNavBadges();
     } catch (err) {
       localStorage.removeItem('sb_token');
       localStorage.removeItem('sb_business');
@@ -3062,7 +3101,7 @@ var qrcode = function() {
             method: 'POST',
             body: JSON.stringify({ status, message: msgInput.value }),
           });
-          MY_NOTES = await apiFetch('/api/my-notes');
+          await reloadMyNotes();
           if (currentNotesScope === 'all') showNotes(); else showTeamBoard();
         } catch {
           btn.textContent = 'Update status';
@@ -3081,7 +3120,7 @@ var qrcode = function() {
             method: 'POST',
             body: JSON.stringify({ showOnWall: newValue }),
           });
-          MY_NOTES = await apiFetch('/api/my-notes');
+          await reloadMyNotes();
         } catch {
           toggle.classList.toggle('on', !newValue); // revert on failure
         }
@@ -3094,7 +3133,7 @@ var qrcode = function() {
         btn.disabled = true;
         try {
           await apiFetch(`/api/my-notes/${noteId}`, { method: 'DELETE' });
-          MY_NOTES = await apiFetch('/api/my-notes');
+          await reloadMyNotes();
           if (currentNotesScope === 'all') showNotes(); else showTeamBoard();
         } catch {
           btn.disabled = false;
