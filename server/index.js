@@ -623,7 +623,7 @@ app.get('/api/board/:businessId/notes', async (req, res) => {
         createdAt: n.createdAt,
       };
     })
-    .sort((a, b) => b.voteCount - a.voteCount);
+    .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
 
   res.json(notes);
 });
