@@ -2,6 +2,7 @@ import express from 'express';
 import cors from 'cors';
 import { db, initDb, newId } from './db.js';
 import { checkTone } from './moderation.js';
+import { sendDailyDigests, startDigestScheduler, getMelbourneDayBounds } from './digest.js';
 import { hashPassword, verifyPassword, createToken } from './auth.js';
 
 const app = express();
@@ -800,6 +801,18 @@ function requireAdmin(req, res, next) {
   next();
 }
 
+// Manually triggers the daily digest send — admin-only, mainly for testing
+// this without waiting until 23:59. Uses the real current Melbourne day by
+// default, so it'll send whatever notes have actually come in so far today.
+app.post('/api/admin/send-digest-now', requireSession, requireAdmin, async (req, res) => {
+  try {
+    const results = await sendDailyDigests();
+    res.json({ ok: true, results });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
 const PLAN_PRICES = { starter: 0, growth: 59 }; // 'business' plan is custom-priced, not included in MRR totals
 
 function businessSummary(b) {
@@ -900,3 +913,4 @@ app.get('/api/admin/billing', requireSession, requireAdmin, async (req, res) => 
 
 const PORT = process.env.PORT || 3001;
 app.listen(PORT, () => console.log(`Suggestions Box API running on port ${PORT}`));
+startDigestScheduler();
