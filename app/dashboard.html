@@ -52,11 +52,9 @@
   .sb-nav button.active{background:var(--terra); color:#fff;}
   .sb-nav .dot{width:6px; height:6px; border-radius:50%; background:currentColor; opacity:.6; flex-shrink:0;}
   .nav-badge{
-    margin-left:auto; background:var(--terra); color:#fff; font-family:'Space Mono',monospace;
-    font-size:10.5px; font-weight:700; padding:2px 7px; border-radius:10px; min-width:18px; text-align:center;
-    flex-shrink:0; display:none;
+    margin-left:auto; font-family:'Space Mono',monospace; font-size:12px; font-weight:700;
+    color:currentColor; opacity:.85; flex-shrink:0; display:none;
   }
-  .sb-nav button.active .nav-badge{background:rgba(255,255,255,.28);}
 
   .sb-nav a{
     display:flex; align-items:center; gap:10px;
@@ -2683,15 +2681,15 @@ var qrcode = function() {
     const customerCounts = countsFor('customer');
     const customerBadge = document.getElementById('badge-customer');
     if (customerBadge) {
-      customerBadge.textContent = customerCounts.unresponded;
-      customerBadge.style.display = customerCounts.unresponded > 0 ? 'inline-block' : 'none';
+      customerBadge.textContent = `(${customerCounts.unresponded})`;
+      customerBadge.style.display = customerCounts.unresponded > 0 ? 'inline' : 'none';
     }
 
     const teamCounts = countsFor('employee');
     const teamBadge = document.getElementById('badge-team');
     if (teamBadge) {
-      teamBadge.textContent = teamCounts.unresponded;
-      teamBadge.style.display = teamCounts.unresponded > 0 ? 'inline-block' : 'none';
+      teamBadge.textContent = `(${teamCounts.unresponded})`;
+      teamBadge.style.display = teamCounts.unresponded > 0 ? 'inline' : 'none';
     }
   }
 
@@ -2718,6 +2716,23 @@ var qrcode = function() {
     renderTopRightAvatar();
     applySidebarPermissions();
     showOverview();
+    startBadgePolling();
+  }
+
+  // Keeps the sidebar "(N)" counts current without needing a manual page
+  // refresh. This deliberately only refreshes the underlying data and the
+  // badge numbers — it never re-renders whatever note list or form you
+  // might currently have open, so it can't interrupt something you're in
+  // the middle of typing. A real push-based approach (WebSockets) would
+  // update instantly rather than within ~30s, but that's a genuinely new
+  // piece of backend infrastructure for a fairly low-stakes count badge —
+  // this gets the same practical result far more simply.
+  let badgePollTimer = null;
+  function startBadgePolling() {
+    if (badgePollTimer) return; // already running, don't stack intervals
+    badgePollTimer = setInterval(() => {
+      reloadMyNotes().catch(() => {}); // a failed background check shouldn't surface an error
+    }, 30000);
   }
 
   // Hides sidebar sections the current role isn't allowed to see. Backend
