@@ -233,17 +233,49 @@ app.post('/api/owner/notes/:id/status', requireOwner, async (req, res) => {
 // from the single-business pilot passcode system above.
 // ============================================================
 
+// A session now resolves to a business PLUS an "acting user" — either the
+// business owner (full access) or one of their team members (restricted
+// by role). Everywhere downstream that used to just check req.business
+// can now also check req.actingUser.role to decide what's allowed.
 function requireSession(req, res, next) {
   const auth = req.headers.authorization || '';
   const token = auth.startsWith('Bearer ') ? auth.slice(7) : null;
-  const businessId = token && db.data.sessions[token];
-  if (!businessId) return res.status(401).json({ error: 'not logged in' });
+  const session = token && db.data.sessions[token];
+  if (!session) return res.status(401).json({ error: 'not logged in' });
 
-  const business = db.data.businesses.find((b) => b.id === businessId);
+  const business = db.data.businesses.find((b) => b.id === session.businessId);
   if (!business) return res.status(401).json({ error: 'not logged in' });
 
+  if (!session.teamMemberId) {
+    req.business = business;
+    req.actingUser = { id: business.id, name: business.ownerName || business.businessName, role: 'admin' };
+    return next();
+  }
+
+  const teamMember = (business.teamMembers || []).find((m) => m.id === session.teamMemberId);
+  if (!teamMember) return res.status(401).json({ error: 'not logged in' });
+
   req.business = business;
+  req.actingUser = { id: teamMember.id, name: teamMember.name, role: teamMember.role };
   next();
+}
+
+// Restricts an endpoint to the business owner only — team members of any
+// role are blocked. Used for settings, billing, and team management itself.
+// (Named distinctly from the legacy requireOwner above, which is the old
+// single-pilot-business passcode check and unrelated to this.)
+function requireBusinessOwner(req, res, next) {
+  if (req.actingUser.role !== 'admin') {
+    return res.status(403).json({ error: 'Only the business owner can do this' });
+  }
+  next();
+}
+
+// A note's lane decides who can touch it: team members only ever see
+// customer notes, managers and the owner see everything.
+function canAccessLane(role, lane) {
+  if (role === 'admin' || role === 'manager') return true;
+  return (lane || 'customer') === 'customer';
 }
 
 app.post('/api/auth/signup', async (req, res) => {
@@ -258,7 +290,7 @@ app.post('/api/auth/signup', async (req, res) => {
 
   await db.read();
   const normalizedEmail = email.trim().toLowerCase();
-  const existing = db.data.businesses.find((b) => b.email === normalizedEmail);
+  const existing = findAnyAccountByEmail(normalizedEmail);
   if (existing) {
     return res.status(409).json({ error: 'An account with that email already exists' });
   }
@@ -281,13 +313,14 @@ app.post('/api/auth/signup', async (req, res) => {
     digestEmail: null, // null = falls back to the account's own email
     digestSkipEmpty: false, // false = still send a "quiet day" email when there's nothing new
     onboarding: { qrViewed: false, teamBoardViewed: false, wallViewed: false },
+    teamMembers: [], // {id, name, email, passwordHash, passwordSalt, role: 'manager'|'team_member', createdAt}
     createdAt: new Date().toISOString(),
     notes: [],
   };
   db.data.businesses.push(business);
 
   const token = createToken();
-  db.data.sessions[token] = business.id;
+  db.data.sessions[token] = { businessId: business.id, teamMemberId: null };
   await db.write();
 
   res.status(201).json({
@@ -304,19 +337,36 @@ app.post('/api/auth/login', async (req, res) => {
 
   await db.read();
   const normalizedEmail = email.trim().toLowerCase();
+
+  // Try the business owner first...
   const business = db.data.businesses.find((b) => b.email === normalizedEmail);
-  if (!business || !verifyPassword(password, business.passwordHash, business.passwordSalt)) {
-    return res.status(401).json({ error: 'Incorrect email or password' });
+  if (business && verifyPassword(password, business.passwordHash, business.passwordSalt)) {
+    const token = createToken();
+    db.data.sessions[token] = { businessId: business.id, teamMemberId: null };
+    await db.write();
+    return res.json({
+      token,
+      business: { id: business.id, businessName: business.businessName, plan: business.plan },
+    });
   }
 
-  const token = createToken();
-  db.data.sessions[token] = business.id;
-  await db.write();
+  // ...then check every business's team members for a matching email.
+  // Team member emails are enforced unique across the whole platform when
+  // they're created, same as owner emails, so this is a safe linear scan.
+  for (const biz of db.data.businesses) {
+    const teamMember = (biz.teamMembers || []).find((m) => m.email === normalizedEmail);
+    if (teamMember && verifyPassword(password, teamMember.passwordHash, teamMember.passwordSalt)) {
+      const token = createToken();
+      db.data.sessions[token] = { businessId: biz.id, teamMemberId: teamMember.id };
+      await db.write();
+      return res.json({
+        token,
+        business: { id: biz.id, businessName: biz.businessName, plan: biz.plan },
+      });
+    }
+  }
 
-  res.json({
-    token,
-    business: { id: business.id, businessName: business.businessName, plan: business.plan },
-  });
+  return res.status(401).json({ error: 'Incorrect email or password' });
 });
 
 app.post('/api/auth/logout', requireSession, async (req, res) => {
@@ -397,7 +447,9 @@ app.get('/api/me', requireSession, (req, res) => {
     ownerName: req.business.ownerName,
     email: req.business.email,
     plan: req.business.plan,
-    isAdmin: !!req.business.isAdmin,
+    isAdmin: req.actingUser.role === 'admin' && !!req.business.isAdmin,
+    role: req.actingUser.role, // 'admin' | 'manager' | 'team_member'
+    userName: req.actingUser.name,
     employeeNotesEnabled: planIncludesEmployeeNotes(req.business.plan),
     address: req.business.address || null,
     lat: req.business.lat ?? null,
@@ -406,7 +458,7 @@ app.get('/api/me', requireSession, (req, res) => {
     digestEnabled: req.business.digestEnabled !== false, // undefined (older accounts) defaults to true
     digestEmail: req.business.digestEmail || null,
     digestSkipEmpty: !!req.business.digestSkipEmpty,
-    onboardingChecklist: computeOnboardingChecklist(req.business),
+    onboardingChecklist: req.actingUser.role === 'admin' ? computeOnboardingChecklist(req.business) : [],
     createdAt: req.business.createdAt,
   });
 });
@@ -416,7 +468,7 @@ const MAX_LOGO_DATA_URL_LENGTH = 1_500_000; // ~1.1MB image, base64-inflated
 // Updates the caller's own business profile — name, owner name, email,
 // address (re-geocoded if it changed), and logo. Password is handled
 // by a separate endpoint below since it needs current-password verification.
-app.post('/api/business/profile', requireSession, async (req, res) => {
+app.post('/api/business/profile', requireSession, requireBusinessOwner, async (req, res) => {
   const { businessName, ownerName, email, address, logoDataUrl, removeLogo } = req.body;
 
   if (businessName !== undefined && !businessName.trim()) {
@@ -434,8 +486,8 @@ app.post('/api/business/profile', requireSession, async (req, res) => {
 
   if (email !== undefined && email.trim()) {
     const normalizedEmail = email.trim().toLowerCase();
-    const existing = db.data.businesses.find((b) => b.email === normalizedEmail && b.id !== business.id);
-    if (existing) {
+    const existing = findAnyAccountByEmail(normalizedEmail);
+    if (existing && !(existing.kind === 'owner' && existing.business.id === business.id)) {
       return res.status(409).json({ error: 'Another account already uses that email' });
     }
     business.email = normalizedEmail;
@@ -483,7 +535,7 @@ app.post('/api/business/profile', requireSession, async (req, res) => {
 
 // Email notification preferences — separate from the main profile endpoint
 // since these are a distinct concern (digest sending), not business details.
-app.post('/api/business/email-preferences', requireSession, async (req, res) => {
+app.post('/api/business/email-preferences', requireSession, requireBusinessOwner, async (req, res) => {
   const { digestEnabled, digestEmail, digestSkipEmpty } = req.body;
 
   if (digestEmail) {
@@ -517,7 +569,7 @@ const ONBOARDING_FLAGS = ['qrViewed', 'teamBoardViewed', 'wallViewed'];
 // done — there's no data-driven way to detect these, so the frontend
 // calls this at the moment the relevant thing is shown (e.g. opening the
 // QR code panel, opening the team board section).
-app.post('/api/business/onboarding', requireSession, async (req, res) => {
+app.post('/api/business/onboarding', requireSession, requireBusinessOwner, async (req, res) => {
   const { step } = req.body;
   if (!ONBOARDING_FLAGS.includes(step)) {
     return res.status(400).json({ error: `step must be one of: ${ONBOARDING_FLAGS.join(', ')}` });
@@ -532,7 +584,107 @@ app.post('/api/business/onboarding', requireSession, async (req, res) => {
   res.json({ ok: true, onboardingChecklist: computeOnboardingChecklist(business) });
 });
 
-app.post('/api/business/password', requireSession, async (req, res) => {
+const TEAM_ROLES = ['manager', 'team_member'];
+
+function findAnyAccountByEmail(email) {
+  for (const biz of db.data.businesses) {
+    if (biz.email === email) return { kind: 'owner', business: biz };
+    const member = (biz.teamMembers || []).find((m) => m.email === email);
+    if (member) return { kind: 'member', business: biz, member };
+  }
+  return null;
+}
+
+// Adds a team member — owner-only. Passwords are set directly by the owner
+// and shared with the person themselves (no invite-email flow yet). Email
+// uniqueness is checked across the WHOLE platform, not just this business,
+// since login has to resolve an email to exactly one account regardless of
+// whether it's an owner login or a team member login.
+app.post('/api/team-members', requireSession, requireBusinessOwner, async (req, res) => {
+  const { name, email, password, role } = req.body;
+
+  if (!email?.trim() || !password) {
+    return res.status(400).json({ error: 'email and password are required' });
+  }
+  if (!TEAM_ROLES.includes(role)) {
+    return res.status(400).json({ error: `role must be one of: ${TEAM_ROLES.join(', ')}` });
+  }
+  if (password.length < 8) {
+    return res.status(400).json({ error: 'Password must be at least 8 characters' });
+  }
+
+  await db.read();
+  const normalizedEmail = email.trim().toLowerCase();
+  if (findAnyAccountByEmail(normalizedEmail)) {
+    return res.status(409).json({ error: 'An account with that email already exists' });
+  }
+
+  const business = db.data.businesses.find((b) => b.id === req.business.id);
+  const { hash, salt } = hashPassword(password);
+  const member = {
+    id: newId(),
+    name: (name || '').trim() || null,
+    email: normalizedEmail,
+    passwordHash: hash,
+    passwordSalt: salt,
+    role,
+    createdAt: new Date().toISOString(),
+  };
+  business.teamMembers = business.teamMembers || [];
+  business.teamMembers.push(member);
+  await db.write();
+
+  res.status(201).json({ id: member.id, name: member.name, email: member.email, role: member.role, createdAt: member.createdAt });
+});
+
+app.get('/api/team-members', requireSession, requireBusinessOwner, (req, res) => {
+  const members = (req.business.teamMembers || []).map((m) => ({
+    id: m.id, name: m.name, email: m.email, role: m.role, createdAt: m.createdAt,
+  }));
+  res.json(members);
+});
+
+app.delete('/api/team-members/:id', requireSession, requireBusinessOwner, async (req, res) => {
+  await db.read();
+  const business = db.data.businesses.find((b) => b.id === req.business.id);
+  const index = (business.teamMembers || []).findIndex((m) => m.id === req.params.id);
+  if (index === -1) return res.status(404).json({ error: 'not found' });
+
+  business.teamMembers.splice(index, 1);
+
+  // Log out any active session for the member being removed, so access
+  // ends immediately rather than whenever their token would've expired.
+  for (const [token, session] of Object.entries(db.data.sessions)) {
+    if (session.teamMemberId === req.params.id) delete db.data.sessions[token];
+  }
+
+  await db.write();
+  res.json({ ok: true });
+});
+
+// Owner resets a team member's password directly — no current-password
+// check needed since this is the owner acting on someone else's account,
+// not the member changing their own.
+app.post('/api/team-members/:id/password', requireSession, requireBusinessOwner, async (req, res) => {
+  const { newPassword } = req.body;
+  if (!newPassword || newPassword.length < 8) {
+    return res.status(400).json({ error: 'newPassword must be at least 8 characters' });
+  }
+
+  await db.read();
+  const business = db.data.businesses.find((b) => b.id === req.business.id);
+  const member = (business.teamMembers || []).find((m) => m.id === req.params.id);
+  if (!member) return res.status(404).json({ error: 'not found' });
+
+  const { hash, salt } = hashPassword(newPassword);
+  member.passwordHash = hash;
+  member.passwordSalt = salt;
+  await db.write();
+
+  res.json({ ok: true });
+});
+
+app.post('/api/business/password', requireSession, requireBusinessOwner, async (req, res) => {
   const { currentPassword, newPassword } = req.body;
   if (!currentPassword || !newPassword) {
     return res.status(400).json({ error: 'currentPassword and newPassword are required' });
@@ -612,7 +764,7 @@ const VALID_PLANS = ['starter', 'growth', 'business'];
 //
 // Before any real users could hit this: either remove it, or gate it
 // behind a real Stripe webhook confirming payment succeeded first.
-app.post('/api/billing/change-plan', requireSession, async (req, res) => {
+app.post('/api/billing/change-plan', requireSession, requireBusinessOwner, async (req, res) => {
   const { plan } = req.body;
   if (!VALID_PLANS.includes(plan)) {
     return res.status(400).json({ error: `plan must be one of: ${VALID_PLANS.join(', ')}` });
@@ -630,6 +782,7 @@ app.post('/api/billing/change-plan', requireSession, async (req, res) => {
 // new account, not the Fix It Right Plumbing pilot data above).
 app.get('/api/my-notes', requireSession, (req, res) => {
   const notes = req.business.notes
+    .filter((n) => canAccessLane(req.actingUser.role, n.lane))
     .map((n) => ({ ...n, voteCount: n.votes.length }))
     .sort((a, b) => b.voteCount - a.voteCount);
   res.json(notes);
@@ -647,6 +800,9 @@ app.post('/api/my-notes/:id/status', requireSession, async (req, res) => {
   const business = db.data.businesses.find((b) => b.id === req.business.id);
   const note = business.notes.find((n) => n.id === req.params.id);
   if (!note) return res.status(404).json({ error: 'not found' });
+  if (!canAccessLane(req.actingUser.role, note.lane)) {
+    return res.status(403).json({ error: "You don't have access to this note" });
+  }
 
   note.status = status;
   note.statusHistory.push({ status, message: message || null, at: new Date().toISOString() });
@@ -668,6 +824,9 @@ app.post('/api/my-notes/:id/wall-visibility', requireSession, async (req, res) =
   const business = db.data.businesses.find((b) => b.id === req.business.id);
   const note = business.notes.find((n) => n.id === req.params.id);
   if (!note) return res.status(404).json({ error: 'not found' });
+  if (!canAccessLane(req.actingUser.role, note.lane)) {
+    return res.status(403).json({ error: "You don't have access to this note" });
+  }
 
   note.showOnWall = showOnWall;
   await db.write();
@@ -681,9 +840,13 @@ app.post('/api/my-notes/:id/wall-visibility', requireSession, async (req, res) =
 app.delete('/api/my-notes/:id', requireSession, async (req, res) => {
   await db.read();
   const business = db.data.businesses.find((b) => b.id === req.business.id);
-  const noteIndex = business.notes.findIndex((n) => n.id === req.params.id);
-  if (noteIndex === -1) return res.status(404).json({ error: 'not found' });
+  const note = business.notes.find((n) => n.id === req.params.id);
+  if (!note) return res.status(404).json({ error: 'not found' });
+  if (!canAccessLane(req.actingUser.role, note.lane)) {
+    return res.status(403).json({ error: "You don't have access to this note" });
+  }
 
+  const noteIndex = business.notes.findIndex((n) => n.id === req.params.id);
   business.notes.splice(noteIndex, 1);
   await db.write();
 
@@ -916,7 +1079,10 @@ app.post('/api/admin/claim', requireSession, async (req, res) => {
 });
 
 function requireAdmin(req, res, next) {
-  if (!req.business.isAdmin) {
+  // Defense in depth: even on the platform-admin business account, only
+  // the actual owner (never an invited team member) can reach these
+  // platform-wide endpoints.
+  if (req.actingUser.role !== 'admin' || !req.business.isAdmin) {
     return res.status(403).json({ error: 'admin access required' });
   }
   next();

@@ -196,6 +196,20 @@
   .onboard-collapsed .onboard-head{padding-right:0;}
   .onboard-expand-icon{width:16px; height:16px; flex:none;}
 
+  .member-row{display:flex; align-items:center; gap:12px; padding:12px 0; border-bottom:1px solid var(--line);}
+  .member-row:first-child{padding-top:0;}
+  .member-row:last-child{border-bottom:none;}
+  .member-info{flex:1; min-width:0;}
+  .member-name{font-family:'Fredoka',sans-serif; font-weight:600; font-size:13.5px;}
+  .member-email{font-size:12px; color:var(--ink-soft); margin-top:1px;}
+  .member-role-badge{font-family:'Space Mono',monospace; font-size:9.5px; text-transform:uppercase; padding:3px 9px; border-radius:6px; flex:none;}
+  .member-role-badge.manager{background:#FBEBD9; color:var(--terra-deep);}
+  .member-role-badge.team_member{background:var(--teal-tint); color:var(--teal-deep);}
+  .member-actions{display:flex; gap:6px; flex:none;}
+  .member-action-btn{background:none; border:1px solid var(--line); border-radius:7px; padding:5px 10px; font-size:11.5px; color:var(--ink-soft); cursor:pointer;}
+  .member-action-btn:hover{background:var(--cream);}
+  .member-action-btn.danger:hover{background:#F5E6E1; border-color:#E8C4B8; color:var(--danger);}
+
   .chart-panel{background:var(--card); border:1px solid var(--line); border-radius:16px; padding:20px; margin-bottom:20px;}
   .chart-panel-head{display:flex; align-items:center; justify-content:space-between; margin-bottom:14px;}
   .chart-panel-head h2{font-size:14px;}
@@ -2653,7 +2667,20 @@ var qrcode = function() {
     document.getElementById('loggedOutShell').style.display = 'none';
     document.getElementById('appShell').style.display = 'flex';
     renderTopRightAvatar();
+    applySidebarPermissions();
     showOverview();
+  }
+
+  // Hides sidebar sections the current role isn't allowed to see. Backend
+  // enforces the real permission boundaries independently of this — this
+  // is just so the UI doesn't show doors that would 403 if opened.
+  function applySidebarPermissions() {
+    const isAdmin = ME.role === 'admin';
+    const isManagerOrAdmin = ME.role === 'admin' || ME.role === 'manager';
+
+    document.getElementById('navBilling').style.display = isAdmin ? '' : 'none';
+    document.getElementById('navSettings').style.display = isAdmin ? '' : 'none';
+    document.getElementById('navTeamBoard').style.display = (isManagerOrAdmin && ME.employeeNotesEnabled) ? '' : 'none';
   }
 
   function renderTopRightAvatar() {
@@ -3606,12 +3633,124 @@ var qrcode = function() {
         <div id="password-msg" class="form-msg" style="display:none;"></div>
         <button class="btn-primary" id="save-password-btn">Update password</button>
       </div>
+
+      <div class="settings-panel">
+        <h2>Team</h2>
+        <p class="desc">Give staff their own login. <b>Manager</b> can see and respond to both customer and team notes. <b>Team member</b> can only see and respond to customer notes.</p>
+        <div id="team-members-list"><div class="form-msg" style="display:block;">Loading…</div></div>
+        <div class="field-row" style="margin-top:16px;">
+          <div class="field"><label>Name</label><input id="new-member-name" placeholder="e.g. Priya"></div>
+          <div class="field"><label>Email</label><input id="new-member-email" type="email" placeholder="priya@example.com"></div>
+        </div>
+        <div class="field-row">
+          <div class="field"><label>Password</label><input id="new-member-password" type="password" placeholder="At least 8 characters"></div>
+          <div class="field">
+            <label>Role</label>
+            <select id="new-member-role" style="width:100%; background:var(--cream); border:1px solid var(--line); border-radius:10px; padding:11px 13px; font-size:13.5px; font-family:'Work Sans',sans-serif; color:var(--ink);">
+              <option value="team_member">Team member — customer notes only</option>
+              <option value="manager">Manager — customer + team notes</option>
+            </select>
+          </div>
+        </div>
+        <div id="team-add-msg" class="form-msg" style="display:none;"></div>
+        <button class="btn-primary" id="add-member-btn">Add team member</button>
+      </div>
     `;
 
     wireSettingsForm();
+    loadTeamMembers();
+  }
+
+  const ROLE_LABELS = { manager: 'Manager', team_member: 'Team member' };
+
+  async function loadTeamMembers() {
+    const listEl = document.getElementById('team-members-list');
+    if (!listEl) return;
+    try {
+      const members = await apiFetch('/api/team-members');
+      listEl.innerHTML = members.length === 0
+        ? `<div class="member-row" style="border-bottom:none; padding-top:0;"><div class="member-info"><div class="member-email" style="margin-top:0;">No team members yet — add one below.</div></div></div>`
+        : members.map((m) => `
+            <div class="member-row" data-member-id="${m.id}">
+              <div class="member-info">
+                <div class="member-name">${escapeHtml(m.name || m.email)}</div>
+                <div class="member-email">${escapeHtml(m.email)}</div>
+              </div>
+              <span class="member-role-badge ${m.role}">${ROLE_LABELS[m.role] || m.role}</span>
+              <div class="member-actions">
+                <button class="member-action-btn" data-reset-pw="${m.id}">Reset password</button>
+                <button class="member-action-btn danger" data-remove-member="${m.id}">Remove</button>
+              </div>
+            </div>
+          `).join('');
+
+      listEl.querySelectorAll('[data-remove-member]').forEach((btn) => {
+        btn.addEventListener('click', async () => {
+          const row = btn.closest('.member-row');
+          const name = row.querySelector('.member-name').textContent;
+          if (!confirm(`Remove ${name}? They'll be logged out immediately and won't be able to log back in.`)) return;
+          btn.disabled = true;
+          try {
+            await apiFetch(`/api/team-members/${btn.dataset.removeMember}`, { method: 'DELETE' });
+            loadTeamMembers();
+          } catch (err) {
+            alert(err.message);
+            btn.disabled = false;
+          }
+        });
+      });
+
+      listEl.querySelectorAll('[data-reset-pw]').forEach((btn) => {
+        btn.addEventListener('click', async () => {
+          const newPassword = prompt('Enter a new password for this person (at least 8 characters):');
+          if (!newPassword) return;
+          if (newPassword.length < 8) { alert('Password must be at least 8 characters.'); return; }
+          try {
+            await apiFetch(`/api/team-members/${btn.dataset.resetPw}/password`, {
+              method: 'POST',
+              body: JSON.stringify({ newPassword }),
+            });
+            alert('Password updated — let them know their new password.');
+          } catch (err) {
+            alert(err.message);
+          }
+        });
+      });
+    } catch (err) {
+      listEl.innerHTML = `<div class="form-msg error" style="display:block;">Couldn't load team members.</div>`;
+    }
   }
 
   function wireSettingsForm() {
+    document.getElementById('add-member-btn').addEventListener('click', async () => {
+      const btn = document.getElementById('add-member-btn');
+      const name = document.getElementById('new-member-name').value;
+      const email = document.getElementById('new-member-email').value;
+      const password = document.getElementById('new-member-password').value;
+      const role = document.getElementById('new-member-role').value;
+
+      if (!email.trim() || !password) {
+        showFormMsg('team-add-msg', 'Email and password are required.', 'error');
+        return;
+      }
+      btn.disabled = true;
+      btn.textContent = 'Adding…';
+      try {
+        await apiFetch('/api/team-members', {
+          method: 'POST',
+          body: JSON.stringify({ name, email, password, role }),
+        });
+        document.getElementById('new-member-name').value = '';
+        document.getElementById('new-member-email').value = '';
+        document.getElementById('new-member-password').value = '';
+        showFormMsg('team-add-msg', 'Added — share their login email and password with them.', 'success');
+        loadTeamMembers();
+      } catch (err) {
+        showFormMsg('team-add-msg', err.message, 'error');
+      }
+      btn.disabled = false;
+      btn.textContent = 'Add team member';
+    });
     let pendingLogoDataUrl; // undefined = no change, null = remove, string = new upload
     const logoInput = document.getElementById('logo-input');
     const logoPreview = document.getElementById('logo-preview');
