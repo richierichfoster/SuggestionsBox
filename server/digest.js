@@ -101,7 +101,7 @@ function buildDigestHtml(business, customerNotes, teamNotes) {
 </html>`;
 }
 
-async function sendEmail(to, subject, html) {
+export async function sendEmail(to, subject, html) {
   if (!RESEND_API_KEY) {
     console.error('[digest] RESEND_API_KEY is not configured — skipping send.');
     return { ok: false, reason: 'not_configured' };

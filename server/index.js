@@ -2,7 +2,7 @@ import express from 'express';
 import cors from 'cors';
 import { db, initDb, newId } from './db.js';
 import { checkTone } from './moderation.js';
-import { sendDailyDigests, startDigestScheduler, getMelbourneDayBounds } from './digest.js';
+import { sendDailyDigests, startDigestScheduler, getMelbourneDayBounds, sendEmail } from './digest.js';
 import { hashPassword, verifyPassword, createToken } from './auth.js';
 
 const app = express();
@@ -233,6 +233,15 @@ app.post('/api/owner/notes/:id/status', requireOwner, async (req, res) => {
 // from the single-business pilot passcode system above.
 // ============================================================
 
+// The owner login always has req.actingUser.id === business.id (set that
+// way in requireSession below); a team member — even one with the "admin"
+// business role — has their own id instead. This is how platform-wide
+// super-admin access stays scoped to the one true owner account, never
+// extended to someone merely promoted to "admin" within a single business.
+function isOriginalOwner(req) {
+  return req.actingUser.id === req.business.id;
+}
+
 // A session now resolves to a business PLUS an "acting user" — either the
 // business owner (full access) or one of their team members (restricted
 // by role). Everywhere downstream that used to just check req.business
@@ -353,9 +362,12 @@ app.post('/api/auth/login', async (req, res) => {
   // ...then check every business's team members for a matching email.
   // Team member emails are enforced unique across the whole platform when
   // they're created, same as owner emails, so this is a safe linear scan.
+  // Members who haven't accepted their invite yet have no passwordHash at
+  // all — skip straight to the generic error for them rather than calling
+  // verifyPassword, which would throw on a null hash.
   for (const biz of db.data.businesses) {
     const teamMember = (biz.teamMembers || []).find((m) => m.email === normalizedEmail);
-    if (teamMember && verifyPassword(password, teamMember.passwordHash, teamMember.passwordSalt)) {
+    if (teamMember && teamMember.passwordHash && verifyPassword(password, teamMember.passwordHash, teamMember.passwordSalt)) {
       const token = createToken();
       db.data.sessions[token] = { businessId: biz.id, teamMemberId: teamMember.id };
       await db.write();
@@ -447,7 +459,7 @@ app.get('/api/me', requireSession, (req, res) => {
     ownerName: req.business.ownerName,
     email: req.business.email,
     plan: req.business.plan,
-    isAdmin: req.actingUser.role === 'admin' && !!req.business.isAdmin,
+    isAdmin: isOriginalOwner(req) && !!req.business.isAdmin,
     role: req.actingUser.role, // 'admin' | 'manager' | 'team_member'
     userName: req.actingUser.name,
     employeeNotesEnabled: planIncludesEmployeeNotes(req.business.plan),
@@ -584,7 +596,9 @@ app.post('/api/business/onboarding', requireSession, requireBusinessOwner, async
   res.json({ ok: true, onboardingChecklist: computeOnboardingChecklist(business) });
 });
 
-const TEAM_ROLES = ['manager', 'team_member'];
+const TEAM_ROLES = ['admin', 'manager', 'team_member'];
+const INVITE_EXPIRY_MS = 7 * 24 * 60 * 60 * 1000; // 7 days
+const APP_BASE_URL = 'https://app.suggestionsbox.com.au';
 
 function findAnyAccountByEmail(email) {
   for (const biz of db.data.businesses) {
@@ -595,22 +609,43 @@ function findAnyAccountByEmail(email) {
   return null;
 }
 
-// Adds a team member — owner-only. Passwords are set directly by the owner
-// and shared with the person themselves (no invite-email flow yet). Email
-// uniqueness is checked across the WHOLE platform, not just this business,
-// since login has to resolve an email to exactly one account regardless of
-// whether it's an owner login or a team member login.
-app.post('/api/team-members', requireSession, requireBusinessOwner, async (req, res) => {
-  const { name, email, password, role } = req.body;
+function inviteEmailHtml(businessName, role, inviteUrl) {
+  const roleLabel = { admin: 'an admin', manager: 'a manager', team_member: 'a team member' }[role] || 'a team member';
+  return `
+<!DOCTYPE html>
+<html><body style="margin:0; padding:0; background:#FBF1E2; font-family:-apple-system,Segoe UI,Roboto,sans-serif;">
+  <table width="100%" cellpadding="0" cellspacing="0" style="background:#FBF1E2; padding:30px 0;">
+    <tr><td align="center">
+      <table width="100%" style="max-width:480px; background:#FFFCF6; border-radius:16px; overflow:hidden;" cellpadding="0" cellspacing="0">
+        <tr><td style="background:#E2653A; padding:24px 28px;">
+          <div style="font-family:sans-serif; font-weight:700; font-size:18px; color:#FBF1E2;">SuggestionsBox</div>
+        </td></tr>
+        <tr><td style="padding:28px;">
+          <div style="font-family:sans-serif; font-size:15px; color:#2E2B28; line-height:1.6; margin-bottom:20px;">
+            You've been invited to join <b>${businessName}</b> on Suggestions Box as ${roleLabel}.
+          </div>
+          <a href="${inviteUrl}" style="display:inline-block; background:#E2653A; color:#FFFCF6; font-family:sans-serif; font-weight:600; font-size:14px; text-decoration:none; padding:12px 22px; border-radius:10px;">Set your password →</a>
+          <div style="font-family:monospace; font-size:11px; color:#6E6A63; margin-top:20px;">This link expires in 7 days.</div>
+        </td></tr>
+      </table>
+    </td></tr>
+  </table>
+</body></html>`;
+}
 
-  if (!email?.trim() || !password) {
-    return res.status(400).json({ error: 'email and password are required' });
+// Adds a team member — owner-only. Rather than the owner setting a
+// password directly, this sends an email invite with a link to set their
+// own password (POST /api/team-invites/:token/accept below). Email
+// uniqueness is checked across the WHOLE platform, not just this
+// business, since login has to resolve an email to exactly one account.
+app.post('/api/team-members', requireSession, requireBusinessOwner, async (req, res) => {
+  const { name, email, role } = req.body;
+
+  if (!email?.trim()) {
+    return res.status(400).json({ error: 'email is required' });
   }
   if (!TEAM_ROLES.includes(role)) {
     return res.status(400).json({ error: `role must be one of: ${TEAM_ROLES.join(', ')}` });
-  }
-  if (password.length < 8) {
-    return res.status(400).json({ error: 'Password must be at least 8 characters' });
   }
 
   await db.read();
@@ -620,26 +655,35 @@ app.post('/api/team-members', requireSession, requireBusinessOwner, async (req, 
   }
 
   const business = db.data.businesses.find((b) => b.id === req.business.id);
-  const { hash, salt } = hashPassword(password);
+  const inviteToken = createToken();
   const member = {
     id: newId(),
     name: (name || '').trim() || null,
     email: normalizedEmail,
-    passwordHash: hash,
-    passwordSalt: salt,
+    passwordHash: null,
+    passwordSalt: null,
     role,
+    inviteToken,
+    inviteTokenExpiresAt: new Date(Date.now() + INVITE_EXPIRY_MS).toISOString(),
     createdAt: new Date().toISOString(),
   };
   business.teamMembers = business.teamMembers || [];
   business.teamMembers.push(member);
   await db.write();
 
-  res.status(201).json({ id: member.id, name: member.name, email: member.email, role: member.role, createdAt: member.createdAt });
+  const inviteUrl = `${APP_BASE_URL}/accept-invite.html?token=${inviteToken}`;
+  const emailResult = await sendEmail(normalizedEmail, `You're invited to join ${business.businessName} on Suggestions Box`, inviteEmailHtml(business.businessName, role, inviteUrl));
+
+  res.status(201).json({
+    id: member.id, name: member.name, email: member.email, role: member.role, status: 'pending', createdAt: member.createdAt,
+    emailSent: emailResult.ok,
+  });
 });
 
 app.get('/api/team-members', requireSession, requireBusinessOwner, (req, res) => {
   const members = (req.business.teamMembers || []).map((m) => ({
     id: m.id, name: m.name, email: m.email, role: m.role, createdAt: m.createdAt,
+    status: m.passwordHash ? 'active' : 'pending',
   }));
   res.json(members);
 });
@@ -660,6 +704,69 @@ app.delete('/api/team-members/:id', requireSession, requireBusinessOwner, async 
 
   await db.write();
   res.json({ ok: true });
+});
+
+// Re-sends the invite email with a fresh token — only makes sense for a
+// member who hasn't accepted yet (no password set).
+app.post('/api/team-members/:id/resend-invite', requireSession, requireBusinessOwner, async (req, res) => {
+  await db.read();
+  const business = db.data.businesses.find((b) => b.id === req.business.id);
+  const member = (business.teamMembers || []).find((m) => m.id === req.params.id);
+  if (!member) return res.status(404).json({ error: 'not found' });
+  if (member.passwordHash) return res.status(400).json({ error: 'This person has already accepted their invite.' });
+
+  member.inviteToken = createToken();
+  member.inviteTokenExpiresAt = new Date(Date.now() + INVITE_EXPIRY_MS).toISOString();
+  await db.write();
+
+  const inviteUrl = `${APP_BASE_URL}/accept-invite.html?token=${member.inviteToken}`;
+  const emailResult = await sendEmail(member.email, `You're invited to join ${business.businessName} on Suggestions Box`, inviteEmailHtml(business.businessName, member.role, inviteUrl));
+
+  res.json({ ok: true, emailSent: emailResult.ok });
+});
+
+// Public — looks up an invite by token so accept-invite.html can show
+// who invited them and to what role before asking for a password.
+app.get('/api/team-invites/:token', async (req, res) => {
+  await db.read();
+  for (const biz of db.data.businesses) {
+    const member = (biz.teamMembers || []).find((m) => m.inviteToken === req.params.token);
+    if (!member) continue;
+    if (member.passwordHash) return res.status(410).json({ error: 'This invite has already been used.' });
+    if (new Date(member.inviteTokenExpiresAt) < new Date()) return res.status(410).json({ error: 'This invite link has expired — ask them to resend it.' });
+    return res.json({ businessName: biz.businessName, email: member.email, role: member.role });
+  }
+  return res.status(404).json({ error: 'Invite not found.' });
+});
+
+// Public — sets the invited person's password and logs them straight in,
+// same response shape as a normal login so the frontend can reuse it.
+app.post('/api/team-invites/:token/accept', async (req, res) => {
+  const { password } = req.body;
+  if (!password || password.length < 8) {
+    return res.status(400).json({ error: 'Password must be at least 8 characters' });
+  }
+
+  await db.read();
+  for (const biz of db.data.businesses) {
+    const member = (biz.teamMembers || []).find((m) => m.inviteToken === req.params.token);
+    if (!member) continue;
+    if (member.passwordHash) return res.status(410).json({ error: 'This invite has already been used.' });
+    if (new Date(member.inviteTokenExpiresAt) < new Date()) return res.status(410).json({ error: 'This invite link has expired — ask them to resend it.' });
+
+    const { hash, salt } = hashPassword(password);
+    member.passwordHash = hash;
+    member.passwordSalt = salt;
+    member.inviteToken = null;
+    member.inviteTokenExpiresAt = null;
+
+    const token = createToken();
+    db.data.sessions[token] = { businessId: biz.id, teamMemberId: member.id };
+    await db.write();
+
+    return res.json({ token, business: { id: biz.id, businessName: biz.businessName, plan: biz.plan } });
+  }
+  return res.status(404).json({ error: 'Invite not found.' });
 });
 
 // Owner resets a team member's password directly — no current-password
@@ -684,6 +791,13 @@ app.post('/api/team-members/:id/password', requireSession, requireBusinessOwner,
   res.json({ ok: true });
 });
 
+// "Admin" business role now includes both the original owner login and
+// any team member promoted to admin — so this has to change the RIGHT
+// account's password: the owner's own record for the owner, or that
+// specific team member's record for a promoted admin. Using the same
+// endpoint for both rather than "always touch business.passwordHash"
+// avoids the bug where a promoted admin changing "their own" password
+// would silently change the actual owner's login instead.
 app.post('/api/business/password', requireSession, requireBusinessOwner, async (req, res) => {
   const { currentPassword, newPassword } = req.body;
   if (!currentPassword || !newPassword) {
@@ -695,15 +809,25 @@ app.post('/api/business/password', requireSession, requireBusinessOwner, async (
 
   await db.read();
   const business = db.data.businesses.find((b) => b.id === req.business.id);
-  if (!verifyPassword(currentPassword, business.passwordHash, business.passwordSalt)) {
-    return res.status(401).json({ error: 'Current password is incorrect' });
+  const { hash, salt } = hashPassword(newPassword);
+
+  if (isOriginalOwner(req)) {
+    if (!verifyPassword(currentPassword, business.passwordHash, business.passwordSalt)) {
+      return res.status(401).json({ error: 'Current password is incorrect' });
+    }
+    business.passwordHash = hash;
+    business.passwordSalt = salt;
+  } else {
+    const member = (business.teamMembers || []).find((m) => m.id === req.actingUser.id);
+    if (!member) return res.status(404).json({ error: 'not found' });
+    if (!verifyPassword(currentPassword, member.passwordHash, member.passwordSalt)) {
+      return res.status(401).json({ error: 'Current password is incorrect' });
+    }
+    member.passwordHash = hash;
+    member.passwordSalt = salt;
   }
 
-  const { hash, salt } = hashPassword(newPassword);
-  business.passwordHash = hash;
-  business.passwordSalt = salt;
   await db.write();
-
   res.json({ ok: true });
 });
 
@@ -1080,9 +1204,9 @@ app.post('/api/admin/claim', requireSession, async (req, res) => {
 
 function requireAdmin(req, res, next) {
   // Defense in depth: even on the platform-admin business account, only
-  // the actual owner (never an invited team member) can reach these
-  // platform-wide endpoints.
-  if (req.actingUser.role !== 'admin' || !req.business.isAdmin) {
+  // the actual owner (never an invited team member, even one promoted to
+  // the "admin" business role) can reach these platform-wide endpoints.
+  if (!isOriginalOwner(req) || !req.business.isAdmin) {
     return res.status(403).json({ error: 'admin access required' });
   }
   next();

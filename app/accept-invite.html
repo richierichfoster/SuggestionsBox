@@ -1,0 +1,211 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="color-scheme" content="light">
+<meta name="supported-color-schemes" content="light">
+<title>Accept invite — Suggestions Box</title>
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 viewBox=%270 0 200 200%27%3E%3Cpath d=%27M56 10 L146 10 L190 54 L190 144 A46 46 0 0 1 144 190 L56 190 A46 46 0 0 1 10 144 L10 56 A46 46 0 0 1 56 10 Z%27 fill=%27%23FBF1E2%27 stroke=%27%23E2653A%27 stroke-width=%2710%27/%3E%3Cpath d=%27M146 10 L190 54 L146 54 Z%27 fill=%27%23E2653A%27/%3E%3Cpath d=%27M146 10 L146 54 L190 54%27 fill=%27none%27 stroke=%27%23B84B29%27 stroke-width=%274%27 stroke-linejoin=%27round%27/%3E%3Ccircle cx=%2766%27 cy=%2786%27 r=%279%27 fill=%27%23E2653A%27/%3E%3Ccircle cx=%27130%27 cy=%2786%27 r=%279%27 fill=%27%23E2653A%27/%3E%3Cpath d=%27M56 120 Q100 158 142 120%27 stroke=%27%23E2653A%27 stroke-width=%2716%27 stroke-linecap=%27round%27 fill=%27none%27/%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600;700&family=Work+Sans:wght@400;500;600;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    color-scheme: light;
+    --cream:#FBF1E2; --parchment:#F3E9D8; --card:#FFFCF6;
+    --terra:#E2653A; --terra-deep:#B84B29;
+    --gold:#D9A441; --gold-deep:#B7852A;
+    --teal:#3D6B66; --teal-deep:#254240; --teal-tint:#E3EDEB;
+    --ink:#2E2B28; --ink-soft:#6E6A63; --line:#EDE0CC;
+    --good:#EFF4DE; --good-ink:#5E7A1F;
+  }
+  *{box-sizing:border-box; margin:0; padding:0;}
+  html{background:#FBF1E2 !important;}
+  body{font-family:'Work Sans',sans-serif; color:#2E2B28 !important; background:#FBF1E2 !important; -webkit-font-smoothing:antialiased;}
+  a{color:inherit; text-decoration:none;}
+  h1,h2{font-family:'Fredoka',sans-serif; font-weight:600;}
+
+  header{padding:20px 24px; border-bottom:1px solid var(--line); background:rgba(251,241,226,0.92);}
+  .brand{display:flex; align-items:center; gap:9px; max-width:1120px; margin:0 auto;}
+  .brand svg{width:28px; height:28px;}
+  .brand span{font-family:'Fredoka',sans-serif; font-weight:700; font-size:16px;}
+  .brand span em{font-style:normal; color:var(--terra);}
+
+  .wrap{max-width:420px; margin:0 auto; padding:64px 24px 60px;}
+  .eyebrow{
+    font-family:'Space Mono',monospace; font-size:11px; letter-spacing:.08em; text-transform:uppercase;
+    color:var(--terra-deep); margin-bottom:14px; display:inline-block; background:#FBEBD9; border:1px solid #F0C9A8;
+    padding:6px 14px; border-radius:20px; font-weight:700;
+  }
+  h1{font-size:26px; margin-bottom:8px;}
+  .sub{font-size:14px; color:var(--ink-soft); margin-bottom:32px; line-height:1.5;}
+
+  .card{background:var(--card); border:1px solid var(--line); border-radius:20px; padding:30px 26px; box-shadow:0 14px 30px rgba(75,33,66,0.08);}
+
+  .field{margin-bottom:16px;}
+  .field label{font-family:'Space Mono',monospace; font-size:10px; text-transform:uppercase; color:var(--ink-soft); display:block; margin-bottom:6px;}
+  .field input{
+    width:100%; background:var(--cream); border:1px solid var(--line); border-radius:10px;
+    padding:12px 13px; font-size:14px; font-family:'Work Sans',sans-serif; color:var(--ink);
+  }
+  .field input:focus{outline:2px solid var(--terra); outline-offset:1px;}
+
+  .btn-primary{
+    width:100%; background:var(--terra); color:var(--card); border:none; font-family:'Fredoka',sans-serif;
+    font-weight:600; font-size:14.5px; padding:14px; border-radius:12px; cursor:pointer;
+    box-shadow:0 10px 22px rgba(226,101,58,0.25);
+  }
+  .btn-primary:disabled{opacity:.6; cursor:default;}
+
+  .invite-summary{
+    background:var(--teal-tint); border:1px solid #CBE0DC; border-radius:12px; padding:14px 16px;
+    font-size:13px; color:var(--teal-deep); line-height:1.5; margin-bottom:22px;
+  }
+  .invite-summary b{font-family:'Fredoka',sans-serif;}
+
+  .state-error{text-align:center; padding:10px 0;}
+  .state-error svg{width:36px; height:36px; color:var(--terra-deep); margin-bottom:14px;}
+  .state-error p{font-size:13.5px; color:var(--ink-soft); line-height:1.6;}
+
+  .back-home{display:inline-flex; align-items:center; gap:6px; font-size:13px; color:var(--ink-soft); margin-bottom:26px;}
+  .back-home:hover{color:var(--terra-deep);}
+  .back-home svg{width:13px; height:13px;}
+</style>
+</head>
+<body>
+
+<header>
+  <a href="https://www.suggestionsbox.com.au/" class="brand">
+    <svg viewBox="0 0 200 200"><path d="M56 10 L146 10 L190 54 L190 144 A46 46 0 0 1 144 190 L56 190 A46 46 0 0 1 10 144 L10 56 A46 46 0 0 1 56 10 Z" fill="#FBF1E2" stroke="#E2653A" stroke-width="10"/><path d="M146 10 L190 54 L146 54 Z" fill="#E2653A"/><path d="M146 10 L146 54 L190 54" fill="none" stroke="#B84B29" stroke-width="4" stroke-linejoin="round"/><circle cx="66" cy="86" r="9" fill="#E2653A"/><circle cx="130" cy="86" r="9" fill="#E2653A"/><path d="M56 120 Q100 158 142 120" stroke="#E2653A" stroke-width="16" stroke-linecap="round" fill="none"/></svg>
+    <span>Suggestions<em>Box</em></span>
+  </a>
+</header>
+
+<div class="wrap">
+  <a href="https://www.suggestionsbox.com.au/" class="back-home">
+    <svg viewBox="0 0 24 24" fill="none"><path d="M15 18l-6-6 6-6" stroke="#6E6A63" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+    Back to home
+  </a>
+
+  <span class="eyebrow">Team invite</span>
+  <h1 id="page-title">You've been invited</h1>
+  <p class="sub" id="page-sub">Set a password to finish joining.</p>
+
+  <div class="card" id="card-content">
+    <div style="text-align:center; color:var(--ink-soft); font-size:13.5px;">Loading invite…</div>
+  </div>
+</div>
+
+<script>
+  const API_BASE = 'https://api.suggestionsbox.com.au';
+  const ROLE_LABELS = { admin: 'an admin', manager: 'a manager', team_member: 'a team member' };
+
+  const params = new URLSearchParams(window.location.search);
+  const token = params.get('token');
+  const cardEl = document.getElementById('card-content');
+  const titleEl = document.getElementById('page-title');
+  const subEl = document.getElementById('page-sub');
+
+  function showError(message) {
+    titleEl.textContent = "This invite isn't valid";
+    subEl.textContent = '';
+    cardEl.innerHTML = `
+      <div class="state-error">
+        <svg viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="1.8"/><path d="M12 8v5M12 16h.01" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+        <p>${message}</p>
+      </div>
+    `;
+  }
+
+  function renderForm(invite) {
+    subEl.textContent = `Set a password to join ${invite.businessName} as ${ROLE_LABELS[invite.role] || 'a team member'}.`;
+    cardEl.innerHTML = `
+      <div class="invite-summary"><b>${invite.email}</b> — invited to ${invite.businessName}</div>
+      <div class="field">
+        <label>Password</label>
+        <input type="password" id="f-password" placeholder="At least 8 characters">
+      </div>
+      <div class="field">
+        <label>Confirm password</label>
+        <input type="password" id="f-password2" placeholder="Type it again">
+      </div>
+      <div id="form-error" style="display:none; color:#C4432A; font-size:12.5px; margin-bottom:12px;"></div>
+      <button class="btn-primary" id="submit-btn">Set password &amp; join</button>
+    `;
+
+    const errorBox = document.getElementById('form-error');
+    const submitBtn = document.getElementById('submit-btn');
+
+    function showFormError(msg) {
+      errorBox.textContent = msg;
+      errorBox.style.display = 'block';
+    }
+
+    async function submit() {
+      errorBox.style.display = 'none';
+      const password = document.getElementById('f-password').value;
+      const password2 = document.getElementById('f-password2').value;
+
+      if (!password || password.length < 8) {
+        showFormError('Password must be at least 8 characters.');
+        return;
+      }
+      if (password !== password2) {
+        showFormError("Passwords don't match.");
+        return;
+      }
+
+      submitBtn.disabled = true;
+      submitBtn.textContent = 'Joining…';
+      try {
+        const res = await fetch(`${API_BASE}/api/team-invites/${token}/accept`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ password }),
+        });
+        const data = await res.json();
+        if (!res.ok) {
+          showFormError(data.error || 'Something went wrong.');
+          submitBtn.disabled = false;
+          submitBtn.textContent = 'Set password & join';
+          return;
+        }
+        localStorage.setItem('sb_token', data.token);
+        localStorage.setItem('sb_business', JSON.stringify(data.business));
+        window.location.href = 'dashboard.html';
+      } catch (err) {
+        showFormError("Couldn't reach the server. Please try again.");
+        submitBtn.disabled = false;
+        submitBtn.textContent = 'Set password & join';
+      }
+    }
+
+    submitBtn.addEventListener('click', submit);
+    document.getElementById('f-password2').addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') submit();
+    });
+  }
+
+  async function boot() {
+    if (!token) {
+      showError('This invite link is missing its token — check the link and try again.');
+      return;
+    }
+    try {
+      const res = await fetch(`${API_BASE}/api/team-invites/${token}`);
+      const data = await res.json();
+      if (!res.ok) {
+        showError(data.error || "This invite link isn't valid.");
+        return;
+      }
+      renderForm(data);
+    } catch (err) {
+      showError("Couldn't reach the server. Please try again in a moment.");
+    }
+  }
+
+  boot();
+</script>
+
+</body>
+</html>
