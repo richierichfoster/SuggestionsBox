@@ -43,6 +43,9 @@
     clip-path:polygon(0 100%,100% 100%,100% 0,97% 6px,94% 0,91% 6px,88% 0,85% 6px,82% 0,79% 6px,76% 0,73% 6px,70% 0,67% 6px,64% 0,61% 6px,58% 0,55% 6px,52% 0,49% 6px,46% 0,43% 6px,40% 0,37% 6px,34% 0,31% 6px,28% 0,25% 6px,22% 0,19% 6px,16% 0,13% 6px,10% 0,7% 6px,4% 0,1% 6px,0 0);
   }
   .mark{width:40px;height:40px;margin:0 auto 14px;display:block;}
+  .wall-brand{display:flex; align-items:center; justify-content:center; gap:10px; margin-bottom:10px;}
+  .wall-brand-logo{width:38px; height:38px; border-radius:9px; object-fit:cover; flex-shrink:0;}
+  .wall-brand-name{font-family:'Fredoka',sans-serif; font-weight:600; font-size:16px; color:#FCF6EC;}
   .eyebrow{
     font-family:'Space Mono',monospace;font-size:11px;letter-spacing:.08em;
     text-transform:uppercase;color:rgba(251,245,236,.75);margin-bottom:10px;
@@ -219,14 +222,20 @@
 
     root.innerHTML = `
       <div class="hero">
-        <svg class="mark" viewBox="0 0 200 200">
-          <path d="M54,14 H142 L186,58 V146 Q186,186 146,186 H54 Q14,186 14,146 V54 Q14,14 54,14 Z" fill="#FCF6EC" stroke="#E9DCC5" stroke-width="3"/>
-          <path d="M142,14 L186,58 L142,58 Z" fill="#ECDBBE"/>
-          <circle cx="70" cy="76" r="7" fill="#E2653A"/>
-          <circle cx="130" cy="76" r="7" fill="#E2653A"/>
-          <path d="M64 106 Q100 130 136 106" stroke="#E2653A" stroke-width="14" stroke-linecap="round" fill="none"/>
-        </svg>
-        <div class="eyebrow">${escapeHtml(wall.businessName)} · Response Wall</div>
+        <div class="wall-brand">
+          ${wall.logoDataUrl
+            ? `<img class="wall-brand-logo" src="${wall.logoDataUrl}" alt="">`
+            : `<svg class="wall-brand-logo" viewBox="0 0 200 200">
+                <path d="M54,14 H142 L186,58 V146 Q186,186 146,186 H54 Q14,186 14,146 V54 Q14,14 54,14 Z" fill="#FCF6EC" stroke="#E9DCC5" stroke-width="3"/>
+                <path d="M142,14 L186,58 L142,58 Z" fill="#ECDBBE"/>
+                <circle cx="70" cy="76" r="7" fill="#E2653A"/>
+                <circle cx="130" cy="76" r="7" fill="#E2653A"/>
+                <path d="M64 106 Q100 130 136 106" stroke="#E2653A" stroke-width="14" stroke-linecap="round" fill="none"/>
+              </svg>`
+          }
+          <span class="wall-brand-name">${escapeHtml(wall.businessName)}</span>
+        </div>
+        <div class="eyebrow">Response Wall</div>
         <h1>You told us what would make this place better. Here's what we did about it.</h1>
         <p>Every note here started as a customer suggestion — not a complaint. This is what happens after you send one.</p>
 

@@ -1240,6 +1240,7 @@ app.get('/api/board/:businessId/wall', async (req, res) => {
 
   res.json({
     businessName: business.businessName,
+    logoDataUrl: business.logoDataUrl || null,
     totalNotes: customerNotes.length,
     actionedCount: customerNotes.filter((n) => n.status === 'actioned').length,
     avgResponseDays,
