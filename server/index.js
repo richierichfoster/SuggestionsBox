@@ -403,7 +403,7 @@ app.post('/api/auth/signup', async (req, res) => {
 const GOOGLE_CLIENT_ID = '84971942559-b3287j5jg35h6h3sveccle2n6d28admc.apps.googleusercontent.com';
 
 app.post('/api/auth/google', async (req, res) => {
-  const { credential } = req.body;
+  const { credential, plan, promoCode } = req.body;
   if (!credential) {
     return res.status(400).json({ error: 'credential is required' });
   }
@@ -443,6 +443,10 @@ app.post('/api/auth/google', async (req, res) => {
       }
     }
   } else {
+    // plan/promoCode only ever apply to a brand-new account — an
+    // existing account's plan is never changed just because someone
+    // happened to have a plan chip selected when they clicked the
+    // Google button on the signup page.
     business = {
       id: newId(),
       businessName: payload.name ? `${payload.name}'s Business` : 'My Business',
@@ -451,13 +455,13 @@ app.post('/api/auth/google', async (req, res) => {
       passwordHash: null,
       passwordSalt: null,
       isGoogleAccount: true, // Google accounts don't use a password
-      plan: 'starter',
+      plan: plan || 'starter',
       isAdmin: false,
       address: null,
       lat: null,
       lng: null,
       logoDataUrl: null,
-      promoUnlocked: false,
+      promoUnlocked: isValidPromoCode(promoCode),
       digestEnabled: true,
       digestEmail: null,
       digestSkipEmpty: false,
