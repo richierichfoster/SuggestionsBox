@@ -21,7 +21,7 @@
   *{box-sizing:border-box; margin:0; padding:0;}
   html{background:#FCF6EC !important;}
   body{font-family:'Work Sans',sans-serif; color:#2E2B28 !important; background:#FCF6EC !important; -webkit-font-smoothing:antialiased;}
-  a{color:var(--terra-deep);}
+  a{color:inherit; text-decoration:none;}
   h1,h2,h3{font-family:'Fredoka',sans-serif; font-weight:600; line-height:1.2;}
 
   header{position:sticky; top:0; z-index:50; background:rgba(252,246,236,0.92); backdrop-filter:blur(6px); border-bottom:1px solid var(--line);}
@@ -30,10 +30,17 @@
   .brand svg{width:30px; height:30px;}
   .brand span{font-family:'Fredoka',sans-serif; font-weight:700; font-size:17px;}
   .brand span em{font-style:normal; color:var(--terra);}
+  .nav-links{display:flex; gap:28px; font-size:14px; font-weight:500;}
+  .nav-links a:hover{color:var(--terra-deep);}
+  .nav-right{display:flex; align-items:center; gap:18px;}
+  .nav-login{font-size:14px; font-weight:500;}
+  .nav-login:hover{color:var(--terra-deep);}
   .nav-cta{
-    background:var(--terra); color:#FCF6EC !important; font-family:'Fredoka',sans-serif; font-weight:600;
-    font-size:14px; padding:10px 20px; border-radius:22px;
+    background:var(--ink); color:var(--cream) !important; font-family:'Fredoka',sans-serif; font-weight:600;
+    font-size:13.5px; padding:10px 20px; border-radius:30px;
   }
+  .nav-mobile-hide{display:flex;}
+  @media (max-width:760px){ .nav-mobile-hide{display:none;} }
 
   .wrap{max-width:760px; margin:0 auto; padding:56px 24px 90px;}
   .eyebrow{
@@ -44,16 +51,12 @@
   h1{font-size:32px; margin-bottom:10px;}
   .updated{font-family:'Space Mono',monospace; font-size:12.5px; color:var(--ink-soft); margin-bottom:28px;}
 
-  .notice{
-    background:var(--teal-tint); border:1px solid #CBE0DC; border-radius:12px; padding:16px 18px;
-    font-size:13.5px; color:var(--teal-deep); line-height:1.6; margin-bottom:40px;
-  }
-  .notice b{font-family:'Fredoka',sans-serif;}
-
   .toc{background:var(--card); border:1px solid var(--line); border-radius:14px; padding:22px 24px; margin-bottom:48px;}
   .toc h3{font-size:14px; text-transform:uppercase; letter-spacing:.03em; color:var(--ink-soft); margin-bottom:12px;}
   .toc ol{margin:0; padding-left:20px; font-size:14px; line-height:2;}
-  .toc a{color:var(--ink);}
+  .toc a{color:var(--ink); text-decoration:underline;}
+  section.term a{color:var(--terra-deep); text-decoration:underline;}
+  section.term a:hover{color:var(--terra-text);}
   .toc a:hover{color:var(--terra-deep);}
 
   section.term{margin-bottom:40px; scroll-margin-top:90px;}
@@ -81,11 +84,19 @@
 
 <header>
   <nav>
-    <a href="index.html" class="brand">
+    <div class="brand">
       <svg viewBox="0 0 200 200"><path d="M56 10 L146 10 L190 54 L190 144 A46 46 0 0 1 144 190 L56 190 A46 46 0 0 1 10 144 L10 56 A46 46 0 0 1 56 10 Z" fill="#FCF6EC" stroke="#E2653A" stroke-width="10"/><path d="M146 10 L190 54 L146 54 Z" fill="#E2653A"/><path d="M146 10 L146 54 L190 54" fill="none" stroke="#B84B29" stroke-width="4" stroke-linejoin="round"/><circle cx="66" cy="86" r="9" fill="#E2653A"/><circle cx="130" cy="86" r="9" fill="#E2653A"/><path d="M56 120 Q100 158 142 120" stroke="#E2653A" stroke-width="16" stroke-linecap="round" fill="none"/></svg>
       <span>Suggestions<em>Box</em></span>
-    </a>
-    <a href="https://app.suggestionsbox.com.au/login.html" class="nav-cta">Log in / Register</a>
+    </div>
+    <div class="nav-links nav-mobile-hide">
+      <a href="index.html#how">How it works</a>
+      <a href="index.html#features">Features</a>
+      <a href="pricing.html">Pricing</a>
+    </div>
+    <div class="nav-right">
+      <a href="https://app.suggestionsbox.com.au/find.html" class="nav-login nav-mobile-hide">Find a business</a>
+      <a href="https://app.suggestionsbox.com.au/login.html" class="nav-cta">Log in / Register</a>
+    </div>
   </nav>
 </header>
 
@@ -93,10 +104,6 @@
   <span class="eyebrow">Legal</span>
   <h1>Terms &amp; Conditions</h1>
   <div class="updated">Last updated — 13 July 2026</div>
-
-  <div class="notice">
-    <b>Before you publish this:</b> this is a plain-English starting draft, written to match how Suggestions Box actually works — it is not legal advice, and it hasn't been reviewed by a solicitor. Please have one look it over (particularly the billing, liability, and Australian Consumer Law sections) before treating it as your final terms.
-  </div>
 
   <div class="toc">
     <h3>Contents</h3>
