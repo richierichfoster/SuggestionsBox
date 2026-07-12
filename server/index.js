@@ -389,6 +389,96 @@ app.post('/api/auth/signup', async (req, res) => {
   });
 });
 
+// Google Sign-In. The frontend sends the ID token it gets from Google's
+// Identity Services library; we verify it directly against Google's own
+// tokeninfo endpoint (no extra dependency needed for this). If an account
+// with that email already exists, log into it — reusing the same
+// findAnyAccountByEmail lookup used everywhere else, so this correctly
+// finds an owner OR an already-invited team member, not just owners.
+// Otherwise create a new business — Google doesn't give us a business
+// name, so we use a sensible default the person can rename later. New
+// accounts get the exact same shape as a normal signup (team members,
+// onboarding checklist, promo flag, etc.) so nothing downstream breaks
+// from a missing field.
+const GOOGLE_CLIENT_ID = '84971942559-b3287j5jg35h6h3sveccle2n6d28admc.apps.googleusercontent.com';
+
+app.post('/api/auth/google', async (req, res) => {
+  const { credential } = req.body;
+  if (!credential) {
+    return res.status(400).json({ error: 'credential is required' });
+  }
+
+  let payload;
+  try {
+    const verifyRes = await fetch(`https://oauth2.googleapis.com/tokeninfo?id_token=${credential}`);
+    if (!verifyRes.ok) throw new Error('bad token');
+    payload = await verifyRes.json();
+  } catch (err) {
+    return res.status(401).json({ error: 'Could not verify Google sign-in' });
+  }
+
+  if (payload.aud !== GOOGLE_CLIENT_ID) {
+    return res.status(401).json({ error: 'Token was not issued for this app' });
+  }
+  if (payload.email_verified !== 'true' || !payload.email) {
+    return res.status(401).json({ error: 'Google account email is not verified' });
+  }
+
+  await db.read();
+  const normalizedEmail = payload.email.trim().toLowerCase();
+  const existing = findAnyAccountByEmail(normalizedEmail);
+
+  let business;
+  let teamMemberId = null;
+
+  if (existing) {
+    business = existing.business;
+    if (existing.kind === 'member') {
+      teamMemberId = existing.member.id;
+      // Google sign-in only applies to owner accounts here — an invited
+      // team member still needs to accept their invite and set a
+      // password first, same as the regular login flow requires.
+      if (!existing.member.passwordHash) {
+        return res.status(401).json({ error: 'Please check your email and accept your invite first.' });
+      }
+    }
+  } else {
+    business = {
+      id: newId(),
+      businessName: payload.name ? `${payload.name}'s Business` : 'My Business',
+      ownerName: payload.name || null,
+      email: normalizedEmail,
+      passwordHash: null,
+      passwordSalt: null,
+      isGoogleAccount: true, // Google accounts don't use a password
+      plan: 'starter',
+      isAdmin: false,
+      address: null,
+      lat: null,
+      lng: null,
+      logoDataUrl: null,
+      promoUnlocked: false,
+      digestEnabled: true,
+      digestEmail: null,
+      digestSkipEmpty: false,
+      onboarding: { qrViewed: false, teamBoardViewed: false, wallViewed: false },
+      teamMembers: [],
+      createdAt: new Date().toISOString(),
+      notes: [],
+    };
+    db.data.businesses.push(business);
+  }
+
+  const token = createToken();
+  db.data.sessions[token] = { businessId: business.id, teamMemberId };
+  await db.write();
+
+  res.json({
+    token,
+    business: { id: business.id, businessName: business.businessName, plan: business.plan },
+  });
+});
+
 app.post('/api/auth/login', async (req, res) => {
   const { email, password } = req.body;
   if (!email?.trim() || !password) {
