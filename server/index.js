@@ -47,6 +47,18 @@ const app = express();
 app.use(cors());
 app.use(express.json({ limit: '3mb' }));
 
+// Simple fixed-code promo system for testing/pilot businesses — set as a
+// comma-separated PROMO_CODES env var, e.g. "TESTFRIEND2026,PILOTFREE".
+// Not a managed/tracked marketing system — just a lightweight bypass for
+// the plan-change payment gate, ahead of real Stripe billing being wired
+// in. A business that redeems a valid code stays free indefinitely until
+// a platform admin manually revokes it.
+function isValidPromoCode(code) {
+  if (!code) return false;
+  const validCodes = (process.env.PROMO_CODES || '').split(',').map((c) => c.trim().toUpperCase()).filter(Boolean);
+  return validCodes.includes(code.trim().toUpperCase());
+}
+
 const STATUS_ORDER = ['sent', 'seen', 'acknowledged', 'in_progress', 'actioned', 'not_planned'];
 
 await initDb();
@@ -326,7 +338,7 @@ function canAccessLane(role, lane) {
 }
 
 app.post('/api/auth/signup', async (req, res) => {
-  const { businessName, ownerName, email, password, plan } = req.body;
+  const { businessName, ownerName, email, password, plan, promoCode } = req.body;
 
   if (!businessName?.trim() || !email?.trim() || !password) {
     return res.status(400).json({ error: 'businessName, email, and password are required' });
@@ -356,6 +368,7 @@ app.post('/api/auth/signup', async (req, res) => {
     lat: null,
     lng: null,
     logoDataUrl: null,
+    promoUnlocked: isValidPromoCode(promoCode),
     digestEnabled: true,
     digestEmail: null, // null = falls back to the account's own email
     digestSkipEmpty: false, // false = still send a "quiet day" email when there's nothing new
@@ -508,6 +521,7 @@ app.get('/api/me', requireSession, (req, res) => {
     digestEnabled: req.business.digestEnabled !== false, // undefined (older accounts) defaults to true
     digestEmail: req.business.digestEmail || null,
     digestSkipEmpty: !!req.business.digestSkipEmpty,
+    promoUnlocked: !!req.business.promoUnlocked,
     onboardingChecklist: req.actingUser.role === 'admin' ? computeOnboardingChecklist(req.business) : [],
     createdAt: req.business.createdAt,
   });
@@ -611,6 +625,20 @@ app.post('/api/business/email-preferences', requireSession, requireBusinessOwner
     digestEmail: business.digestEmail,
     digestSkipEmpty: business.digestSkipEmpty,
   });
+});
+
+app.post('/api/business/redeem-promo', requireSession, requireBusinessOwner, async (req, res) => {
+  const { code } = req.body;
+  if (!isValidPromoCode(code)) {
+    return res.status(400).json({ error: "That code isn't valid." });
+  }
+
+  await db.read();
+  const business = db.data.businesses.find((b) => b.id === req.business.id);
+  business.promoUnlocked = true;
+  await db.write();
+
+  res.json({ ok: true, promoUnlocked: true });
 });
 
 const ONBOARDING_FLAGS = ['qrViewed', 'teamBoardViewed', 'wallViewed'];
@@ -948,7 +976,7 @@ app.get('/api/my-notes', requireSession, (req, res) => {
     .map((n) => ({ ...n, voteCount: n.votes.length }))
     .sort((a, b) => {
       if (!!b.isSafetyIssue !== !!a.isSafetyIssue) return b.isSafetyIssue ? 1 : -1;
-      return b.voteCount - a.voteCount;
+      return new Date(b.createdAt) - new Date(a.createdAt);
     });
   res.json(notes);
 });
@@ -1307,6 +1335,7 @@ function businessSummary(b) {
     employeeNotesEnabled: planIncludesEmployeeNotes(b.plan),
     actionedRate: notes.length ? Math.round((actionedCount / notes.length) * 100) : 0,
     lastActivity: lastNoteAt || b.createdAt,
+    promoUnlocked: !!b.promoUnlocked,
   };
 }
 
@@ -1330,6 +1359,18 @@ app.get('/api/admin/businesses/:id', requireSession, requireAdmin, async (req, r
     .sort((a, b) => b.voteCount - a.voteCount);
 
   res.json({ ...businessSummary(business), notes });
+});
+
+// Platform admin revokes a business's promo-unlocked billing bypass.
+app.post('/api/admin/businesses/:id/revoke-promo', requireSession, requireAdmin, async (req, res) => {
+  await db.read();
+  const business = db.data.businesses.find((b) => b.id === req.params.id);
+  if (!business) return res.status(404).json({ error: 'business not found' });
+
+  business.promoUnlocked = false;
+  await db.write();
+
+  res.json({ ok: true });
 });
 
 // Admin updates a note's status on behalf of any business.

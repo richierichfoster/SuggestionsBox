@@ -3182,6 +3182,19 @@ var qrcode = function() {
 
     app.innerHTML = `
       <div class="topbar"><h1>Plan &amp; Billing</h1></div>
+      <div class="settings-panel">
+        <h2>Promo code</h2>
+        ${ME.promoUnlocked ? `
+          <p class="desc" style="margin-bottom:0;">✓ Promo access active — plan changes are free on this account, no payment needed.</p>
+        ` : `
+          <p class="desc">Have a code? Apply it here to unlock free plan changes for testing.</p>
+          <div class="field-row">
+            <div class="field" style="flex:1;"><input type="text" id="promo-code-input" placeholder="Enter code" style="text-transform:uppercase;"></div>
+            <button class="btn-primary" id="apply-promo-btn" style="align-self:flex-start;">Apply</button>
+          </div>
+          <div id="promo-msg" class="form-msg" style="display:none;"></div>
+        `}
+      </div>
       <div class="plan-cards" id="plan-cards"></div>
       <div class="plan-change-action" id="plan-change-action" style="display:none;">
         <div class="plan-btn-row">
@@ -3191,6 +3204,23 @@ var qrcode = function() {
         <div class="dev-note">"Pay with card" isn't wired up yet — real billing goes through Stripe once that's connected. The button on the right applies the plan change immediately, no payment involved, for testing during the pilot.</div>
       </div>
     `;
+
+    document.getElementById('apply-promo-btn')?.addEventListener('click', async () => {
+      const btn = document.getElementById('apply-promo-btn');
+      const code = document.getElementById('promo-code-input').value.trim();
+      if (!code) return;
+      btn.disabled = true;
+      btn.textContent = 'Applying…';
+      try {
+        await apiFetch('/api/business/redeem-promo', { method: 'POST', body: JSON.stringify({ code }) });
+        ME = await apiFetch('/api/me');
+        showBilling();
+      } catch (err) {
+        showFormMsg('promo-msg', err.message, 'error');
+        btn.disabled = false;
+        btn.textContent = 'Apply';
+      }
+    });
 
     let selectedPlan = null;
     const cardsEl = document.getElementById('plan-cards');
