@@ -253,6 +253,7 @@
 
   /* ---- print card ---- */
   .print-card-wrap{display:flex; gap:32px; flex-wrap:wrap; align-items:flex-start;}
+  .print-card-wrap > div[id^="print-card-area-"]{min-width:0; flex:1 1 340px; max-width:340px;}
   .print-card{
     width:340px; max-width:100%; background:var(--terra); border-radius:20px;
     padding:clamp(20px,8vw,36px) clamp(16px,6vw,28px);
