@@ -98,10 +98,7 @@
   <p class="sub">Log in to reply to notes, update statuses, and see what your customers and team are saying.</p>
 
   <div class="card">
-    <div class="btn-social" id="google-btn">
-      <svg viewBox="0 0 24 24" width="16" height="16"><path fill="#E2653A" d="M12 2L2 7l10 5 10-5-10-5z"/></svg>
-      Continue with Google
-    </div>
+    <div id="google-btn-container" style="margin-bottom:10px; display:flex; justify-content:center;"></div>
 
     <div class="divider">or</div>
 
@@ -209,9 +206,18 @@
         client_id: GOOGLE_CLIENT_ID,
         callback: handleGoogleCredential,
       });
-      document.getElementById('google-btn').addEventListener('click', () => {
-        google.accounts.id.prompt();
-      });
+      // Rendering Google's own button (rather than triggering prompt()
+      // from our custom-styled one) is the reliable, Google-recommended
+      // approach — the One Tap prompt() call is documented as "not
+      // always displayed," with particular unreliability on mobile
+      // browsers (Safari/Firefox's tracking-prevention rules force a
+      // popup-based flow there, and popups are especially prone to
+      // being blocked on mobile). A rendered button doesn't have that
+      // problem on any platform.
+      google.accounts.id.renderButton(
+        document.getElementById('google-btn-container'),
+        { theme: 'outline', size: 'large', shape: 'pill', text: 'continue_with', width: 340 }
+      );
     }
   });
 </script>
