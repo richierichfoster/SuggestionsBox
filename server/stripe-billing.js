@@ -9,9 +9,9 @@ const STRIPE_SECRET_KEY = process.env.STRIPE_SECRET_KEY || null;
 export const stripe = STRIPE_SECRET_KEY ? new Stripe(STRIPE_SECRET_KEY) : null;
 
 // Matches the prices shown on the public pricing page (pricing.html):
-// Growth is $59/mo billed monthly, or $47/mo ($564/yr) billed annually.
-const GROWTH_MONTHLY_AUD_CENTS = 5900;
-const GROWTH_ANNUAL_AUD_CENTS = 56400;
+// Growth is $49/mo billed monthly, or $39/mo ($468/yr) billed annually.
+const GROWTH_MONTHLY_AUD_CENTS = 4900;
+const GROWTH_ANNUAL_AUD_CENTS = 46800;
 
 // Creates the Growth-plan Product + two Prices (monthly/annual) in Stripe
 // the first time the server ever boots with a Stripe key configured, then
@@ -22,18 +22,34 @@ export async function ensureGrowthPrices() {
   await db.read();
   db.data.stripe ||= {};
 
-  if (db.data.stripe.growthMonthlyPriceId && db.data.stripe.growthAnnualPriceId) {
-    return; // already created on a previous boot
+  const cached = db.data.stripe;
+  const upToDate = cached.growthMonthlyPriceId && cached.growthAnnualPriceId
+    && cached.growthMonthlyCents === GROWTH_MONTHLY_AUD_CENTS
+    && cached.growthAnnualCents === GROWTH_ANNUAL_AUD_CENTS;
+
+  if (upToDate) return; // already created at the current price, nothing to do
+
+  // Either nothing's cached yet, or the price constants above have changed
+  // since the last boot. Stripe Price objects are immutable — you can't
+  // edit an existing one's amount — so when the price changes we create a
+  // brand new Price (attached to the same Product) and just start
+  // pointing new checkouts at that one. The old Price object is left
+  // alone in Stripe (existing subscribers keep billing at their original
+  // rate until they cancel/renew onto the new price some other way) —
+  // this only affects what NEW checkouts use going forward.
+  console.log('[stripe] Growth prices missing or stale — creating current prices in Stripe...');
+
+  let productId = cached.growthProductId;
+  if (!productId) {
+    const product = await stripe.products.create({
+      name: 'Suggestions Box — Growth',
+      description: 'Team notes, trends, priority queue, and team roles — billed per location.',
+    });
+    productId = product.id;
   }
 
-  console.log('[stripe] Growth prices not found in local cache — creating them in Stripe...');
-  const product = await stripe.products.create({
-    name: 'Suggestions Box — Growth',
-    description: 'Team notes, trends, priority queue, and team roles — billed per location.',
-  });
-
   const monthly = await stripe.prices.create({
-    product: product.id,
+    product: productId,
     currency: 'aud',
     unit_amount: GROWTH_MONTHLY_AUD_CENTS,
     recurring: { interval: 'month' },
@@ -41,16 +57,18 @@ export async function ensureGrowthPrices() {
   });
 
   const annual = await stripe.prices.create({
-    product: product.id,
+    product: productId,
     currency: 'aud',
     unit_amount: GROWTH_ANNUAL_AUD_CENTS,
     recurring: { interval: 'year' },
     nickname: 'Growth — annual',
   });
 
-  db.data.stripe.growthProductId = product.id;
+  db.data.stripe.growthProductId = productId;
   db.data.stripe.growthMonthlyPriceId = monthly.id;
   db.data.stripe.growthAnnualPriceId = annual.id;
+  db.data.stripe.growthMonthlyCents = GROWTH_MONTHLY_AUD_CENTS;
+  db.data.stripe.growthAnnualCents = GROWTH_ANNUAL_AUD_CENTS;
   await db.write();
   console.log(`[stripe] Created Growth prices — monthly: ${monthly.id}, annual: ${annual.id}`);
 }
