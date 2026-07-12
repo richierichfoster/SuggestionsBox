@@ -91,6 +91,7 @@
     font-family:'Fredoka',sans-serif; font-size:18px; font-weight:600; color:var(--ink);
     padding:16px 18px 0; line-height:1.3; display:flex; align-items:center; gap:8px;
   }
+  .notes-section-label .arrow-slot{width:84px; flex-shrink:0; display:flex; justify-content:center;}
   .notes-section-label svg{width:18px; height:18px; flex-shrink:0; color:var(--terra-deep);}
 
   .btn-primary{background:var(--terra); color:var(--card); border:none; font-family:'Fredoka',sans-serif; font-weight:600; font-size:14px; padding:13px; border-radius:12px; width:100%; cursor:pointer;}
@@ -326,7 +327,7 @@
       </div>
     ` : '';
     const composeHeadline = isStaffMode ? 'Got feedback for the team?' : 'Help us! Could we be doing something better?';
-    const backLabel = isStaffMode ? "or back a colleague's" : "or back someone else's";
+    const backLabel = isStaffMode ? "Or back a colleague's" : "Or back someone else's";
     root.innerHTML = `
       <div class="sticky-header">
         <div class="topbar">
@@ -349,7 +350,7 @@
       </div>
       ${staffBanner}
       <div class="notes-section-label">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M6 13l6 6 6-6"/></svg>
+        <span class="arrow-slot"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M6 13l6 6 6-6"/></svg></span>
         ${backLabel}…
       </div>
       <div class="page" id="notes-page"><div class="empty">Loading notes…</div></div>
