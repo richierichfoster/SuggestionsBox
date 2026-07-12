@@ -300,19 +300,19 @@
     content:""; position:absolute; top:-40%; right:-10%; width:320px; height:320px; border-radius:50%;
     background:radial-gradient(circle, rgba(217,164,65,0.28), transparent 70%);
   }
-  .cta-band h2{font-size:30px; color:#FFFFFF; margin-bottom:12px;}
-  .cta-band p{font-size:15px; color:#FFFFFF; max-width:440px; margin:0 auto 28px; line-height:1.6;}
-  .cta-form{display:flex; gap:10px; max-width:420px; margin:0 auto; flex-wrap:wrap; justify-content:center;}
-  .cta-form input{
-    flex:1; min-width:200px; padding:14px 16px; border-radius:12px; border:none; font-size:14px; font-family:'Work Sans',sans-serif;
-  }
-  .cta-form button{
+  .cta-band h2{font-size:30px; color:#FFFFFF; margin-bottom:12px; position:relative; z-index:1;}
+  .cta-band p{font-size:15px; color:#FFFFFF; max-width:440px; margin:0 auto 28px; line-height:1.6; position:relative; z-index:1;}
+  .cta-buttons{display:flex; gap:12px; max-width:420px; margin:0 auto; flex-wrap:wrap; justify-content:center; position:relative; z-index:1;}
+  .cta-btn-primary{
     background:var(--gold); color:var(--ink); font-family:'Fredoka',sans-serif; font-weight:700;
-    font-size:14px; padding:14px 24px; border-radius:12px; border:none; position:relative; z-index:1;
+    font-size:14px; padding:14px 24px; border-radius:12px; text-decoration:none; display:inline-block;
   }
-  .cta-form input{position:relative; z-index:1;}
-  .cta-band h2, .cta-band p{position:relative; z-index:1;}
-  .cta-fine{font-size:11.5px; color:#FFFFFF; margin-top:14px;}
+  .cta-btn-secondary{
+    background:rgba(255,255,255,0.12); color:#FFFFFF; font-family:'Fredoka',sans-serif; font-weight:600;
+    font-size:14px; padding:14px 24px; border-radius:12px; border:1.5px solid rgba(255,255,255,0.4);
+    text-decoration:none; display:inline-block;
+  }
+  .cta-fine{font-size:11.5px; color:#FFFFFF; margin-top:14px; position:relative; z-index:1;}
 
   /* FOOTER */
   footer{padding:50px 0 40px;}
@@ -458,7 +458,7 @@
       <p class="lede">Most business improvement ideas start as a frustration — and die before they ever get heard by the right person. Suggestions Box turns that frustration into an idea that actually gets seen.</p>
       <!-- END LOCKED -->
       <div class="hero-ctas">
-        <a href="#cta" class="btn-primary">Join the waitlist →</a>
+        <a href="https://app.suggestionsbox.com.au/signup.html" class="btn-primary">Get started free →</a>
         <a href="#how" class="btn-secondary">See how it works</a>
       </div>
 
@@ -473,7 +473,7 @@
         </div>
         <div class="value-mini business">
           <svg viewBox="0 0 24 24" fill="none"><path d="M3 3v18h18M7 15l4-5 3 3 5-7" stroke="#D9A441" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
-          <div><b>The owner</b><span>Finally hears it — ranked by how many people agree.</span></div>
+          <div><b>The owner</b><span>Finally gets let in on what the room already knew.</span></div>
         </div>
       </div>
 
@@ -702,24 +702,14 @@
 <section id="customers-business" style="background:#FCF6EC;">
   <div class="wrap">
     <div class="section-head center" style="margin-left:auto;margin-right:auto;">
-      <span class="eyebrow">Same story, three seats</span>
-      <h2>The regular, the new hire, and you</h2>
-      <p>One note, tracked one way — but what it actually does depends on which of the three you are.</p>
+      <span class="eyebrow">Whose story this really is</span>
+      <h2>The best ideas were already in the building.</h2>
+      <p>Your regulars notice things. Your crew notices more. None of that is new — what's new is that it finally has somewhere to go, and someone lucky enough to be listening.</p>
     </div>
     <div class="audience-grid">
-      <div class="audience-card business" id="business">
-        <span class="tag">For your business</span>
-        <h3>Every good idea, in one ranked list.</h3>
-        <ul class="audience-list">
-          <li><svg viewBox="0 0 24 24" fill="none"><path d="M9 12l2 2 4-4M21 12a9 9 0 11-18 0 9 9 0 0118 0z" stroke="#E2653A" stroke-width="1.8"/></svg>Customer and team notes in separate queues, ranked by how many people agree.</li>
-          <li><svg viewBox="0 0 24 24" fill="none"><path d="M9 12l2 2 4-4M21 12a9 9 0 11-18 0 9 9 0 0118 0z" stroke="#E2653A" stroke-width="1.8"/></svg>One reply closes the loop for everyone who backed a note.</li>
-          <li><svg viewBox="0 0 24 24" fill="none"><path d="M9 12l2 2 4-4M21 12a9 9 0 11-18 0 9 9 0 0118 0z" stroke="#E2653A" stroke-width="1.8"/></svg>Trends surface recurring ideas, not just whichever note is loudest today.</li>
-          <li><svg viewBox="0 0 24 24" fill="none"><path d="M9 12l2 2 4-4M21 12a9 9 0 11-18 0 9 9 0 0118 0z" stroke="#E2653A" stroke-width="1.8"/></svg>Say "not right now" honestly — silence is what actually loses trust.</li>
-        </ul>
-      </div>
       <div class="audience-card customers" id="customers">
         <span class="tag">From customers</span>
-        <h3>A constructive way to say it.</h3>
+        <h3>They already had the idea. Now it has somewhere to go.</h3>
         <ul class="audience-list">
           <li><svg viewBox="0 0 24 24" fill="none"><path d="M9 12l2 2 4-4M21 12a9 9 0 11-18 0 9 9 0 0118 0z" stroke="#5E7A1F" stroke-width="1.8"/></svg>Post under your name, or anonymously — your choice, every time.</li>
           <li><svg viewBox="0 0 24 24" fill="none"><path d="M9 12l2 2 4-4M21 12a9 9 0 11-18 0 9 9 0 0118 0z" stroke="#5E7A1F" stroke-width="1.8"/></svg>Back a note someone else already wrote instead of repeating it.</li>
@@ -735,6 +725,16 @@
           <li><svg viewBox="0 0 24 24" fill="none"><path d="M9 12l2 2 4-4M21 12a9 9 0 11-18 0 9 9 0 0118 0z" stroke="#D9A441" stroke-width="1.8"/></svg>Equipment, scheduling, process, or safety — routed to a separate internal queue.</li>
           <li><svg viewBox="0 0 24 24" fill="none"><path d="M9 12l2 2 4-4M21 12a9 9 0 11-18 0 9 9 0 0118 0z" stroke="#D9A441" stroke-width="1.8"/></svg>Safety issues skip the vote queue and get fast-tracked straight away.</li>
           <li><svg viewBox="0 0 24 24" fill="none"><path d="M9 12l2 2 4-4M21 12a9 9 0 11-18 0 9 9 0 0118 0z" stroke="#D9A441" stroke-width="1.8"/></svg>Joins with a code from your manager — no separate app to install.</li>
+        </ul>
+      </div>
+      <div class="audience-card business" id="business">
+        <span class="tag">For the business</span>
+        <h3>You're the lucky one — you get to actually hear it.</h3>
+        <ul class="audience-list">
+          <li><svg viewBox="0 0 24 24" fill="none"><path d="M9 12l2 2 4-4M21 12a9 9 0 11-18 0 9 9 0 0118 0z" stroke="#E2653A" stroke-width="1.8"/></svg>Customer and team notes in separate queues, ranked by how many people agree.</li>
+          <li><svg viewBox="0 0 24 24" fill="none"><path d="M9 12l2 2 4-4M21 12a9 9 0 11-18 0 9 9 0 0118 0z" stroke="#E2653A" stroke-width="1.8"/></svg>One reply closes the loop for everyone who backed a note.</li>
+          <li><svg viewBox="0 0 24 24" fill="none"><path d="M9 12l2 2 4-4M21 12a9 9 0 11-18 0 9 9 0 0118 0z" stroke="#E2653A" stroke-width="1.8"/></svg>Trends surface recurring ideas, not just whichever note is loudest today.</li>
+          <li><svg viewBox="0 0 24 24" fill="none"><path d="M9 12l2 2 4-4M21 12a9 9 0 11-18 0 9 9 0 0118 0z" stroke="#E2653A" stroke-width="1.8"/></svg>Say "not right now" honestly — silence is what actually loses trust.</li>
         </ul>
       </div>
     </div>
@@ -805,13 +805,13 @@
 <section id="cta">
   <div class="wrap">
     <div class="cta-band">
-      <h2>Be first to try it</h2>
-      <p>We're opening early access to a small group of customers, staff, and businesses before the public launch. Tell us where you'd want to use it first.</p>
-      <div class="cta-form">
-        <input type="email" placeholder="you@email.com">
-        <button>Join waitlist</button>
+      <h2>Give them somewhere to put it.</h2>
+      <p>Your customers and your crew already know what would make this place better. All they've ever needed is somewhere for it to go — and someone lucky enough to be on the other end.</p>
+      <div class="cta-buttons">
+        <a href="https://app.suggestionsbox.com.au/signup.html" class="cta-btn-primary">Get started free →</a>
+        <a href="https://app.suggestionsbox.com.au/find.html" class="cta-btn-secondary">Find a business</a>
       </div>
-      <div class="cta-fine">No spam — just a note when it's your turn.</div>
+      <div class="cta-fine">Free to start — no credit card required.</div>
     </div>
   </div>
 </section>
