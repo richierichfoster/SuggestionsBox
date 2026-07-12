@@ -223,6 +223,13 @@
   .member-action-btn:hover{background:var(--cream);}
   .member-action-btn.danger:hover{background:#F5E6E1; border-color:#E8C4B8; color:var(--danger);}
 
+  @media (max-width:520px){
+    .member-row{flex-wrap:wrap; row-gap:8px;}
+    .member-info{flex-basis:100%;}
+    .member-role-badge{order:2;}
+    .member-actions{order:3; flex-basis:100%; flex-wrap:wrap;}
+  }
+
   .chart-panel{background:var(--card); border:1px solid var(--line); border-radius:16px; padding:20px; margin-bottom:20px;}
   .chart-panel-head{display:flex; align-items:center; justify-content:space-between; margin-bottom:14px;}
   .chart-panel-head h2{font-size:14px;}
@@ -247,8 +254,8 @@
   /* ---- print card ---- */
   .print-card-wrap{display:flex; gap:32px; flex-wrap:wrap; align-items:flex-start;}
   .print-card{
-    width:340px; background:var(--terra); border-radius:20px; padding:36px 28px;
-    text-align:center; box-shadow:0 14px 34px rgba(46,38,32,.16); flex-shrink:0;
+    width:340px; max-width:100%; background:var(--terra); border-radius:20px; padding:36px 28px;
+    text-align:center; box-shadow:0 14px 34px rgba(46,38,32,.16); flex-shrink:0; box-sizing:border-box;
   }
   .print-card.team-variant{background:var(--teal-deep);}
   .print-card .pc-mark{width:44px; height:44px; margin:0 auto 16px;}
@@ -263,8 +270,10 @@
   .print-card p{color:rgba(251,241,226,.88); font-size:13px; line-height:1.5; margin-bottom:22px;}
   .print-card .pc-qr-box{
     background:#FCF6EC; border-radius:14px; padding:16px; display:inline-block; margin-bottom:16px;
+    max-width:100%; overflow:hidden; box-sizing:border-box;
   }
   .print-card .pc-qr-box #qr-canvas{display:flex; align-items:center; justify-content:center;}
+  .print-card .pc-qr-box #qr-canvas canvas{max-width:100%; height:auto;}
   .print-card .pc-biz-name{
     font-family:'Space Mono',monospace; font-size:11px; letter-spacing:.04em; text-transform:uppercase;
     color:rgba(251,241,226,.75);
