@@ -88,7 +88,7 @@
   .compose-icon svg{width:18px; height:18px;}
   .compose-text .t{font-family:'Fredoka',sans-serif; font-size:15px; font-weight:600; margin-bottom:3px; line-height:1.25;}
   .compose-text .d{font-size:12px; color:rgba(255,255,255,.82); line-height:1.4;}
-  .notes-section-label{font-size:13px; color:var(--ink-soft); padding:16px 18px 0; line-height:1.4;}
+  .notes-section-label{font-family:'Fredoka',sans-serif; font-size:18px; font-weight:600; color:var(--ink); padding:16px 18px 0; line-height:1.3;}
 
   .btn-primary{background:var(--terra); color:var(--card); border:none; font-family:'Fredoka',sans-serif; font-weight:600; font-size:14px; padding:13px; border-radius:12px; width:100%; cursor:pointer;}
   .btn-primary:disabled{opacity:.5; cursor:not-allowed;}
@@ -323,9 +323,7 @@
       </div>
     ` : '';
     const composeHeadline = isStaffMode ? 'Got feedback for the team?' : 'Help us! Could we be doing something better?';
-    const composeSubtext = isStaffMode
-      ? "Leave an anonymous note, or back a colleague's — takes 20 seconds."
-      : "Leave an anonymous note, or back someone else's — takes 20 seconds.";
+    const backLabel = isStaffMode ? "or back a colleague's" : "or back someone else's";
     root.innerHTML = `
       <div class="sticky-header">
         <div class="topbar">
@@ -341,13 +339,13 @@
             <div class="compose-icon"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg></div>
             <div class="compose-text">
               <div class="t">New note</div>
-              <div class="d">Something on your mind</div>
+              <div class="d">Leave an anonymous note, takes 20 seconds</div>
             </div>
           </div>
         </div>
       </div>
       ${staffBanner}
-      <div class="notes-section-label">${composeSubtext}</div>
+      <div class="notes-section-label">${backLabel}</div>
       <div class="page" id="notes-page"><div class="empty">Loading notes…</div></div>
       <div class="footer-brand">Powered by <a href="https://www.suggestionsbox.com.au/">Suggestions Box</a></div>
     `;
