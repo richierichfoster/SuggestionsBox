@@ -50,15 +50,14 @@
     background-size: 12px 10px; background-repeat:repeat-x; background-position:top center;
   }
   .note-card:hover{transform:translateY(-1px); box-shadow:0 8px 18px rgba(46,38,32,.07);}
-  .vote-btn{
-    flex:none; width:46px; height:52px; border-radius:12px; background:var(--cream); border:1px solid var(--line);
-    display:flex; flex-direction:column; align-items:center; justify-content:center; cursor:pointer;
-    font-family:'Space Mono',monospace; font-weight:700; gap:2px; padding:0;
+  .vote-block{flex:none; display:flex; flex-direction:column; align-items:center; gap:5px; cursor:pointer; width:52px;}
+  .vote-box{
+    width:52px; height:52px; border-radius:12px; background:var(--cream); border:1px solid var(--line);
+    display:flex; align-items:center; justify-content:center;
+    font-family:'Fredoka',sans-serif; font-weight:600; font-size:20px; color:var(--ink);
   }
-  .vote-btn svg{width:16px; height:16px; fill:none; stroke:var(--gold); stroke-width:1.6;}
-  .vote-btn.voted{background:var(--terra); border-color:var(--terra); color:var(--card);}
-  .vote-btn.voted svg{fill:var(--card); stroke:var(--card);}
-  .vote-btn .vlabel{font-size:14px;}
+  .vote-box.voted{background:var(--terra); border-color:var(--terra); color:var(--card);}
+  .vote-label{font-family:'Space Mono',monospace; font-size:9.5px; text-transform:uppercase; letter-spacing:.03em; color:var(--ink-soft);}
   .note-body{flex:1; min-width:0;}
   .note-body .ntext{font-size:14px; line-height:1.5; margin-bottom:8px; color:var(--ink);}
   .note-meta{display:flex; align-items:center; gap:7px; font-family:'Space Mono',monospace; font-size:10px; color:var(--ink-soft); flex-wrap:wrap; margin-bottom:2px;}
@@ -373,10 +372,10 @@
       }
       page.innerHTML = notes.map((n) => `
         <div class="note-card" data-id="${n.id}">
-          <button class="vote-btn ${n.hasVoted ? 'voted' : ''}" data-vote="${n.id}">
-            <svg viewBox="0 0 20 20"><path d="M10 17s-6.5-4.1-8.5-8.2C.3 6.1 1.7 3 4.7 3c1.7 0 3 .9 3.7 2.1C9.1 3.9 10.4 3 12.1 3c3 0 4.4 3.1 3.2 5.8C14.5 12.9 10 17 10 17z"/></svg>
-            <span class="vlabel">${n.voteCount}</span>
-          </button>
+          <div class="vote-block" data-vote="${n.id}">
+            <div class="vote-box ${n.hasVoted ? 'voted' : ''}">${n.voteCount}</div>
+            <div class="vote-label">Backed</div>
+          </div>
           <div class="note-body" data-open="${n.id}">
             <span class="status-pill ${n.status}">${STATUS_LABELS[n.status]}</span>
             <div class="ntext">"${escapeHtml(n.text)}"</div>
@@ -664,10 +663,10 @@
       const note = await api(`/api/board/${businessId}/notes/${noteId}?deviceId=${getDeviceId()}`);
       document.getElementById('detail-page').innerHTML = `
         <div class="note-card" style="margin-bottom:18px;">
-          <button class="vote-btn ${note.hasVoted ? 'voted' : ''}" id="vote-btn">
-            <svg viewBox="0 0 20 20"><path d="M10 17s-6.5-4.1-8.5-8.2C.3 6.1 1.7 3 4.7 3c1.7 0 3 .9 3.7 2.1C9.1 3.9 10.4 3 12.1 3c3 0 4.4 3.1 3.2 5.8C14.5 12.9 10 17 10 17z"/></svg>
-            <span class="vlabel">${note.voteCount}</span>
-          </button>
+          <div class="vote-block" id="vote-btn">
+            <div class="vote-box ${note.hasVoted ? 'voted' : ''}">${note.voteCount}</div>
+            <div class="vote-label">Backed</div>
+          </div>
           <div class="note-body">
             <span class="status-pill ${note.status}">${STATUS_LABELS[note.status]}</span>
             <div class="ntext">"${escapeHtml(note.text)}"</div>
