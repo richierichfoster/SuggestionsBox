@@ -77,7 +77,15 @@
   .status-pill.actioned{background:var(--good); color:var(--good-ink);}
   .status-pill.not_planned{background:#EFEAE3; color:var(--ink-soft);}
 
-  .fab{position:fixed; bottom:24px; right:24px; width:56px; height:56px; border-radius:50%; background:var(--terra); color:var(--card); display:flex; align-items:center; justify-content:center; box-shadow:0 10px 22px rgba(226,101,58,0.35); border:none; cursor:pointer; font-size:26px; max-width:480px;}
+  .sticky-header{position:sticky; top:0; z-index:10; background:rgba(252,246,236,0.94); backdrop-filter:blur(6px); border-bottom:1px solid var(--line);}
+  .compose-tile-wrap{padding:0 18px 16px;}
+  .compose-tile{border-radius:16px; padding:18px 16px; display:flex; align-items:center; gap:13px; cursor:pointer;}
+  .compose-tile.terra{background:var(--terra); color:#fff;}
+  .compose-tile.teal{background:var(--teal-deep); color:#fff;}
+  .compose-icon{width:40px; height:40px; border-radius:11px; background:rgba(255,255,255,.18); display:flex; align-items:center; justify-content:center; flex-shrink:0;}
+  .compose-icon svg{width:18px; height:18px;}
+  .compose-text .t{font-family:'Fredoka',sans-serif; font-size:15px; font-weight:600; margin-bottom:3px; line-height:1.25;}
+  .compose-text .d{font-size:12px; color:rgba(255,255,255,.82); line-height:1.4;}
 
   .btn-primary{background:var(--terra); color:var(--card); border:none; font-family:'Fredoka',sans-serif; font-weight:600; font-size:14px; padding:13px; border-radius:12px; width:100%; cursor:pointer;}
   .btn-primary:disabled{opacity:.5; cursor:not-allowed;}
@@ -311,20 +319,34 @@
         <span>You're viewing as a team member — notes here are private to ${escapeHtml(businessName)}'s staff, separate from the public customer board.</span>
       </div>
     ` : '';
+    const composeHeadline = isStaffMode ? 'Got feedback for the team?' : 'Help us! Could we be doing something better?';
+    const composeSubtext = isStaffMode
+      ? "Leave an anonymous note, or back a colleague's — takes 20 seconds."
+      : "Leave an anonymous note, or back someone else's — takes 20 seconds.";
     root.innerHTML = `
-      <div class="topbar">
-        <div class="topbar-brand">
-          <svg viewBox="0 0 200 200"><path d="M56 10 L146 10 L190 54 L190 144 A46 46 0 0 1 144 190 L56 190 A46 46 0 0 1 10 144 L10 56 A46 46 0 0 1 56 10 Z" fill="#FCF6EC" stroke="#E2653A" stroke-width="10"/><path d="M146 10 L190 54 L146 54 Z" fill="#E2653A"/><path d="M146 10 L146 54 L190 54" fill="none" stroke="#B84B29" stroke-width="4" stroke-linejoin="round"/><circle cx="66" cy="86" r="9" fill="#E2653A"/><circle cx="130" cy="86" r="9" fill="#E2653A"/><path d="M56 120 Q100 158 142 120" stroke="#E2653A" stroke-width="16" stroke-linecap="round" fill="none"/></svg>
-          <h1>${escapeHtml(businessName)}${isStaffMode ? ' · Team' : ''}</h1>
+      <div class="sticky-header">
+        <div class="topbar">
+          <div class="topbar-brand">
+            <svg viewBox="0 0 200 200"><path d="M56 10 L146 10 L190 54 L190 144 A46 46 0 0 1 144 190 L56 190 A46 46 0 0 1 10 144 L10 56 A46 46 0 0 1 56 10 Z" fill="#FCF6EC" stroke="#E2653A" stroke-width="10"/><path d="M146 10 L190 54 L146 54 Z" fill="#E2653A"/><path d="M146 10 L146 54 L190 54" fill="none" stroke="#B84B29" stroke-width="4" stroke-linejoin="round"/><circle cx="66" cy="86" r="9" fill="#E2653A"/><circle cx="130" cy="86" r="9" fill="#E2653A"/><path d="M56 120 Q100 158 142 120" stroke="#E2653A" stroke-width="16" stroke-linecap="round" fill="none"/></svg>
+            <h1>${escapeHtml(businessName)}${isStaffMode ? ' · Team' : ''}</h1>
+          </div>
+          ${businessLogoUrl ? `<div class="topbar-logo"><img src="${businessLogoUrl}" alt=""></div>` : `<div style="width:34px;"></div>`}
         </div>
-        ${businessLogoUrl ? `<div class="topbar-logo"><img src="${businessLogoUrl}" alt=""></div>` : `<div style="width:34px;"></div>`}
+        <div class="compose-tile-wrap">
+          <div class="compose-tile ${isStaffMode ? 'teal' : 'terra'}" id="compose-tile">
+            <div class="compose-icon"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg></div>
+            <div class="compose-text">
+              <div class="t">${composeHeadline}</div>
+              <div class="d">${composeSubtext}</div>
+            </div>
+          </div>
+        </div>
       </div>
       ${staffBanner}
       <div class="page" id="notes-page"><div class="empty">Loading notes…</div></div>
-      <button class="fab" id="fab">+</button>
       <div class="footer-brand">Powered by <a href="https://www.suggestionsbox.com.au/">Suggestions Box</a></div>
     `;
-    document.getElementById('fab').addEventListener('click', renderCompose);
+    document.getElementById('compose-tile').addEventListener('click', renderCompose);
     await loadNotes();
   }
 
@@ -335,8 +357,8 @@
       const notes = await api(`/api/board/${businessId}/notes?deviceId=${getDeviceId()}&lane=${lane}`);
       if (notes.length === 0) {
         page.innerHTML = isStaffMode
-          ? `<div class="empty">No team notes yet.<br>Be the first to say something — tap the + button below.</div>`
-          : `<div class="empty">No notes yet.<br>Be the first to say something — tap the + button below.</div>`;
+          ? `<div class="empty">No team notes yet.<br>Be the first to say something — tap the tile above.</div>`
+          : `<div class="empty">No notes yet.<br>Be the first to say something — tap the tile above.</div>`;
         return;
       }
       page.innerHTML = notes.map((n) => `
