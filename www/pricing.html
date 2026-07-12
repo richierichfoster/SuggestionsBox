@@ -377,8 +377,12 @@
       el.textContent = period === 'annual' ? el.dataset.annual : el.dataset.monthly;
     });
     if (period === 'annual') {
-      const yearly = parseInt(priceNums[1].dataset.annual.replace('$', ''), 10) * 12;
-      growthNote.textContent = `$${yearly} billed annually`;
+      const monthlyPrice = parseInt(priceNums[1].dataset.monthly.replace('$', ''), 10);
+      const annualPrice = parseInt(priceNums[1].dataset.annual.replace('$', ''), 10);
+      const yearly = annualPrice * 12;
+      const savings = (monthlyPrice - annualPrice) * 12;
+      const savingsPct = Math.round((savings / (monthlyPrice * 12)) * 100);
+      growthNote.textContent = `$${yearly} billed annually — save $${savings}/year (${savingsPct}%)`;
       growthNote.style.display = 'block';
     } else {
       growthNote.textContent = '';
