@@ -215,7 +215,7 @@
         <div class="tier-desc">For a business ready to hear from their team too.</div>
         <div class="price-row"><span class="price-num" data-monthly="$59" data-annual="$47">$59</span><span class="price-unit">/month</span></div>
         <div class="price-note" id="growth-price-note" style="display:none;"></div>
-        <a href="https://app.suggestionsbox.com.au/signup.html?plan=growth" class="tier-cta" style="display:block; text-decoration:none;">Start 14-day trial</a>
+        <a href="https://app.suggestionsbox.com.au/signup.html?plan=growth&billing=monthly" class="tier-cta" id="growth-cta" style="display:block; text-decoration:none;">Start 14-day trial</a>
         <ul class="feature-list">
           <li><svg viewBox="0 0 24 24" fill="none"><path d="M20 6L9 17l-5-5" stroke="#FFFFFF" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg>Everything in Starter</li>
           <li><svg viewBox="0 0 24 24" fill="none"><path d="M20 6L9 17l-5-5" stroke="#FFFFFF" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg>Team notes (private staff feedback)</li>
@@ -381,6 +381,10 @@
     } else {
       growthNote.textContent = '';
       growthNote.style.display = 'none';
+    }
+    const growthCta = document.getElementById('growth-cta');
+    if (growthCta) {
+      growthCta.href = `https://app.suggestionsbox.com.au/signup.html?plan=growth&billing=${period}`;
     }
   }
 

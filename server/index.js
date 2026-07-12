@@ -42,8 +42,45 @@ async function sendSafetyIssueAlert(business, note) {
   );
 }
 import { hashPassword, verifyPassword, createToken } from './auth.js';
+import { stripe, ensureGrowthPrices, growthPriceId, applyStripeEvent } from './stripe-billing.js';
 
 const app = express();
+
+const STRIPE_WEBHOOK_SECRET = process.env.STRIPE_WEBHOOK_SECRET || null;
+
+// Registered before app.use(express.json()) below on purpose — Stripe's
+// signature verification needs the exact raw request body, and once the
+// global JSON parser has consumed/parsed it that's no longer available.
+app.post('/api/billing/webhook', express.raw({ type: 'application/json' }), async (req, res) => {
+  if (!stripe) return res.status(503).json({ error: 'Stripe is not configured on this server.' });
+
+  let event;
+  try {
+    if (STRIPE_WEBHOOK_SECRET) {
+      const signature = req.headers['stripe-signature'];
+      event = stripe.webhooks.constructEvent(req.body, signature, STRIPE_WEBHOOK_SECRET);
+    } else {
+      // No webhook signing secret configured yet — this accepts events
+      // unverified, which is only safe while you're still setting things
+      // up. Create the webhook endpoint in the Stripe Dashboard and put
+      // its signing secret in STRIPE_WEBHOOK_SECRET before going live, or
+      // anyone could POST a fake "payment succeeded" event here.
+      event = JSON.parse(req.body.toString('utf8'));
+    }
+  } catch (err) {
+    console.error('[stripe] Webhook signature check failed:', err.message);
+    return res.status(400).json({ error: `Webhook Error: ${err.message}` });
+  }
+
+  try {
+    await applyStripeEvent(event);
+    res.json({ received: true });
+  } catch (err) {
+    console.error('[stripe] Failed to process webhook event:', err.message);
+    res.status(500).json({ error: 'Failed to process event' });
+  }
+});
+
 app.use(cors());
 app.use(express.json({ limit: '3mb' }));
 
@@ -62,6 +99,7 @@ function isValidPromoCode(code) {
 const STATUS_ORDER = ['sent', 'seen', 'acknowledged', 'in_progress', 'actioned', 'not_planned'];
 
 await initDb();
+await ensureGrowthPrices();
 
 // Turns a free-text address into coordinates using OpenStreetMap's free
 // Nominatim service — no API key needed. Returns null on any failure
@@ -355,6 +393,8 @@ app.post('/api/auth/signup', async (req, res) => {
   }
 
   const { hash, salt } = hashPassword(password);
+  const requestedPlan = VALID_PLANS.includes(plan) ? plan : 'starter';
+  const promoUnlocked = isValidPromoCode(promoCode);
   const business = {
     id: newId(),
     businessName: businessName.trim(),
@@ -362,13 +402,24 @@ app.post('/api/auth/signup', async (req, res) => {
     email: normalizedEmail,
     passwordHash: hash,
     passwordSalt: salt,
-    plan: plan || 'starter',
+    // Growth (and Business, which is custom/contact-sales anyway) is never
+    // granted for free just because it was selected on the signup form —
+    // only a valid promo code skips payment. Everyone else starts on
+    // Starter; the frontend sends them straight to Stripe Checkout right
+    // after this if they picked Growth (see `needsCheckout` below).
+    plan: promoUnlocked ? requestedPlan : 'starter',
+    stripeCustomerId: null,
+    stripeSubscriptionId: null,
+    planStatus: 'active',
+    trialEndsAt: null,
+    currentPeriodEnd: null,
+    cancelAtPeriodEnd: false,
     isAdmin: false,
     address: null,
     lat: null,
     lng: null,
     logoDataUrl: null,
-    promoUnlocked: isValidPromoCode(promoCode),
+    promoUnlocked,
     digestEnabled: true,
     digestEmail: null, // null = falls back to the account's own email
     digestSkipEmpty: false, // false = still send a "quiet day" email when there's nothing new
@@ -386,6 +437,7 @@ app.post('/api/auth/signup', async (req, res) => {
   res.status(201).json({
     token,
     business: { id: business.id, businessName: business.businessName, plan: business.plan },
+    needsCheckout: !promoUnlocked && requestedPlan === 'growth',
   });
 });
 
@@ -430,6 +482,7 @@ app.post('/api/auth/google', async (req, res) => {
 
   let business;
   let teamMemberId = null;
+  let needsCheckout = false;
 
   if (existing) {
     business = existing.business;
@@ -447,6 +500,8 @@ app.post('/api/auth/google', async (req, res) => {
     // existing account's plan is never changed just because someone
     // happened to have a plan chip selected when they clicked the
     // Google button on the signup page.
+    const requestedPlan = VALID_PLANS.includes(plan) ? plan : 'starter';
+    const promoUnlocked = isValidPromoCode(promoCode);
     business = {
       id: newId(),
       businessName: payload.name ? `${payload.name}'s Business` : 'My Business',
@@ -455,13 +510,21 @@ app.post('/api/auth/google', async (req, res) => {
       passwordHash: null,
       passwordSalt: null,
       isGoogleAccount: true, // Google accounts don't use a password
-      plan: plan || 'starter',
+      // Same rule as the regular signup form: Growth is never free just
+      // because it was selected, only a valid promo code skips payment.
+      plan: promoUnlocked ? requestedPlan : 'starter',
+      stripeCustomerId: null,
+      stripeSubscriptionId: null,
+      planStatus: 'active',
+      trialEndsAt: null,
+      currentPeriodEnd: null,
+      cancelAtPeriodEnd: false,
       isAdmin: false,
       address: null,
       lat: null,
       lng: null,
       logoDataUrl: null,
-      promoUnlocked: isValidPromoCode(promoCode),
+      promoUnlocked,
       digestEnabled: true,
       digestEmail: null,
       digestSkipEmpty: false,
@@ -471,6 +534,7 @@ app.post('/api/auth/google', async (req, res) => {
       notes: [],
     };
     db.data.businesses.push(business);
+    needsCheckout = !promoUnlocked && requestedPlan === 'growth';
   }
 
   const token = createToken();
@@ -480,6 +544,7 @@ app.post('/api/auth/google', async (req, res) => {
   res.json({
     token,
     business: { id: business.id, businessName: business.businessName, plan: business.plan },
+    needsCheckout,
   });
 });
 
@@ -604,6 +669,12 @@ app.get('/api/me', requireSession, (req, res) => {
     ownerName: req.business.ownerName,
     email: req.business.email,
     plan: req.business.plan,
+    planStatus: req.business.planStatus || 'active',
+    trialEndsAt: req.business.trialEndsAt || null,
+    currentPeriodEnd: req.business.currentPeriodEnd || null,
+    cancelAtPeriodEnd: !!req.business.cancelAtPeriodEnd,
+    hasStripeCustomer: !!req.business.stripeCustomerId,
+    stripeConfigured: !!stripe,
     isAdmin: isOriginalOwner(req) && !!req.business.isAdmin,
     role: req.actingUser.role, // 'admin' | 'manager' | 'team_member'
     userName: req.actingUser.name,
@@ -1041,13 +1112,70 @@ app.get('/api/businesses/search', async (req, res) => {
 
 const VALID_PLANS = ['starter', 'growth', 'business'];
 
-// TEMPORARY DEV BYPASS — no real Stripe integration exists yet, so this
-// lets a business change its own plan with no payment collected, purely
-// for testing plan-gated features (e.g. team notes). It only ever
-// touches the caller's own account, never another business's.
-//
-// Before any real users could hit this: either remove it, or gate it
-// behind a real Stripe webhook confirming payment succeeded first.
+// Starts a real Stripe subscription checkout for the Growth plan, with a
+// 14-day trial (matches what's advertised on the pricing page). Reuses an
+// existing Stripe customer if this business already has one (e.g. they
+// cancelled before and are upgrading again).
+app.post('/api/billing/create-checkout-session', requireSession, requireBusinessOwner, async (req, res) => {
+  if (!stripe) return res.status(503).json({ error: 'Payments are not configured on this server yet.' });
+
+  await db.read();
+  const business = db.data.businesses.find((b) => b.id === req.business.id);
+  const billingPeriod = req.body?.billingPeriod === 'annual' ? 'annual' : 'monthly';
+  const priceId = growthPriceId(billingPeriod);
+  if (!priceId) return res.status(503).json({ error: 'Growth plan pricing is not set up yet.' });
+
+  try {
+    const session = await stripe.checkout.sessions.create({
+      mode: 'subscription',
+      customer: business.stripeCustomerId || undefined,
+      customer_email: business.stripeCustomerId ? undefined : business.email,
+      line_items: [{ price: priceId, quantity: 1 }],
+      subscription_data: {
+        trial_period_days: 14,
+        metadata: { businessId: business.id },
+      },
+      metadata: { businessId: business.id },
+      success_url: `${APP_BASE_URL}/dashboard.html?billing=success`,
+      cancel_url: `${APP_BASE_URL}/dashboard.html?billing=cancelled`,
+    });
+    res.json({ url: session.url });
+  } catch (err) {
+    console.error('[stripe] Failed to create checkout session:', err.message);
+    res.status(500).json({ error: "Couldn't start checkout. Please try again." });
+  }
+});
+
+// Opens Stripe's hosted Billing Portal — lets the business update their
+// card, view invoices, or cancel, without us building any of that
+// ourselves. Only available once they actually have a Stripe customer
+// (i.e. they've been through checkout at least once).
+app.post('/api/billing/create-portal-session', requireSession, requireBusinessOwner, async (req, res) => {
+  if (!stripe) return res.status(503).json({ error: 'Payments are not configured on this server yet.' });
+
+  await db.read();
+  const business = db.data.businesses.find((b) => b.id === req.business.id);
+  if (!business.stripeCustomerId) {
+    return res.status(400).json({ error: "You don't have a billing account yet — upgrade to Growth first." });
+  }
+
+  try {
+    const session = await stripe.billingPortal.sessions.create({
+      customer: business.stripeCustomerId,
+      return_url: `${APP_BASE_URL}/dashboard.html`,
+    });
+    res.json({ url: session.url });
+  } catch (err) {
+    console.error('[stripe] Failed to create billing portal session:', err.message);
+    res.status(500).json({ error: "Couldn't open the billing portal. Please try again." });
+  }
+});
+
+// Free, no-payment plan switch — kept ONLY for promo-unlocked test/pilot
+// accounts (what the promo code has always been for) or when Stripe isn't
+// configured at all (local dev without keys). Everyone else must go
+// through the real Checkout/Billing Portal flow above, so the plan
+// recorded here can never drift from what Stripe is actually billing.
 app.post('/api/billing/change-plan', requireSession, requireBusinessOwner, async (req, res) => {
   const { plan } = req.body;
   if (!VALID_PLANS.includes(plan)) {
@@ -1056,6 +1184,15 @@ app.post('/api/billing/change-plan', requireSession, requireBusinessOwner, async
 
   await db.read();
   const business = db.data.businesses.find((b) => b.id === req.business.id);
+
+  if (stripe && !business.promoUnlocked) {
+    return res.status(403).json({
+      error: plan === 'starter'
+        ? 'To move to Starter, cancel your subscription from the billing portal instead.'
+        : 'Upgrading requires payment — use the Upgrade button to check out with Stripe.',
+    });
+  }
+
   business.plan = plan;
   await db.write();
 
@@ -1423,6 +1560,7 @@ function businessSummary(b) {
     businessName: b.businessName,
     email: b.email,
     plan: b.plan,
+    planStatus: b.planStatus || 'active',
     createdAt: b.createdAt,
     notesReceived: notes.length,
     customerNotes: notes.length - employeeNotes,

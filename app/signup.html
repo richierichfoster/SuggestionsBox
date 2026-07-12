@@ -166,6 +166,7 @@
   // Pre-select the plan chip if arriving from a pricing page link (?plan=growth etc.)
   const params = new URLSearchParams(window.location.search);
   const plan = params.get('plan');
+  const billingPeriod = params.get('billing') === 'annual' ? 'annual' : 'monthly';
   if (plan) {
     const chips = document.querySelectorAll('.plan-chip');
     const index = { starter: 0, growth: 1, business: 2 }[plan];
@@ -190,6 +191,38 @@
   function showError(msg) {
     errorBox.textContent = msg;
     errorBox.style.display = 'block';
+  }
+
+  // After a successful signup/login response: if the account needs to pay
+  // for Growth (i.e. no promo code unlocked it for free), send them
+  // straight into Stripe Checkout instead of the dashboard. Stripe will
+  // redirect back to the dashboard itself once they're done.
+  async function proceedAfterAuth(data) {
+    localStorage.setItem('sb_token', data.token);
+    localStorage.setItem('sb_business', JSON.stringify(data.business));
+
+    if (!data.needsCheckout) {
+      window.location.href = 'dashboard.html';
+      return;
+    }
+
+    try {
+      const res = await fetch(`${API_BASE}/api/billing/create-checkout-session`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${data.token}` },
+        body: JSON.stringify({ billingPeriod }),
+      });
+      const checkout = await res.json();
+      if (res.ok && checkout.url) {
+        window.location.href = checkout.url;
+      } else {
+        // Account exists either way — just land them on the dashboard,
+        // where the Plan & Billing panel offers Upgrade again.
+        window.location.href = 'dashboard.html';
+      }
+    } catch (err) {
+      window.location.href = 'dashboard.html';
+    }
   }
 
   submitBtn.addEventListener('click', async () => {
@@ -229,9 +262,7 @@
         return;
       }
 
-      localStorage.setItem('sb_token', data.token);
-      localStorage.setItem('sb_business', JSON.stringify(data.business));
-      window.location.href = 'dashboard.html';
+      proceedAfterAuth(data);
     } catch (err) {
       showError("Couldn't reach the server. Is the API running?");
       submitBtn.disabled = false;
@@ -263,9 +294,7 @@
         showError(data.error || 'Google sign-in failed. Please try again.');
         return;
       }
-      localStorage.setItem('sb_token', data.token);
-      localStorage.setItem('sb_business', JSON.stringify(data.business));
-      window.location.href = 'dashboard.html';
+      proceedAfterAuth(data);
     } catch (err) {
       showError("Couldn't reach the server. Is the API running?");
     }

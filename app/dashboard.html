@@ -3218,13 +3218,54 @@ var qrcode = function() {
     { id: 'business', name: 'Business', price: 'Custom', features: 'Multi-location, full permissions' },
   ];
 
+  const PLAN_STATUS_LABELS = {
+    trialing: 'Free trial', active: 'Active', past_due: 'Payment past due',
+    canceled: 'Cancelled', unpaid: 'Payment failed', incomplete_expired: 'Cancelled',
+  };
+
+  function formatDate(iso) {
+    if (!iso) return null;
+    return new Date(iso).toLocaleDateString('en-AU', { day: 'numeric', month: 'short', year: 'numeric' });
+  }
+
   function showBilling() {
     closeMobileNav();
     hideAllNav();
     document.getElementById('navBilling').classList.add('active');
 
+    const isGrowthOrAbove = ME.plan === 'growth' || ME.plan === 'business';
+    const statusLabel = PLAN_STATUS_LABELS[ME.planStatus] || null;
+    const trialEnds = formatDate(ME.trialEndsAt);
+    const periodEnds = formatDate(ME.currentPeriodEnd);
+
+    let statusLine = '';
+    if (isGrowthOrAbove && ME.hasStripeCustomer) {
+      if (ME.planStatus === 'trialing' && trialEnds) {
+        statusLine = `<p class="desc" style="margin-bottom:0;">Free trial — first charge on ${trialEnds}.</p>`;
+      } else if (ME.cancelAtPeriodEnd && periodEnds) {
+        statusLine = `<p class="desc" style="margin-bottom:0;">Cancelling — access continues until ${periodEnds}.</p>`;
+      } else if (statusLabel) {
+        statusLine = `<p class="desc" style="margin-bottom:0;">Status: ${statusLabel}${periodEnds ? ` · renews ${periodEnds}` : ''}</p>`;
+      }
+    }
+
     app.innerHTML = `
       <div class="topbar"><h1>Plan &amp; Billing</h1></div>
+
+      ${!ME.stripeConfigured ? `
+        <div class="settings-panel">
+          <p class="desc" style="margin-bottom:0;">Payments aren't configured on this server yet — Stripe keys still need to be added. Plan changes below are free for now.</p>
+        </div>
+      ` : ''}
+
+      ${ME.hasStripeCustomer ? `
+        <div class="settings-panel">
+          <h2>Billing</h2>
+          ${statusLine || '<p class="desc" style="margin-bottom:0;">Manage your card, view invoices, or cancel any time.</p>'}
+          <button class="btn-primary" id="manage-billing-btn" style="margin-top:14px;">Manage billing</button>
+        </div>
+      ` : ''}
+
       <div class="settings-panel">
         <h2>Promo code</h2>
         ${ME.promoUnlocked ? `
@@ -3241,12 +3282,26 @@ var qrcode = function() {
       <div class="plan-cards" id="plan-cards"></div>
       <div class="plan-change-action" id="plan-change-action" style="display:none;">
         <div class="plan-btn-row">
-          <button class="btn-stripe" disabled>Pay with card</button>
-          <button class="btn-skip-payment" id="skip-payment-btn">Skip payment — apply now (testing)</button>
+          <button class="btn-primary" id="pay-with-stripe-btn" style="display:none;">Continue to payment</button>
+          <button class="btn-skip-payment" id="skip-payment-btn" style="display:none;">Apply now — no payment (promo account)</button>
         </div>
-        <div class="dev-note">"Pay with card" isn't wired up yet — real billing goes through Stripe once that's connected. The button on the right applies the plan change immediately, no payment involved, for testing during the pilot.</div>
+        <div class="dev-note" id="plan-change-note"></div>
       </div>
     `;
+
+    document.getElementById('manage-billing-btn')?.addEventListener('click', async (e) => {
+      const btn = e.target;
+      btn.disabled = true;
+      btn.textContent = 'Opening…';
+      try {
+        const { url } = await apiFetch('/api/billing/create-portal-session', { method: 'POST' });
+        window.location.href = url;
+      } catch (err) {
+        btn.disabled = false;
+        btn.textContent = 'Manage billing';
+        alert(err.message);
+      }
+    });
 
     document.getElementById('apply-promo-btn')?.addEventListener('click', async () => {
       const btn = document.getElementById('apply-promo-btn');
@@ -3268,6 +3323,9 @@ var qrcode = function() {
     let selectedPlan = null;
     const cardsEl = document.getElementById('plan-cards');
     const actionEl = document.getElementById('plan-change-action');
+    const payBtn = document.getElementById('pay-with-stripe-btn');
+    const skipBtn = document.getElementById('skip-payment-btn');
+    const noteEl = document.getElementById('plan-change-note');
 
     cardsEl.innerHTML = PLANS.map((p) => `
       <div class="plan-card ${p.id === ME.plan ? 'current' : ''}" data-plan="${p.id}">
@@ -3290,14 +3348,48 @@ var qrcode = function() {
         selectedPlan = plan;
         cardsEl.querySelectorAll('.plan-card').forEach((c) => c.classList.toggle('selected', c.dataset.plan === plan));
         actionEl.style.display = 'block';
+
+        // Business is custom/contact-sales pricing — no self-serve
+        // checkout for it, same as advertised on the pricing page.
+        if (plan === 'business') {
+          payBtn.style.display = 'none';
+          skipBtn.style.display = ME.promoUnlocked || !ME.stripeConfigured ? 'inline-block' : 'none';
+          noteEl.textContent = ME.promoUnlocked || !ME.stripeConfigured
+            ? ''
+            : "Business is custom pricing — get in touch and we'll set this up for you.";
+          return;
+        }
+
+        const needsRealPayment = plan === 'growth' && ME.stripeConfigured && !ME.promoUnlocked;
+        payBtn.style.display = needsRealPayment ? 'inline-block' : 'none';
+        skipBtn.style.display = needsRealPayment ? 'none' : 'inline-block';
+        noteEl.textContent = needsRealPayment
+          ? "You'll go to Stripe to enter your card — 14-day free trial, cancel any time."
+          : (ME.stripeConfigured ? 'Free — promo access on this account.' : 'Payments not configured yet — this applies instantly, no charge.');
       });
     });
 
-    document.getElementById('skip-payment-btn').addEventListener('click', async () => {
+    payBtn.addEventListener('click', async () => {
       if (!selectedPlan) return;
-      const btn = document.getElementById('skip-payment-btn');
-      btn.disabled = true;
-      btn.textContent = 'Applying…';
+      payBtn.disabled = true;
+      payBtn.textContent = 'Redirecting…';
+      try {
+        const { url } = await apiFetch('/api/billing/create-checkout-session', {
+          method: 'POST',
+          body: JSON.stringify({ billingPeriod: 'monthly' }),
+        });
+        window.location.href = url;
+      } catch (err) {
+        payBtn.disabled = false;
+        payBtn.textContent = 'Continue to payment';
+        alert(err.message);
+      }
+    });
+
+    skipBtn.addEventListener('click', async () => {
+      if (!selectedPlan) return;
+      skipBtn.disabled = true;
+      skipBtn.textContent = 'Applying…';
       try {
         await apiFetch('/api/billing/change-plan', {
           method: 'POST',
@@ -3306,8 +3398,9 @@ var qrcode = function() {
         ME = await apiFetch('/api/me');
         showBilling();
       } catch (err) {
-        btn.disabled = false;
-        btn.textContent = 'Skip payment — apply now (testing)';
+        skipBtn.disabled = false;
+        skipBtn.textContent = 'Apply now — no payment (promo account)';
+        alert(err.message);
       }
     });
   }

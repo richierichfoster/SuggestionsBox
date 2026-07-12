@@ -19,8 +19,13 @@ const defaultData = {
   // Separate from the single pilot business above — this is where real
   // sign-ups from the marketing site's "Get early access" flow live, each
   // with their own isolated notes list.
-  businesses: [], // {id, businessName, ownerName, email, passwordHash, passwordSalt, plan, createdAt, notes: []}
+  businesses: [], // {id, businessName, ownerName, email, passwordHash, passwordSalt, plan, stripeCustomerId, stripeSubscriptionId, planStatus, trialEndsAt, currentPeriodEnd, cancelAtPeriodEnd, createdAt, notes: []}
   sessions: {}, // { [token]: businessId }
+
+  // Cached Stripe Price IDs for the Growth plan (monthly + annual) — created
+  // once via the Stripe API on first boot with a key configured, then
+  // reused forever after. See stripe-billing.js.
+  stripe: {},
 };
 
 export const db = new Low(adapter, defaultData);
