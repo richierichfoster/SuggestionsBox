@@ -79,11 +79,15 @@
   .top-right-avatar{
     position:absolute; top:28px; right:32px; width:42px; height:42px; border-radius:12px;
     border:1.5px solid var(--line); background:var(--card); display:flex; align-items:center; justify-content:center;
-    overflow:hidden; z-index:5;
+    z-index:5;
   }
-  .top-right-avatar img{width:100%; height:100%; object-fit:cover;}
+  .top-right-avatar img{width:100%; height:100%; object-fit:cover; border-radius:10px;}
   .top-right-avatar .placeholder{font-family:'Fredoka',sans-serif; font-weight:600; font-size:16px; color:var(--ink-soft);}
-  @media (max-width:900px){ .top-right-avatar{top:14px; right:16px; width:36px; height:36px;} }
+  .verified-badge{position:absolute; top:-7px; right:-7px; width:18px; height:18px; z-index:6;}
+  @media (max-width:900px){
+    .top-right-avatar{top:14px; right:16px; width:36px; height:36px;}
+    .verified-badge{width:15px; height:15px; top:-6px; right:-6px;}
+  }
 
   .loading, .error-state{text-align:center; padding:80px 20px; color:var(--ink-soft); font-size:14px;}
   .error-state a{color:var(--terra-deep); font-weight:600;}
@@ -2664,6 +2668,12 @@ var qrcode = function() {
     document.getElementById('loggedOutShell').style.display = 'block';
   }
 
+  // Solid-fill verified badge (Growth/Business plans only) — reuses the
+  // same folded-note silhouette as the real logo, with a tick instead of
+  // the smile face. Kept as one constant so every place it's used stays
+  // pixel-identical.
+  const VERIFIED_BADGE_SVG = '<svg class="verified-badge" viewBox="0 0 200 200"><path d="M56 10 L146 10 L190 54 L190 144 A46 46 0 0 1 144 190 L56 190 A46 46 0 0 1 10 144 L10 56 A46 46 0 0 1 56 10 Z" fill="#3B82C4" stroke="#FFFFFF" stroke-width="10"/><path d="M146 10 L190 54 L146 54 Z" fill="#2A6398"/><path d="M62 104 L88 130 L142 68" fill="none" stroke="#FFFFFF" stroke-width="18" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+
   async function apiFetch(path, opts = {}) {
     const res = await fetch(`${API_BASE}${path}`, {
       ...opts,
@@ -2775,6 +2785,9 @@ var qrcode = function() {
     el.innerHTML = ME.logoDataUrl
       ? `<img src="${ME.logoDataUrl}" alt="${escapeHtml(ME.businessName)}">`
       : `<span class="placeholder">${escapeHtml((ME.businessName || '?').charAt(0).toUpperCase())}</span>`;
+    if (ME.verified) {
+      el.insertAdjacentHTML('beforeend', VERIFIED_BADGE_SVG);
+    }
   }
 
   document.getElementById('hamburger-btn').addEventListener('click', () => {

@@ -34,6 +34,8 @@
   .topbar-brand svg{width:26px; height:26px; flex-shrink:0;}
   .topbar-logo{width:34px; height:34px; border-radius:10px; border:1px solid var(--line); background:var(--card); display:flex; align-items:center; justify-content:center; overflow:hidden; flex-shrink:0;}
   .topbar-logo img{width:100%; height:100%; object-fit:cover;}
+  .topbar-logo-wrap{position:relative; flex-shrink:0;}
+  .topbar-logo-wrap .verified-badge{position:absolute; top:-4px; right:-4px; width:14px; height:14px;}
   .icon-btn{width:34px; height:34px; border-radius:10px; background:var(--card); border:1px solid var(--line); display:flex; align-items:center; justify-content:center; cursor:pointer;}
   .icon-btn svg{width:16px; height:16px;}
   .page{padding:16px 18px;}
@@ -242,6 +244,7 @@
 
   let businessName = '';
   let businessLogoUrl = null;
+  let businessVerified = false;
   let isStaffMode = false;
   let view = { name: 'home' };
 
@@ -259,6 +262,8 @@
     }
     return data;
   }
+
+  const VERIFIED_BADGE_SVG = '<svg class="verified-badge" viewBox="0 0 200 200"><path d="M56 10 L146 10 L190 54 L190 144 A46 46 0 0 1 144 190 L56 190 A46 46 0 0 1 10 144 L10 56 A46 46 0 0 1 56 10 Z" fill="#3B82C4" stroke="#FFFFFF" stroke-width="10"/><path d="M146 10 L190 54 L146 54 Z" fill="#2A6398"/><path d="M62 104 L88 130 L142 68" fill="none" stroke="#FFFFFF" stroke-width="18" stroke-linecap="round" stroke-linejoin="round"/></svg>';
 
   function escapeHtml(str) {
     const div = document.createElement('div');
@@ -309,6 +314,7 @@
       const biz = await api(`/api/board/${businessId}`);
       businessName = biz.name;
       businessLogoUrl = biz.logoDataUrl || null;
+      businessVerified = !!biz.verified;
       // Staff mode only activates if the link asked for it AND the
       // business's plan actually includes employee notes — a shared
       // staff link on a Starter business just falls back to customer view.
@@ -335,7 +341,7 @@
             <svg viewBox="0 0 200 200"><path d="M56 10 L146 10 L190 54 L190 144 A46 46 0 0 1 144 190 L56 190 A46 46 0 0 1 10 144 L10 56 A46 46 0 0 1 56 10 Z" fill="#FCF6EC" stroke="#E2653A" stroke-width="10"/><path d="M146 10 L190 54 L146 54 Z" fill="#E2653A"/><path d="M146 10 L146 54 L190 54" fill="none" stroke="#B84B29" stroke-width="4" stroke-linejoin="round"/><circle cx="66" cy="86" r="9" fill="#E2653A"/><circle cx="130" cy="86" r="9" fill="#E2653A"/><path d="M56 120 Q100 158 142 120" stroke="#E2653A" stroke-width="16" stroke-linecap="round" fill="none"/></svg>
             <h1>${escapeHtml(businessName)}${isStaffMode ? ' · Team' : ''}</h1>
           </div>
-          ${businessLogoUrl ? `<div class="topbar-logo"><img src="${businessLogoUrl}" alt=""></div>` : `<div style="width:34px;"></div>`}
+          ${businessLogoUrl ? `<div class="topbar-logo-wrap"><div class="topbar-logo"><img src="${businessLogoUrl}" alt=""></div>${businessVerified ? VERIFIED_BADGE_SVG : ''}</div>` : `<div style="width:34px;"></div>`}
         </div>
         <div class="compose-tile-wrap">
           <div class="compose-headline">${composeHeadline}</div>

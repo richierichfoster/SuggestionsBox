@@ -702,6 +702,7 @@ app.get('/api/me', requireSession, (req, res) => {
     role: req.actingUser.role, // 'admin' | 'manager' | 'team_member'
     userName: req.actingUser.name,
     employeeNotesEnabled: planIncludesEmployeeNotes(req.business.plan),
+    verified: isVerifiedPlan(req.business.plan),
     address: req.business.address || null,
     lat: req.business.lat ?? null,
     lng: req.business.lng ?? null,
@@ -1117,6 +1118,7 @@ app.get('/api/businesses/search', async (req, res) => {
       businessName: b.businessName,
       address: b.address,
       logoDataUrl: b.logoDataUrl,
+      verified: isVerifiedPlan(b.plan),
       distanceKm: distance,
     };
   });
@@ -1315,6 +1317,15 @@ function planIncludesEmployeeNotes(plan) {
   return plan === 'growth' || plan === 'business';
 }
 
+// Verified badge shows for any paid plan. Kept as its own function (even
+// though the condition is identical to planIncludesEmployeeNotes today)
+// since these are conceptually separate gates that could diverge later —
+// e.g. if Business-tier ever required manual verification before the
+// badge applies, only this function would need to change.
+function isVerifiedPlan(plan) {
+  return plan === 'growth' || plan === 'business';
+}
+
 app.get('/api/board/:businessId', async (req, res) => {
   await db.read();
   const business = db.data.businesses.find((b) => b.id === req.params.businessId);
@@ -1324,6 +1335,7 @@ app.get('/api/board/:businessId', async (req, res) => {
     name: business.businessName,
     logoDataUrl: business.logoDataUrl || null,
     employeeNotesEnabled: planIncludesEmployeeNotes(business.plan),
+    verified: isVerifiedPlan(business.plan),
   });
 });
 
@@ -1401,6 +1413,7 @@ app.get('/api/board/:businessId/wall', async (req, res) => {
   res.json({
     businessName: business.businessName,
     logoDataUrl: business.logoDataUrl || null,
+    verified: isVerifiedPlan(business.plan),
     totalNotes: customerNotes.length,
     actionedCount: customerNotes.filter((n) => n.status === 'actioned').length,
     avgResponseDays,
