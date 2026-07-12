@@ -1,0 +1,266 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="color-scheme" content="light">
+<meta name="supported-color-schemes" content="light">
+<title>Terms & Conditions — Suggestions Box</title>
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 viewBox=%270 0 200 200%27%3E%3Cpath d=%27M56 10 L146 10 L190 54 L190 144 A46 46 0 0 1 144 190 L56 190 A46 46 0 0 1 10 144 L10 56 A46 46 0 0 1 56 10 Z%27 fill=%27%23FCF6EC%27 stroke=%27%23E2653A%27 stroke-width=%2710%27/%3E%3Cpath d=%27M146 10 L190 54 L146 54 Z%27 fill=%27%23E2653A%27/%3E%3Cpath d=%27M146 10 L146 54 L190 54%27 fill=%27none%27 stroke=%27%23B84B29%27 stroke-width=%274%27 stroke-linejoin=%27round%27/%3E%3Ccircle cx=%2766%27 cy=%2786%27 r=%279%27 fill=%27%23E2653A%27/%3E%3Ccircle cx=%27130%27 cy=%2786%27 r=%279%27 fill=%27%23E2653A%27/%3E%3Cpath d=%27M56 120 Q100 158 142 120%27 stroke=%27%23E2653A%27 stroke-width=%2716%27 stroke-linecap=%27round%27 fill=%27none%27/%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600;700&family=Work+Sans:wght@400;500;600;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    color-scheme: light;
+    --cream:#FCF6EC; --parchment:#F3E9D8; --card:#FFFFFF;
+    --terra:#E2653A; --terra-deep:#B84B29; --terra-text:#8C371C;
+    --gold:#D9A441; --gold-deep:#B7852A;
+    --teal:#3D6B66; --teal-tint:#E3EDEB; --teal-deep:#254240;
+    --ink:#2E2B28; --ink-soft:#6E6A63; --line:#EDE0CC;
+  }
+  *{box-sizing:border-box; margin:0; padding:0;}
+  html{background:#FCF6EC !important;}
+  body{font-family:'Work Sans',sans-serif; color:#2E2B28 !important; background:#FCF6EC !important; -webkit-font-smoothing:antialiased;}
+  a{color:var(--terra-deep);}
+  h1,h2,h3{font-family:'Fredoka',sans-serif; font-weight:600; line-height:1.2;}
+
+  header{position:sticky; top:0; z-index:50; background:rgba(252,246,236,0.92); backdrop-filter:blur(6px); border-bottom:1px solid var(--line);}
+  nav{display:flex; align-items:center; justify-content:space-between; padding:16px 24px; max-width:1120px; margin:0 auto;}
+  .brand{display:flex; align-items:center; gap:9px;}
+  .brand svg{width:30px; height:30px;}
+  .brand span{font-family:'Fredoka',sans-serif; font-weight:700; font-size:17px;}
+  .brand span em{font-style:normal; color:var(--terra);}
+  .nav-cta{
+    background:var(--terra); color:#FCF6EC !important; font-family:'Fredoka',sans-serif; font-weight:600;
+    font-size:14px; padding:10px 20px; border-radius:22px;
+  }
+
+  .wrap{max-width:760px; margin:0 auto; padding:56px 24px 90px;}
+  .eyebrow{
+    font-family:'Space Mono',monospace; font-size:12px; letter-spacing:.08em; text-transform:uppercase;
+    color:var(--terra-text); font-weight:700; margin-bottom:14px; display:inline-block;
+    background:#FBEBD9; border:1px solid #F0C9A8; padding:6px 14px; border-radius:20px;
+  }
+  h1{font-size:32px; margin-bottom:10px;}
+  .updated{font-family:'Space Mono',monospace; font-size:12.5px; color:var(--ink-soft); margin-bottom:28px;}
+
+  .notice{
+    background:var(--teal-tint); border:1px solid #CBE0DC; border-radius:12px; padding:16px 18px;
+    font-size:13.5px; color:var(--teal-deep); line-height:1.6; margin-bottom:40px;
+  }
+  .notice b{font-family:'Fredoka',sans-serif;}
+
+  .toc{background:var(--card); border:1px solid var(--line); border-radius:14px; padding:22px 24px; margin-bottom:48px;}
+  .toc h3{font-size:14px; text-transform:uppercase; letter-spacing:.03em; color:var(--ink-soft); margin-bottom:12px;}
+  .toc ol{margin:0; padding-left:20px; font-size:14px; line-height:2;}
+  .toc a{color:var(--ink);}
+  .toc a:hover{color:var(--terra-deep);}
+
+  section.term{margin-bottom:40px; scroll-margin-top:90px;}
+  section.term h2{font-size:20px; margin-bottom:12px; display:flex; gap:10px; align-items:baseline;}
+  section.term h2 .num{font-family:'Space Mono',monospace; font-size:15px; color:var(--terra-deep); font-weight:700;}
+  section.term h3{font-size:15.5px; margin:18px 0 8px;}
+  section.term p{font-size:14.5px; line-height:1.7; color:var(--ink); margin-bottom:12px;}
+  section.term ul, section.term ol.sub{font-size:14.5px; line-height:1.7; margin:0 0 12px 22px; color:var(--ink);}
+  section.term li{margin-bottom:6px;}
+  section.term strong{font-family:'Fredoka',sans-serif; font-weight:600;}
+
+  .divider{height:1px; background:var(--line); margin:44px 0;}
+
+  footer{border-top:1px solid var(--line); padding:36px 24px; text-align:center;}
+  footer .brand{justify-content:center; margin-bottom:8px;}
+  footer p{font-size:12.5px; color:var(--ink-soft); font-family:'Space Mono',monospace;}
+
+  @media (max-width:600px){
+    h1{font-size:26px;}
+    .wrap{padding:40px 20px 70px;}
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <nav>
+    <a href="index.html" class="brand">
+      <svg viewBox="0 0 200 200"><path d="M56 10 L146 10 L190 54 L190 144 A46 46 0 0 1 144 190 L56 190 A46 46 0 0 1 10 144 L10 56 A46 46 0 0 1 56 10 Z" fill="#FCF6EC" stroke="#E2653A" stroke-width="10"/><path d="M146 10 L190 54 L146 54 Z" fill="#E2653A"/><path d="M146 10 L146 54 L190 54" fill="none" stroke="#B84B29" stroke-width="4" stroke-linejoin="round"/><circle cx="66" cy="86" r="9" fill="#E2653A"/><circle cx="130" cy="86" r="9" fill="#E2653A"/><path d="M56 120 Q100 158 142 120" stroke="#E2653A" stroke-width="16" stroke-linecap="round" fill="none"/></svg>
+      <span>Suggestions<em>Box</em></span>
+    </a>
+    <a href="https://app.suggestionsbox.com.au/login.html" class="nav-cta">Log in / Register</a>
+  </nav>
+</header>
+
+<div class="wrap">
+  <span class="eyebrow">Legal</span>
+  <h1>Terms &amp; Conditions</h1>
+  <div class="updated">Last updated — 13 July 2026</div>
+
+  <div class="notice">
+    <b>Before you publish this:</b> this is a plain-English starting draft, written to match how Suggestions Box actually works — it is not legal advice, and it hasn't been reviewed by a solicitor. Please have one look it over (particularly the billing, liability, and Australian Consumer Law sections) before treating it as your final terms.
+  </div>
+
+  <div class="toc">
+    <h3>Contents</h3>
+    <ol>
+      <li><a href="#definitions">Definitions</a></li>
+      <li><a href="#two-kinds">Two kinds of people this applies to</a></li>
+      <li><a href="#business-terms">Business account terms</a></li>
+      <li><a href="#billing">Subscriptions &amp; billing</a></li>
+      <li><a href="#customer-terms">Submitting a note (customers &amp; team members)</a></li>
+      <li><a href="#acceptable-use">Acceptable use &amp; prohibited content</a></li>
+      <li><a href="#moderation">Moderation</a></li>
+      <li><a href="#public-wall">The public Response Wall &amp; widget</a></li>
+      <li><a href="#ip">Intellectual property</a></li>
+      <li><a href="#warranties">Disclaimers</a></li>
+      <li><a href="#liability">Limitation of liability</a></li>
+      <li><a href="#suspension">Suspension &amp; termination</a></li>
+      <li><a href="#changes">Changes to these terms</a></li>
+      <li><a href="#law">Governing law</a></li>
+      <li><a href="#contact">Contact</a></li>
+    </ol>
+  </div>
+
+  <section class="term" id="definitions">
+    <h2><span class="num">1.</span> Definitions</h2>
+    <p><strong>"Suggestions Box," "we," "us"</strong> means Suggestions Box Feedback, the operator of the Suggestions Box platform at suggestionsbox.com.au and its subdomains.</p>
+    <p><strong>"Platform"</strong> means our website, dashboard, embeddable widget, and related services.</p>
+    <p><strong>"Business"</strong> means an organisation that has created a Business Account to collect and manage feedback.</p>
+    <p><strong>"Business Account"</strong> means the paid or free account a Business uses to access the Platform, including any Team Members added to it.</p>
+    <p><strong>"Note"</strong> means any suggestion, comment, or piece of feedback submitted through the Platform by a Customer or Team Member.</p>
+    <p><strong>"Customer"</strong> means a member of the public submitting a Note about a Business, typically via a QR code or public link.</p>
+    <p><strong>"Team Member"</strong> means a person the Business has identified as staff, who may submit Notes through a separate internal channel.</p>
+  </section>
+
+  <section class="term" id="two-kinds">
+    <h2><span class="num">2.</span> Two kinds of people this applies to</h2>
+    <p>These Terms cover two different relationships with the Platform, and different sections apply depending on which one describes you:</p>
+    <ul>
+      <li><strong>Businesses</strong> that sign up for a Business Account to collect feedback — see sections 3–4 in particular.</li>
+      <li><strong>Customers and Team Members</strong> who submit a Note — see section 5 in particular.</li>
+    </ul>
+    <p>Sections 6 onward (acceptable use, moderation, liability, and so on) apply to everyone using the Platform in any capacity.</p>
+  </section>
+
+  <section class="term" id="business-terms">
+    <h2><span class="num">3.</span> Business account terms</h2>
+    <h3>3.1 Eligibility</h3>
+    <p>You must be authorised to act on behalf of the Business you're registering, and be at least 18 years old, to create a Business Account.</p>
+    <h3>3.2 Accuracy of information</h3>
+    <p>You agree to provide accurate business details (name, address, contact email) and to keep them up to date, since Customers rely on this information when submitting Notes.</p>
+    <h3>3.3 Account security</h3>
+    <p>You're responsible for keeping your login credentials confidential, and for all activity that happens under your Business Account, including actions taken by any Team Members you invite.</p>
+    <h3>3.4 Responding to feedback</h3>
+    <p>Businesses are encouraged, but not obligated, to respond to and update the status of Notes. We don't guarantee that any Note will receive a response within any particular timeframe.</p>
+  </section>
+
+  <section class="term" id="billing">
+    <h2><span class="num">4.</span> Subscriptions &amp; billing</h2>
+    <h3>4.1 Plans</h3>
+    <p>The Platform offers a free Starter plan and paid Growth/Business plans, billed per location. Current pricing is shown on our <a href="pricing.html">pricing page</a> and may change from time to time — we'll give existing subscribers reasonable notice before a price change takes effect on their account.</p>
+    <h3>4.2 Payment processing</h3>
+    <p>Paid subscriptions are billed through Stripe. By subscribing, you also agree to Stripe's own terms of service for payment processing. We don't store your card details ourselves.</p>
+    <h3>4.3 Free trials</h3>
+    <p>Where a free trial is offered, your card will be charged automatically once the trial ends unless you cancel before it does.</p>
+    <h3>4.4 Cancellation &amp; refunds</h3>
+    <p>You can cancel a paid subscription at any time through the billing portal in your dashboard. Cancelling stops future billing but doesn't refund the current billing period unless we say otherwise in a specific case.</p>
+    <h3>4.5 Failed payments</h3>
+    <p>If a payment fails and isn't resolved, we may downgrade your Business Account to the Starter plan, or suspend access to paid features, until payment is made.</p>
+  </section>
+
+  <section class="term" id="customer-terms">
+    <h2><span class="num">5.</span> Submitting a note (customers &amp; team members)</h2>
+    <h3>5.1 Anonymity</h3>
+    <p>You can generally choose to submit a Note anonymously or with your name attached, depending on what the Business has enabled. Where you submit anonymously, we do not share your identity with the Business.</p>
+    <h3>5.2 No account required</h3>
+    <p>Submitting a Note as a Customer doesn't require creating an account.</p>
+    <h3>5.3 Ownership of your words</h3>
+    <p>You retain ownership of the content of your Note. By submitting it, you grant the Business and Suggestions Box a licence to store, display (including publicly, if the Business chooses to feature it on a public Response Wall or embeddable widget), and respond to it.</p>
+    <h3>5.4 No guarantee of a response</h3>
+    <p>Businesses are not obligated to respond to, act on, or even read every Note. Submitting a Note doesn't create any obligation on the Business's part.</p>
+  </section>
+
+  <section class="term" id="acceptable-use">
+    <h2><span class="num">6.</span> Acceptable use &amp; prohibited content</h2>
+    <p>The Platform exists for feedback <strong>about a business</strong> — its service, products, facilities, processes, or experience. It is not a general messaging tool and must not be used to target individual people. Regardless of who's using the Platform, the following is not allowed:</p>
+    <ul>
+      <li>Personal attacks, harassment, threats, or insults directed at a named or identifiable individual (an employee, owner, or another customer) rather than the business itself.</li>
+      <li>Hate speech, discriminatory remarks, or content that demeans a person or group based on a protected characteristic.</li>
+      <li>Profanity or crude/vulgar language, even if not directed at a person.</li>
+      <li>Content unrelated to the business — spam, advertising, or messages with no connection to feedback about the business's service or experience.</li>
+      <li>Attempting to identify an anonymous Note's author, or retaliating against a Customer or Team Member for feedback they've given.</li>
+      <li>Impersonating another person or business.</li>
+      <li>Uploading unlawful content, or content that infringes someone else's intellectual property or privacy.</li>
+    </ul>
+    <p>We may remove content, or restrict, suspend, or terminate access to the Platform, for anyone who breaches this section — see section 12.</p>
+  </section>
+
+  <section class="term" id="moderation">
+    <h2><span class="num">7.</span> Moderation</h2>
+    <p>Notes are checked, using a combination of automated tools and — where flagged — human review, against section 6 before being posted. Depending on what's found:</p>
+    <ul>
+      <li><strong>Content that clearly breaches section 6</strong> (e.g. a personal attack or profanity) is blocked from posting, and the author is offered a chance to rewrite it.</li>
+      <li><strong>Content that's borderline</strong> — critical of a named individual but not clearly abusive, for instance — may be blocked from public posting but offered to the Business privately by email instead, so genuine feedback isn't lost even where it isn't suitable to publish.</li>
+    </ul>
+    <p>Automated moderation isn't perfect. We don't guarantee that every Note that should be blocked will be, or that every Note that's blocked deserved to be — if you believe a Note was moderated in error, contact us (see section 15).</p>
+  </section>
+
+  <section class="term" id="public-wall">
+    <h2><span class="num">8.</span> The public Response Wall &amp; widget</h2>
+    <p>Businesses may choose to display actioned Notes and the business's responses publicly, via a Response Wall page or an embeddable widget on their own website. Only Notes the Business has actively published are shown this way — nothing is made public automatically.</p>
+  </section>
+
+  <section class="term" id="ip">
+    <h2><span class="num">9.</span> Intellectual property</h2>
+    <p>The Platform itself — its software, design, branding, and underlying code — belongs to Suggestions Box. Nothing in these Terms transfers ownership of that to you. Businesses retain ownership of their own business name, logo, and any content they upload (aside from the licence described in section 5.3 for Notes).</p>
+  </section>
+
+  <section class="term" id="warranties">
+    <h2><span class="num">10.</span> Disclaimers</h2>
+    <p>The Platform is provided "as is." To the maximum extent permitted by law, we don't warrant that the Platform will be uninterrupted, error-free, or available at all times. Nothing in this section limits any consumer guarantee that can't lawfully be excluded under the Australian Consumer Law.</p>
+  </section>
+
+  <section class="term" id="liability">
+    <h2><span class="num">11.</span> Limitation of liability</h2>
+    <p>To the maximum extent permitted by law, Suggestions Box isn't liable for indirect, incidental, or consequential loss arising from use of the Platform, including loss of business, revenue, or data. Our total liability for any claim relating to the Platform is limited to the amount you've paid us in the 12 months before the claim arose.</p>
+  </section>
+
+  <section class="term" id="suspension">
+    <h2><span class="num">12.</span> Suspension &amp; termination</h2>
+    <h3>12.1 By you</h3>
+    <p>A Business may cancel its account at any time via the dashboard or by contacting us.</p>
+    <h3>12.2 By us</h3>
+    <p>We may suspend or terminate a Business Account's access to the Platform — including while we investigate a suspected breach — where we reasonably believe:</p>
+    <ul>
+      <li>These Terms, particularly section 6, have been breached;</li>
+      <li>Payment is significantly overdue;</li>
+      <li>The account is being used in a way that risks harm to Suggestions Box, another Business, or any Customer or Team Member; or</li>
+      <li>We're required to by law.</li>
+    </ul>
+    <p>Where reasonably possible, we'll give notice of a suspension and the reason for it. Suspension doesn't automatically cancel a paid subscription — you may still need to cancel billing separately.</p>
+  </section>
+
+  <section class="term" id="changes">
+    <h2><span class="num">13.</span> Changes to these terms</h2>
+    <p>We may update these Terms from time to time. For material changes, we'll make reasonable efforts to notify active Business Accounts (e.g. by email) before the change takes effect. Continuing to use the Platform after a change takes effect means you accept the updated Terms.</p>
+  </section>
+
+  <section class="term" id="law">
+    <h2><span class="num">14.</span> Governing law</h2>
+    <p>These Terms are governed by the laws of Victoria, Australia, and each party submits to the non-exclusive jurisdiction of the courts of Victoria.</p>
+  </section>
+
+  <section class="term" id="contact">
+    <h2><span class="num">15.</span> Contact</h2>
+    <p>Questions about these Terms can be sent to <a href="mailto:hello@suggestionsbox.com.au">hello@suggestionsbox.com.au</a>. <em>(Update this to whichever inbox you'd like these to land in.)</em></p>
+  </section>
+</div>
+
+<footer>
+  <div class="brand">
+    <svg viewBox="0 0 200 200"><path d="M56 10 L146 10 L190 54 L190 144 A46 46 0 0 1 144 190 L56 190 A46 46 0 0 1 10 144 L10 56 A46 46 0 0 1 56 10 Z" fill="#FCF6EC" stroke="#E2653A" stroke-width="10"/><path d="M146 10 L190 54 L146 54 Z" fill="#E2653A"/><path d="M146 10 L146 54 L190 54" fill="none" stroke="#B84B29" stroke-width="4" stroke-linejoin="round"/><circle cx="66" cy="86" r="9" fill="#E2653A"/><circle cx="130" cy="86" r="9" fill="#E2653A"/><path d="M56 120 Q100 158 142 120" stroke="#E2653A" stroke-width="16" stroke-linecap="round" fill="none"/></svg>
+    <span>Suggestions<em>Box</em></span>
+  </div>
+  <p>© 2026 Suggestions Box. All rights reserved.</p>
+</footer>
+
+</body>
+</html>

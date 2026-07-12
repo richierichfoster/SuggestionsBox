@@ -2671,6 +2671,17 @@ var qrcode = function() {
     });
     const data = await res.json().catch(() => ({}));
     if (!res.ok) {
+      // A suspended business loses API access immediately (see the
+      // server's requireSession check) — every call will 403 with this
+      // exact error until an admin restores it, so rather than showing a
+      // half-broken dashboard, send them to login with a clear reason.
+      if (res.status === 403 && data.error === 'suspended') {
+        localStorage.removeItem('sb_token');
+        localStorage.removeItem('sb_business');
+        const reason = data.suspendedReason ? `?suspended=${encodeURIComponent(data.suspendedReason)}` : '?suspended=1';
+        window.location.href = `login.html${reason}`;
+        return new Promise(() => {}); // stop this call chain — we're navigating away
+      }
       const err = new Error(data.error || 'Request failed');
       err.status = res.status;
       throw err;

@@ -134,6 +134,18 @@
     errorBox.style.display = 'block';
   }
 
+  // Arriving here after a suspended-account bounce from the dashboard —
+  // show the reason (if one was given) rather than leaving them wondering
+  // why they were logged out.
+  const suspendedParam = new URLSearchParams(window.location.search).get('suspended');
+  if (suspendedParam) {
+    showError(
+      suspendedParam === '1'
+        ? 'Your account has been suspended. Contact us if you think this is a mistake.'
+        : `Your account has been suspended: ${suspendedParam}`
+    );
+  }
+
   async function attemptLogin() {
     errorBox.style.display = 'none';
     const email = document.getElementById('f-email').value.trim();

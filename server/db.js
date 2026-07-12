@@ -19,7 +19,7 @@ const defaultData = {
   // Separate from the single pilot business above — this is where real
   // sign-ups from the marketing site's "Get early access" flow live, each
   // with their own isolated notes list.
-  businesses: [], // {id, businessName, ownerName, email, passwordHash, passwordSalt, plan, stripeCustomerId, stripeSubscriptionId, planStatus, trialEndsAt, currentPeriodEnd, cancelAtPeriodEnd, createdAt, notes: []}
+  businesses: [], // {id, businessName, ownerName, email, passwordHash, passwordSalt, plan, stripeCustomerId, stripeSubscriptionId, planStatus, trialEndsAt, currentPeriodEnd, cancelAtPeriodEnd, suspended, suspendedReason, suspendedAt, createdAt, notes: []}
   sessions: {}, // { [token]: businessId }
 
   // Cached Stripe Price IDs for the Growth plan (monthly + annual) — created

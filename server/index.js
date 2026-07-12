@@ -343,6 +343,14 @@ function requireSession(req, res, next) {
   const business = db.data.businesses.find((b) => b.id === session.businessId);
   if (!business) return res.status(401).json({ error: 'not logged in' });
 
+  // A suspended business (and anyone on its team) loses API access
+  // immediately, even with a valid existing token — this is checked here
+  // rather than only at login so an admin's suspend action takes effect
+  // right away, not just for the next login.
+  if (business.suspended) {
+    return res.status(403).json({ error: 'suspended', suspendedReason: business.suspendedReason || null });
+  }
+
   if (!session.teamMemberId) {
     req.business = business;
     req.actingUser = { id: business.id, name: business.ownerName || business.businessName, role: 'admin' };
@@ -420,6 +428,9 @@ app.post('/api/auth/signup', async (req, res) => {
     lng: null,
     logoDataUrl: null,
     promoUnlocked,
+    suspended: false,
+    suspendedReason: null,
+    suspendedAt: null,
     digestEnabled: true,
     digestEmail: null, // null = falls back to the account's own email
     digestSkipEmpty: false, // false = still send a "quiet day" email when there's nothing new
@@ -486,6 +497,9 @@ app.post('/api/auth/google', async (req, res) => {
 
   if (existing) {
     business = existing.business;
+    if (business.suspended) {
+      return res.status(403).json({ error: business.suspendedReason ? `Account suspended: ${business.suspendedReason}` : 'This account has been suspended.' });
+    }
     if (existing.kind === 'member') {
       teamMemberId = existing.member.id;
       // Google sign-in only applies to owner accounts here — an invited
@@ -525,6 +539,9 @@ app.post('/api/auth/google', async (req, res) => {
       lng: null,
       logoDataUrl: null,
       promoUnlocked,
+      suspended: false,
+      suspendedReason: null,
+      suspendedAt: null,
       digestEnabled: true,
       digestEmail: null,
       digestSkipEmpty: false,
@@ -560,6 +577,9 @@ app.post('/api/auth/login', async (req, res) => {
   // Try the business owner first...
   const business = db.data.businesses.find((b) => b.email === normalizedEmail);
   if (business && verifyPassword(password, business.passwordHash, business.passwordSalt)) {
+    if (business.suspended) {
+      return res.status(403).json({ error: business.suspendedReason ? `Account suspended: ${business.suspendedReason}` : 'This account has been suspended.' });
+    }
     const token = createToken();
     db.data.sessions[token] = { businessId: business.id, teamMemberId: null };
     await db.write();
@@ -578,6 +598,9 @@ app.post('/api/auth/login', async (req, res) => {
   for (const biz of db.data.businesses) {
     const teamMember = (biz.teamMembers || []).find((m) => m.email === normalizedEmail);
     if (teamMember && teamMember.passwordHash && verifyPassword(password, teamMember.passwordHash, teamMember.passwordSalt)) {
+      if (biz.suspended) {
+        return res.status(403).json({ error: biz.suspendedReason ? `Account suspended: ${biz.suspendedReason}` : 'This account has been suspended.' });
+      }
       const token = createToken();
       db.data.sessions[token] = { businessId: biz.id, teamMemberId: teamMember.id };
       await db.write();
@@ -1412,6 +1435,49 @@ app.get('/api/board/:businessId/notes/:noteId', async (req, res) => {
   });
 });
 
+app.post('/api/board/:businessId/notes/email-instead', async (req, res) => {
+  const { text, category, isEmployee, authorName } = req.body;
+
+  if (typeof text !== 'string' || !text.trim()) {
+    return res.status(400).json({ error: 'text is required' });
+  }
+
+  await db.read();
+  const business = db.data.businesses.find((b) => b.id === req.params.businessId);
+  if (!business) return res.status(404).json({ error: 'business not found' });
+
+  const recipient = business.digestEmail || business.email;
+  if (!recipient) return res.status(503).json({ error: "This business doesn't have an email on file yet." });
+
+  // This feedback was flagged as personally targeting an identifiable
+  // individual — not abusive enough to reject outright, but not suitable
+  // to post to the public/team board either. It's relayed directly and
+  // privately to the business instead, and is never stored as a Note.
+  const escapeHtml = (str) => String(str ?? '')
+    .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+
+  const html = `
+    <div style="font-family:sans-serif; max-width:520px; margin:0 auto; padding:24px;">
+      <p style="font-size:13px; color:#6E6A63;">
+        This note named a specific person, so it wasn't posted to your ${isEmployee ? 'team' : 'customer'} board —
+        it's been sent to you privately instead.
+      </p>
+      <div style="background:#FCF6EC; border:1px solid #EDE0CC; border-radius:10px; padding:16px; font-size:14px; color:#2E2B28; line-height:1.5;">
+        "${escapeHtml(text.trim())}"
+      </div>
+      ${authorName ? `<p style="font-size:12.5px; color:#6E6A63; margin-top:10px;">— ${escapeHtml(authorName)}</p>` : ''}
+      <p style="font-size:11.5px; color:#6E6A63; margin-top:18px;">Category: ${escapeHtml(category || 'general')}</p>
+    </div>`;
+
+  const result = await sendEmail(recipient, 'Private feedback (not posted publicly)', html);
+  if (!result.ok) {
+    return res.status(502).json({ error: "Couldn't send this to the business right now. Please try again." });
+  }
+
+  res.json({ ok: true });
+});
+
 app.post('/api/board/:businessId/notes', async (req, res) => {
   const { text, category, isAnonymous, authorName, deviceId, skipModerationCheck, isEmployee, isSafetyIssue } = req.body;
 
@@ -1569,6 +1635,9 @@ function businessSummary(b) {
     actionedRate: notes.length ? Math.round((actionedCount / notes.length) * 100) : 0,
     lastActivity: lastNoteAt || b.createdAt,
     promoUnlocked: !!b.promoUnlocked,
+    suspended: !!b.suspended,
+    suspendedReason: b.suspendedReason || null,
+    suspendedAt: b.suspendedAt || null,
   };
 }
 
@@ -1592,6 +1661,43 @@ app.get('/api/admin/businesses/:id', requireSession, requireAdmin, async (req, r
     .sort((a, b) => b.voteCount - a.voteCount);
 
   res.json({ ...businessSummary(business), notes });
+});
+
+// Platform admin suspends a business — immediately blocks all API access
+// for that business and its team (see requireSession), and blocks future
+// logins with a clear reason. Doesn't touch their Stripe subscription or
+// data; suspension is reversible.
+app.post('/api/admin/businesses/:id/suspend', requireSession, requireAdmin, async (req, res) => {
+  const { reason } = req.body;
+  await db.read();
+  const business = db.data.businesses.find((b) => b.id === req.params.id);
+  if (!business) return res.status(404).json({ error: 'business not found' });
+
+  // Never allow suspending the platform-admin account itself, deliberately
+  // or via a typo'd ID — that would lock the only super-admin out.
+  if (business.isAdmin) {
+    return res.status(400).json({ error: "Can't suspend the platform admin account." });
+  }
+
+  business.suspended = true;
+  business.suspendedReason = (reason || '').trim() || null;
+  business.suspendedAt = new Date().toISOString();
+  await db.write();
+
+  res.json({ ok: true });
+});
+
+app.post('/api/admin/businesses/:id/unsuspend', requireSession, requireAdmin, async (req, res) => {
+  await db.read();
+  const business = db.data.businesses.find((b) => b.id === req.params.id);
+  if (!business) return res.status(404).json({ error: 'business not found' });
+
+  business.suspended = false;
+  business.suspendedReason = null;
+  business.suspendedAt = null;
+  await db.write();
+
+  res.json({ ok: true });
 });
 
 // Platform admin revokes a business's promo-unlocked billing bypass.

@@ -521,7 +521,7 @@
     const submitBtn = document.getElementById('submit-note');
     const modBox = document.getElementById('mod-check');
     const toneStatusEl = document.getElementById('tone-status');
-    let moderationStatus = 'unchecked'; // unchecked | checking | passed | blocked | nudged
+    let moderationStatus = 'unchecked'; // unchecked | checking | passed | blocked | nudged | medium
     let debounceTimer;
 
     function updateSubmitState() {
@@ -577,6 +577,62 @@
               modBox.innerHTML = '';
               updateSubmitState();
             });
+          } else if (result.severity === 'medium') {
+            // Not abusive, but personally singles out an identifiable
+            // individual rather than the business — not suitable to post
+            // to the public/team board. Offer to send it to the business
+            // privately by email instead, so the feedback isn't lost.
+            moderationStatus = 'medium';
+            modBox.innerHTML = `
+              <div class="nudge"><div>${escapeHtml(result.message)}
+                ${result.suggestion ? `<div style="margin-top:6px; font-style:italic;">"${escapeHtml(result.suggestion)}"</div>` : ''}
+                <div style="margin-top:8px;">
+                  ${result.suggestion ? '<button id="use-rewrite">Use this instead</button>' : ''}
+                  <button id="email-instead">Email this to the business instead</button>
+                  <button id="edit-myself">I'll edit it myself</button>
+                </div>
+                <div id="email-instead-msg" style="margin-top:8px; display:none;"></div>
+              </div></div>`;
+            if (result.suggestion) {
+              document.getElementById('use-rewrite').addEventListener('click', () => {
+                textarea.value = result.suggestion;
+                runToneCheck();
+              });
+            }
+            document.getElementById('edit-myself').addEventListener('click', () => {
+              modBox.innerHTML = '';
+              moderationStatus = 'unchecked';
+              updateSubmitState();
+            });
+            document.getElementById('email-instead').addEventListener('click', async (e) => {
+              const btn = e.target;
+              btn.disabled = true;
+              btn.textContent = 'Sending…';
+              const msgEl = document.getElementById('email-instead-msg');
+              try {
+                const anonEl = document.getElementById('anon');
+                const isAnonymous = anonEl ? anonEl.checked : true;
+                const authorName = document.getElementById('author-name')?.value || '';
+                await api(`/api/board/${businessId}/notes/email-instead`, {
+                  method: 'POST',
+                  body: JSON.stringify({
+                    text: textarea.value,
+                    category,
+                    isEmployee: isStaffMode,
+                    authorName: isAnonymous ? '' : authorName,
+                  }),
+                });
+                modBox.innerHTML = `<div class="nudge">✓ Sent privately to the business — thanks for the feedback.</div>`;
+                textarea.value = '';
+                moderationStatus = 'unchecked';
+                updateSubmitState();
+              } catch (err) {
+                msgEl.style.display = 'block';
+                msgEl.textContent = err.message || "Couldn't send — please try again.";
+                btn.disabled = false;
+                btn.textContent = 'Email this to the business instead';
+              }
+            });
           } else {
             moderationStatus = 'blocked';
             modBox.innerHTML = `
@@ -629,8 +685,40 @@
       } catch (err) {
         // A real submission failure — the note was NOT saved, so let them retry.
         if (err.status === 422 && err.data?.moderation) {
-          moderationStatus = 'blocked';
-          modBox.innerHTML = `<div class="nudge">${escapeHtml(err.data.moderation.message)}</div>`;
+          const mod = err.data.moderation;
+          if (mod.severity === 'medium') {
+            moderationStatus = 'medium';
+            modBox.innerHTML = `
+              <div class="nudge"><div>${escapeHtml(mod.message)}
+                <div style="margin-top:8px;">
+                  <button id="email-instead-late">Email this to the business instead</button>
+                </div>
+              </div></div>`;
+            document.getElementById('email-instead-late').addEventListener('click', async (e) => {
+              const btn = e.target;
+              btn.disabled = true;
+              btn.textContent = 'Sending…';
+              try {
+                const anonEl = document.getElementById('anon');
+                const isAnonymous = anonEl ? anonEl.checked : true;
+                const nameVal = document.getElementById('author-name')?.value || '';
+                await api(`/api/board/${businessId}/notes/email-instead`, {
+                  method: 'POST',
+                  body: JSON.stringify({ text, category, isEmployee: isStaffMode, authorName: isAnonymous ? '' : nameVal }),
+                });
+                modBox.innerHTML = `<div class="nudge">✓ Sent privately to the business — thanks for the feedback.</div>`;
+                textarea.value = '';
+                moderationStatus = 'unchecked';
+              } catch (err2) {
+                btn.disabled = false;
+                btn.textContent = 'Email this to the business instead';
+              }
+              updateSubmitState();
+            });
+          } else {
+            moderationStatus = 'blocked';
+            modBox.innerHTML = `<div class="nudge">${escapeHtml(mod.message)}</div>`;
+          }
         } else if (err.status === 403) {
           errBox.textContent = "This business's plan doesn't include team notes right now.";
         } else {

@@ -589,12 +589,36 @@ async function revokePromo(id){
   }
 }
 
+async function suspendBusiness(id){
+  const reason = prompt("Reason for suspension (shown to them if they try to log in — optional):", "");
+  if (reason === null) return; // cancelled
+  if (!confirm("Suspend this business? They'll be logged out of the app immediately and won't be able to log back in until you unsuspend them.")) return;
+  try {
+    await apiFetch(`/api/admin/businesses/${id}/suspend`, { method: 'POST', body: JSON.stringify({ reason }) });
+    allBusinesses = await apiFetch('/api/admin/businesses');
+    showBusiness(id);
+  } catch(e) {
+    alert(e.message || "Couldn't suspend this business — please try again.");
+  }
+}
+
+async function unsuspendBusiness(id){
+  if (!confirm('Restore this business\'s access?')) return;
+  try {
+    await apiFetch(`/api/admin/businesses/${id}/unsuspend`, { method: 'POST' });
+    allBusinesses = await apiFetch('/api/admin/businesses');
+    showBusiness(id);
+  } catch(e) {
+    alert("Couldn't restore access — please try again.");
+  }
+}
+
 function renderRows(filter=''){
   const rows = allBusinesses.filter(b => b.businessName.toLowerCase().includes(filter.toLowerCase()));
   document.getElementById('bizRows').innerHTML = rows.length ? rows.map(b => `
     <tr onclick="showBusiness('${b.id}')" style="cursor:pointer;">
       <td>
-        <div class="biz-name">${escapeHtml(b.businessName)}</div>
+        <div class="biz-name">${escapeHtml(b.businessName)}${b.suspended ? ' <span style="font-size:10.5px; font-weight:700; color:#B4432A; background:#FBEAE5; padding:2px 7px; border-radius:5px; text-transform:uppercase; letter-spacing:.03em;">Suspended</span>' : ''}</div>
         <div class="biz-sub">${escapeHtml(b.email)}</div>
       </td>
       <td><span class="plan-pill ${b.plan}">${planLabel(b.plan)}</span></td>
@@ -647,6 +671,12 @@ async function showBusiness(id){
       <span class="plan-pill" style="background:#EFF4DE; color:#5E7A1F; margin-left:6px;">Promo unlocked</span>
       <button onclick="revokePromo('${biz.id}')" style="margin-left:8px; font-size:12px; color:var(--ink-faint); background:none; border:1px solid var(--line); border-radius:6px; padding:3px 9px; cursor:pointer;">Revoke</button>
     ` : ''}
+    ${biz.suspended ? `
+      <span class="plan-pill" style="background:#FBEAE5; color:#B4432A; margin-left:6px;">Suspended${biz.suspendedReason ? `: ${escapeHtml(biz.suspendedReason)}` : ''}</span>
+      <button onclick="unsuspendBusiness('${biz.id}')" style="margin-left:8px; font-size:12px; color:var(--ink-faint); background:none; border:1px solid var(--line); border-radius:6px; padding:3px 9px; cursor:pointer;">Restore access</button>
+    ` : `
+      <button onclick="suspendBusiness('${biz.id}')" style="margin-left:8px; font-size:12px; color:#B4432A; background:none; border:1px solid #EBC6BA; border-radius:6px; padding:3px 9px; cursor:pointer;">Suspend account</button>
+    `}
   `;
 
   document.getElementById('dStats').innerHTML = `
