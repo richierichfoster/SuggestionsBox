@@ -2797,6 +2797,8 @@ var qrcode = function() {
 
       <div id="onboard-container"></div>
 
+      ${MY_NOTES.length > 0 ? `<div id="volume-chart-container"></div>` : ''}
+
       <div class="stat-row">
         <div class="stat-card"><div class="stat-num">${MY_NOTES.length}</div><div class="stat-label">Notes received</div></div>
         <div class="stat-card"><div class="stat-num">${totalVotes}</div><div class="stat-label">Total votes</div></div>
@@ -2810,8 +2812,6 @@ var qrcode = function() {
         ` : ''}
         <div class="stat-card"><div class="stat-num">${avgResponseTimeLabel(MY_NOTES)}</div><div class="stat-label">Avg. time to first response</div></div>
       </div>
-
-      ${MY_NOTES.length > 0 ? `<div id="volume-chart-container"></div>` : ''}
 
       ${MY_NOTES.length === 0 ? emptyState("No notes yet — that's normal on day one", 'Share your board link from Settings with customers and your team. Notes will show up here, ranked by votes, as soon as the first one comes in.') : ''}
     `;
@@ -2917,9 +2917,11 @@ var qrcode = function() {
     });
   }
 
-  // Renders a lightweight SVG bar chart of note volume over the last 14
-  // days, split into customer/team where relevant — no charting library,
-  // consistent with how the QR code was built elsewhere in this file.
+  // Renders a lightweight SVG line/area chart of note volume over the last
+  // 14 days, split into customer/team where relevant — no charting
+  // library, consistent with how the QR code was built elsewhere in this
+  // file. Customer and team are independent lines (not stacked), each
+  // with its own soft fill down to the baseline.
   function renderVolumeChart() {
     const container = document.getElementById('volume-chart-container');
     if (!container) return;
@@ -2937,34 +2939,48 @@ var qrcode = function() {
       created.setHours(0, 0, 0, 0);
       const bucket = buckets.find((b) => b.date.getTime() === created.getTime());
       if (bucket) {
-        if (n.lane === 'employee') bucket.team++;
+        if ((n.lane || 'customer') === 'employee') bucket.team++;
         else bucket.customer++;
       }
     });
 
-    const maxVal = Math.max(...buckets.map((b) => b.customer + b.team), 1);
-    const W = 640, H = 140, padBottom = 20, barGap = 4;
-    const barWidth = (W / days) - barGap;
+    const maxVal = Math.max(...buckets.map((b) => Math.max(b.customer, b.team)), 1);
+    const W = 640, H = 160, padBottom = 20, padTop = 10;
+    const plotH = H - padBottom - padTop;
+    const stepX = W / (days - 1);
 
-    const bars = buckets.map((b, i) => {
-      const x = i * (W / days) + barGap / 2;
-      const totalH = ((b.customer + b.team) / maxVal) * (H - padBottom);
-      const customerH = (b.customer / maxVal) * (H - padBottom);
-      const teamH = (b.team / maxVal) * (H - padBottom);
-      const yTop = H - padBottom - totalH;
+    function pointsFor(key) {
+      return buckets.map((b, i) => {
+        const x = i * stepX;
+        const y = padTop + plotH - (b[key] / maxVal) * plotH;
+        return [x, y];
+      });
+    }
+
+    function linePath(points) {
+      return points.map((p, i) => `${i === 0 ? 'M' : 'L'} ${p[0].toFixed(1)} ${p[1].toFixed(1)}`).join(' ');
+    }
+
+    function areaPath(points) {
+      const baseline = padTop + plotH;
+      return `${linePath(points)} L ${points[points.length - 1][0].toFixed(1)} ${baseline} L ${points[0][0].toFixed(1)} ${baseline} Z`;
+    }
+
+    const customerPoints = pointsFor('customer');
+    const teamPoints = pointsFor('team');
+
+    const labels = buckets.map((b, i) => {
       const showLabel = i === 0 || i === days - 1 || i === Math.floor(days / 2);
-      const label = showLabel ? b.date.toLocaleDateString('en-AU', { day: 'numeric', month: 'short' }) : '';
-      return `
-        ${teamH > 0 ? `<rect x="${x}" y="${yTop}" width="${barWidth}" height="${teamH}" fill="#254240" rx="2"/>` : ''}
-        ${customerH > 0 ? `<rect x="${x}" y="${yTop + teamH}" width="${barWidth}" height="${customerH}" fill="#E2653A" rx="2"/>` : ''}
-        ${label ? `<text x="${x + barWidth / 2}" y="${H - 4}" font-size="9" fill="#6E6A63" text-anchor="middle" font-family="monospace">${label}</text>` : ''}
-      `;
+      if (!showLabel) return '';
+      const x = i * stepX;
+      const label = b.date.toLocaleDateString('en-AU', { day: 'numeric', month: 'short' });
+      return `<text x="${x}" y="${H - 4}" font-size="9" fill="#6E6A63" text-anchor="middle" font-family="monospace">${label}</text>`;
     }).join('');
 
     container.innerHTML = `
       <div class="chart-panel">
         <div class="chart-panel-head">
-          <h2>Notes over the last 14 days</h2>
+          <h2>Suggestion volume, last 14 days</h2>
           ${ME.employeeNotesEnabled ? `
             <div class="chart-legend">
               <span><i style="background:#E2653A;"></i>Customers</span>
@@ -2972,7 +2988,23 @@ var qrcode = function() {
             </div>
           ` : ''}
         </div>
-        <svg viewBox="0 0 ${W} ${H}" style="width:100%; height:140px; display:block;">${bars}</svg>
+        <svg viewBox="0 0 ${W} ${H}" style="width:100%; height:160px; display:block;">
+          <defs>
+            <linearGradient id="fillCustomer" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stop-color="#E2653A" stop-opacity="0.18"/>
+              <stop offset="100%" stop-color="#E2653A" stop-opacity="0"/>
+            </linearGradient>
+            <linearGradient id="fillTeam" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stop-color="#254240" stop-opacity="0.16"/>
+              <stop offset="100%" stop-color="#254240" stop-opacity="0"/>
+            </linearGradient>
+          </defs>
+          ${ME.employeeNotesEnabled ? `<path d="${areaPath(teamPoints)}" fill="url(#fillTeam)"/>` : ''}
+          <path d="${areaPath(customerPoints)}" fill="url(#fillCustomer)"/>
+          ${ME.employeeNotesEnabled ? `<path d="${linePath(teamPoints)}" fill="none" stroke="#254240" stroke-width="2.5" stroke-linejoin="round" stroke-linecap="round"/>` : ''}
+          <path d="${linePath(customerPoints)}" fill="none" stroke="#E2653A" stroke-width="2.5" stroke-linejoin="round" stroke-linecap="round"/>
+          ${labels}
+        </svg>
       </div>
     `;
   }
@@ -2984,7 +3016,7 @@ var qrcode = function() {
     document.getElementById('navNotes').classList.add('active');
     currentNotesScope = 'all';
     currentNoteFilter = 'all';
-    renderNotesView('All notes', 'all');
+    renderNotesView('Customer Notes', 'customer');
   }
 
   function showTeamBoard() {
@@ -3015,7 +3047,7 @@ var qrcode = function() {
     const staffBoardUrl = `board.html?business=${ME.id}&staff=1`;
     const idSuffix = scope === 'employee' ? 'team' : 'customer';
 
-    const scopedNotes = scope === 'all' ? MY_NOTES : MY_NOTES.filter((n) => n.lane === scope);
+    const scopedNotes = MY_NOTES.filter((n) => (n.lane || 'customer') === scope);
 
     app.innerHTML = `
       <div class="topbar"><h1>${escapeHtml(title)}</h1></div>
