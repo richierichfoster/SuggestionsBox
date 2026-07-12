@@ -55,7 +55,7 @@ function noteRowHtml(n) {
   const statusColor = n.status === 'actioned' ? '#5E7A1F' : '#6E6A63';
   return `
     <tr><td style="padding-bottom:12px;">
-      <table width="100%" cellpadding="0" cellspacing="0" style="background:#FFFCF6; border:1px solid #EDE0CC; border-radius:10px; overflow:hidden;">
+      <table width="100%" cellpadding="0" cellspacing="0" style="background:#FFFFFF; border:1px solid #EDE0CC; border-radius:10px; overflow:hidden;">
         <tr><td style="line-height:0; font-size:0;">
           <img src="data:image/png;base64,${DOT_STRIP_BASE64}" width="100%" height="5" alt="" style="display:block; width:100%; height:5px; border:0;">
         </td></tr>
@@ -88,11 +88,11 @@ function buildDigestHtml(business, customerNotes, teamNotes) {
   return `
 <!DOCTYPE html>
 <html>
-<body style="margin:0; padding:0; background:#FBF1E2; font-family:-apple-system,Segoe UI,Roboto,sans-serif;">
-  <table width="100%" cellpadding="0" cellspacing="0" style="background:#FBF1E2; padding:30px 0;">
+<body style="margin:0; padding:0; background:#FCF6EC; font-family:-apple-system,Segoe UI,Roboto,sans-serif;">
+  <table width="100%" cellpadding="0" cellspacing="0" style="background:#FCF6EC; padding:30px 0;">
     <tr><td align="center">
-      <table width="100%" style="max-width:520px; background:#FFFCF6; border-radius:16px; overflow:hidden; border:1px solid #EDE0CC;" cellpadding="0" cellspacing="0">
-        <tr><td style="background:#FBF1E2; padding:22px 28px; border-bottom:1px solid #EDE0CC;">
+      <table width="100%" style="max-width:520px; background:#FFFFFF; border-radius:16px; overflow:hidden; border:1px solid #EDE0CC;" cellpadding="0" cellspacing="0">
+        <tr><td style="background:#FCF6EC; padding:22px 28px; border-bottom:1px solid #EDE0CC;">
           <img src="data:image/png;base64,${LOGO_PNG_BASE64}" alt="Suggestions Box" style="height:37px; display:block; border:0;">
           <div style="font-family:sans-serif; font-size:13px; color:#6E6A63; margin-top:8px;">Your notes for ${escapeHtml(business.businessName)}</div>
         </td></tr>
@@ -100,7 +100,7 @@ function buildDigestHtml(business, customerNotes, teamNotes) {
           <table width="100%" cellpadding="0" cellspacing="0">${bodyHtml}</table>
         </td></tr>
         <tr><td style="padding:8px 28px 28px;">
-          <a href="${dashboardUrl}" style="display:inline-block; background:#E2653A; color:#FFFCF6; font-family:sans-serif; font-weight:600; font-size:14px; text-decoration:none; padding:12px 22px; border-radius:10px; margin-top:12px;">Log in to reply</a>
+          <a href="${dashboardUrl}" style="display:inline-block; background:#E2653A; color:#FFFFFF; font-family:sans-serif; font-weight:600; font-size:14px; text-decoration:none; padding:12px 22px; border-radius:10px; margin-top:12px;">Log in to reply</a>
         </td></tr>
       </table>
       <div style="font-family:monospace; font-size:10.5px; color:#6E6A63; margin-top:16px;">Suggestions Box · Daily digest</div>

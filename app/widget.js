@@ -19,10 +19,10 @@
   const STYLE = `
     .sb-w-root{
       --sb-w-terra:#E2653A; --sb-w-terra-deep:#B84B29; --sb-w-gold:#D9A441;
-      --sb-w-cream:#FBF1E2; --sb-w-ink:#2E2B28; --sb-w-ink-soft:#6E6A63; --sb-w-line:#EDE0CC;
+      --sb-w-cream:#FCF6EC; --sb-w-ink:#2E2B28; --sb-w-ink-soft:#6E6A63; --sb-w-line:#EDE0CC;
       --sb-w-good-ink:#5E7A1F;
       all:initial; box-sizing:border-box; display:block; font-family:'Work Sans',Arial,sans-serif;
-      max-width:820px; margin:0 auto; background:#FFFCF6; border:1px solid var(--sb-w-line);
+      max-width:820px; margin:0 auto; background:#FFFFFF; border:1px solid var(--sb-w-line);
       border-radius:16px; box-shadow:0 1px 2px rgba(46,38,32,.04), 0 10px 28px rgba(46,38,32,.08);
       padding:22px 22px 20px;
     }
@@ -43,8 +43,14 @@
     .sb-w-track::-webkit-scrollbar{display:none;}
     .sb-w-card{
       flex:0 0 270px; scroll-snap-align:start; background:#fff; border:1px solid var(--sb-w-line);
-      border-radius:12px; padding:18px 18px 16px; display:flex; flex-direction:column; gap:12px;
+      border-radius:12px; padding:22px 18px 16px; display:flex; flex-direction:column; gap:12px;
       box-shadow:0 1px 2px rgba(46,38,32,.04); transition:transform .15s ease, box-shadow .15s ease;
+      position:relative; overflow:hidden;
+    }
+    .sb-w-card::before{
+      content:""; position:absolute; top:0; left:0; right:0; height:10px;
+      background-image: radial-gradient(circle at 6px 6px, var(--sb-w-cream) 3px, transparent 3.5px);
+      background-size: 12px 10px; background-repeat:repeat-x; background-position:top center;
     }
     .sb-w-card:hover{transform:translateY(-2px); box-shadow:0 8px 20px rgba(46,38,32,.08);}
     .sb-w-card-top{display:flex; justify-content:space-between; align-items:flex-start; gap:10px;}
@@ -105,7 +111,7 @@
   }
 
   function logoSvg() {
-    return `<svg class="sb-w-mark" viewBox="0 0 200 200"><path d="M54,14 H142 L186,58 V146 Q186,186 146,186 H54 Q14,186 14,146 V54 Q14,14 54,14 Z" fill="#FBF1E2" stroke="#E9DCC5" stroke-width="4"/><path d="M142,14 L186,58 L142,58 Z" fill="#ECDBBE"/><circle cx="70" cy="76" r="8" fill="#E2653A"/><circle cx="130" cy="76" r="8" fill="#E2653A"/><path d="M64 106 Q100 130 136 106" stroke="#E2653A" stroke-width="15" stroke-linecap="round" fill="none"/></svg>`;
+    return `<svg class="sb-w-mark" viewBox="0 0 200 200"><path d="M54,14 H142 L186,58 V146 Q186,186 146,186 H54 Q14,186 14,146 V54 Q14,14 54,14 Z" fill="#FCF6EC" stroke="#E9DCC5" stroke-width="4"/><path d="M142,14 L186,58 L142,58 Z" fill="#ECDBBE"/><circle cx="70" cy="76" r="8" fill="#E2653A"/><circle cx="130" cy="76" r="8" fill="#E2653A"/><path d="M64 106 Q100 130 136 106" stroke="#E2653A" stroke-width="15" stroke-linecap="round" fill="none"/></svg>`;
   }
 
   function buildWidget(container, wall) {
