@@ -24,20 +24,27 @@
 
 <style>
   body{margin:0; font-family:'Work Sans',Arial,sans-serif; background:#FCF6EC; color:#2E2B28; display:flex; align-items:center; justify-content:center; min-height:100vh; text-align:center; padding:24px;}
-  a{color:#B84B29;}
+  .card{max-width:420px;}
+  h1{font-size:26px; margin:0 0 10px; color:#2E2B28;}
+  p{font-size:16px; line-height:1.5; color:#5A544E; margin:0 0 24px;}
+  a.btn{display:inline-block; background:#B84B29; color:#fff; font-weight:600; font-size:17px; text-decoration:none; padding:14px 30px; border-radius:12px;}
+  a.plain{color:#B84B29;}
 </style>
 </head>
 <body>
-  <!-- This page exists purely so the link preview (iMessage/SMS/Slack/etc.)
-       shows the team-specific image and copy above — board.html itself is
-       shared between customer and staff view via a ?staff=1 query param at
-       runtime, so it can't have its own static preview image. Crawlers
-       read the meta tags above and stop there; real visitors get bounced
-       straight through to the actual team board via the script below. -->
-  <noscript>
-    <p>Follow the link from your manager to open the team board.</p>
-  </noscript>
-  <p id="fallback" style="display:none;">Redirecting to the team board… if nothing happens, <a id="fallback-link" href="board.html?staff=1">tap here</a>.</p>
+  <!-- This page carries the team-specific link preview (iMessage/SMS/Slack/etc.)
+       via the meta tags above, then offers a button through to the real team
+       board — which lives in board.html, shared with the customer view via a
+       ?staff=1 query param. We intentionally do NOT auto-redirect: iMessage's
+       preview generator runs page JS, so an automatic redirect sends it on to
+       board.html (which has no preview image) and the preview comes up blank.
+       A plain button leaves the preview generator on this page, where the tags
+       are, and costs real visitors a single tap. -->
+  <div class="card">
+    <h1>Your team board</h1>
+    <p>Notes here are private to your team — no name attached to management, ever. Safety issues get fast-tracked straight away.</p>
+    <a id="board-link" class="btn" href="board.html?staff=1">Open the team board →</a>
+  </div>
 
 <script>
   const params = new URLSearchParams(window.location.search);
@@ -46,10 +53,7 @@
     ? `board.html?business=${encodeURIComponent(businessId)}&staff=1`
     : 'board.html?staff=1';
 
-  document.getElementById('fallback-link').href = dest;
-  document.getElementById('fallback').style.display = 'block';
-
-  window.location.replace(dest);
+  document.getElementById('board-link').href = dest;
 </script>
 </body>
 </html>
