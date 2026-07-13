@@ -3078,8 +3078,8 @@ var qrcode = function() {
 
   function renderNotesView(title, scope, showLink) {
     const basePath = `${window.location.origin}${window.location.pathname.replace('dashboard.html','')}`;
-    const boardUrl = scope === 'employee' ? `${basePath}board.html?business=${ME.id}&staff=1` : `${basePath}board.html?business=${ME.id}`;
-    const staffBoardUrl = `board.html?business=${ME.id}&staff=1`;
+    const boardUrl = scope === 'employee' ? `${basePath}team.html?business=${ME.id}` : `${basePath}board.html?business=${ME.id}`;
+    const staffBoardUrl = `team.html?business=${ME.id}`;
     const idSuffix = scope === 'employee' ? 'team' : 'customer';
 
     const scopedNotes = MY_NOTES.filter((n) => (n.lane || 'customer') === scope);
@@ -3821,9 +3821,9 @@ var qrcode = function() {
           <div class="board-link-box" style="background:#FBEBD9; border-color:#F0C9A8; margin-bottom:10px;">
             <div>
               <b style="color:#B84B29;">Team notes (private — staff only)</b>
-              <div class="board-url">${window.location.origin}${window.location.pathname.replace('dashboard.html','')}board.html?business=${ME.id}&staff=1</div>
+              <div class="board-url">${window.location.origin}${window.location.pathname.replace('dashboard.html','')}team.html?business=${ME.id}</div>
             </div>
-            <a href="board.html?business=${ME.id}&staff=1" target="_blank" class="board-link-btn" style="background:#B84B29;">Open →</a>
+            <a href="team.html?business=${ME.id}" target="_blank" class="board-link-btn" style="background:#B84B29;">Open →</a>
           </div>
         ` : ''}
         <div class="board-link-box" id="wall-link-box" style="background:var(--teal-tint); border-color:#CBE0DC; margin-bottom:0;">
