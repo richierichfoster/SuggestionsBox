@@ -1,0 +1,335 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="color-scheme" content="light">
+<meta name="supported-color-schemes" content="light">
+<title>Suggestions Box</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600;700&family=Work+Sans:wght@400;500;600;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    color-scheme: light;
+    --cream:#FBF1E2; --card:#FFFCF6; --terra:#E2653A; --terra-deep:#B84B29;
+    --ink:#2E2B28; --ink-soft:#6E6A63; --line:#EDE0CC; --good:#EFF4DE; --good-ink:#5E7A1F;
+    --alert:#C4432A; --alert-tint:#FBE3DD;
+  }
+  *{box-sizing:border-box; margin:0; padding:0;}
+  html{background:#FBF1E2 !important;}
+  body{font-family:'Work Sans',sans-serif; color:#2E2B28 !important; background:#FBF1E2 !important; -webkit-font-smoothing:antialiased;}
+  #root{max-width:480px; margin:0 auto; min-height:100vh; position:relative; padding-bottom:70px;}
+  h1,h2,h3{font-family:'Fredoka',sans-serif; font-weight:600; margin:0;}
+  a{color:inherit;}
+
+  .topbar{
+    display:flex; align-items:center; justify-content:space-between; padding:18px 18px 14px;
+    position:sticky; top:0; background:rgba(251,241,226,0.94); backdrop-filter:blur(6px); z-index:10; border-bottom:1px solid var(--line);
+  }
+  .topbar h1{font-size:17px;}
+  .icon-btn{width:34px; height:34px; border-radius:10px; background:var(--card); border:1px solid var(--line); display:flex; align-items:center; justify-content:center; cursor:pointer;}
+  .icon-btn svg{width:16px; height:16px;}
+  .page{padding:16px 18px;}
+
+  .note-card{background:var(--card); border:1px solid var(--line); border-radius:14px; padding:14px; margin-bottom:10px; display:flex; gap:12px; align-items:flex-start;}
+  .vote-btn{flex:none; width:44px; height:44px; border-radius:10px; background:var(--cream); border:1px solid var(--line); display:flex; flex-direction:column; align-items:center; justify-content:center; cursor:pointer; font-family:'Space Mono',monospace; font-weight:700; gap:1px;}
+  .vote-btn.voted{background:var(--terra); border-color:var(--terra); color:var(--card);}
+  .vote-btn .vlabel{font-size:7px; text-transform:uppercase; opacity:.7; font-weight:400;}
+  .note-body{flex:1; min-width:0;}
+  .note-body .ntext{font-size:13.5px; line-height:1.5; margin-bottom:6px;}
+  .note-meta{display:flex; align-items:center; gap:6px; font-family:'Space Mono',monospace; font-size:10px; color:var(--ink-soft); flex-wrap:wrap;}
+
+  .status-pill{padding:2px 8px; border-radius:6px; font-size:9.5px;}
+  .status-pill.sent{background:#EFEAE3; color:var(--ink-soft);}
+  .status-pill.seen{background:#E4EEFB; color:#3A5F8A;}
+  .status-pill.acknowledged{background:#FBEBD9; color:var(--terra-deep);}
+  .status-pill.in_progress{background:#FBF1D0; color:#9A7A15;}
+  .status-pill.actioned{background:var(--good); color:var(--good-ink);}
+  .status-pill.not_planned{background:#EFEAE3; color:var(--ink-soft);}
+
+  .fab{position:fixed; bottom:24px; right:24px; width:56px; height:56px; border-radius:50%; background:var(--terra); color:var(--card); display:flex; align-items:center; justify-content:center; box-shadow:0 10px 22px rgba(226,101,58,0.35); border:none; cursor:pointer; font-size:26px; max-width:480px;}
+
+  .btn-primary{background:var(--terra); color:var(--card); border:none; font-family:'Fredoka',sans-serif; font-weight:600; font-size:14px; padding:13px; border-radius:12px; width:100%; cursor:pointer;}
+  .btn-primary:disabled{opacity:.5; cursor:not-allowed;}
+  .btn-secondary{background:transparent; border:1px solid var(--line); color:var(--ink); font-family:'Fredoka',sans-serif; font-weight:600; font-size:13px; padding:11px; border-radius:11px; width:100%; cursor:pointer;}
+
+  .field{margin-bottom:14px;}
+  .field label{font-family:'Space Mono',monospace; font-size:10px; text-transform:uppercase; color:var(--ink-soft); display:block; margin-bottom:6px;}
+  .field input, .field textarea{width:100%; background:var(--card); border:1px solid var(--line); border-radius:10px; padding:11px; font-size:13.5px; font-family:'Work Sans',sans-serif; color:var(--ink);}
+  .field textarea{min-height:100px; resize:vertical;}
+
+  .chip-row{display:flex; gap:8px; flex-wrap:wrap; margin-bottom:14px;}
+  .chip{font-size:12px; padding:8px 14px; border-radius:16px; border:1px solid var(--line); background:var(--card); cursor:pointer; font-weight:500;}
+  .chip.active{background:var(--terra); border-color:var(--terra); color:var(--card);}
+  .checkbox-row{display:flex; align-items:center; gap:8px; margin-bottom:14px; font-size:13px;}
+
+  .nudge{display:flex; gap:8px; align-items:flex-start; background:var(--alert-tint); color:var(--alert); border-radius:10px; padding:10px; font-size:12px; line-height:1.4; margin-bottom:14px;}
+  .nudge button{background:var(--card); border:1px solid var(--line); border-radius:8px; padding:6px 10px; font-size:11.5px; font-family:'Fredoka',sans-serif; font-weight:600; cursor:pointer; margin-top:6px; margin-right:6px;}
+
+  .timeline{position:relative; padding-left:22px; margin-top:16px;}
+  .timeline::before{content:""; position:absolute; left:5px; top:4px; bottom:4px; width:2px; background:var(--line);}
+  .tstep{position:relative; padding-bottom:18px;}
+  .tstep:last-child{padding-bottom:0;}
+  .tstep::before{content:""; position:absolute; left:-22px; top:2px; width:11px; height:11px; border-radius:50%; background:var(--good-ink); border:2px solid var(--cream);}
+  .tstep .tlabel{font-family:'Fredoka',sans-serif; font-weight:600; font-size:13px; text-transform:capitalize;}
+  .tstep .ttime{font-family:'Space Mono',monospace; font-size:10px; color:var(--ink-soft); margin-top:1px;}
+  .tstep .tmsg{font-size:12px; color:var(--ink-soft); margin-top:4px; line-height:1.5;}
+
+  .empty{text-align:center; padding:60px 20px; color:var(--ink-soft); font-size:13.5px; line-height:1.6;}
+  .back-link{font-size:13px; color:var(--ink-soft); display:inline-flex; align-items:center; gap:6px; cursor:pointer; margin-bottom:12px;}
+  .footer-brand{text-align:center; padding:18px; font-family:'Space Mono',monospace; font-size:10.5px; color:var(--ink-soft);}
+  .footer-brand a{color:var(--terra-deep); font-weight:700;}
+</style>
+</head>
+<body>
+<div id="root"><div class="empty">Loading…</div></div>
+
+<script>
+  const API_BASE = 'http://localhost:3001';
+  const root = document.getElementById('root');
+  const params = new URLSearchParams(window.location.search);
+  const businessId = params.get('business');
+
+  function getDeviceId() {
+    let id = localStorage.getItem('sb_board_device_id');
+    if (!id) {
+      id = 'dev_' + Math.random().toString(36).slice(2) + Date.now().toString(36);
+      localStorage.setItem('sb_board_device_id', id);
+    }
+    return id;
+  }
+
+  let businessName = '';
+  let view = { name: 'home' };
+
+  async function api(path, options = {}) {
+    const res = await fetch(`${API_BASE}${path}`, {
+      ...options,
+      headers: { 'Content-Type': 'application/json', ...(options.headers || {}) },
+    });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) {
+      const err = new Error(data.error || 'Request failed');
+      err.status = res.status;
+      err.data = data;
+      throw err;
+    }
+    return data;
+  }
+
+  function escapeHtml(str) {
+    const div = document.createElement('div');
+    div.textContent = str;
+    return div.innerHTML;
+  }
+
+  const STATUS_LABELS = { sent:'Sent', seen:'Seen', acknowledged:'Acknowledged', in_progress:'In progress', actioned:'Actioned', not_planned:'Not planned' };
+
+  async function boot() {
+    if (!businessId) {
+      root.innerHTML = `<div class="empty">No business specified.<br>This link should include <code>?business=&lt;id&gt;</code>.</div>`;
+      return;
+    }
+    try {
+      const biz = await api(`/api/board/${businessId}`);
+      businessName = biz.name;
+      renderHome();
+    } catch (err) {
+      root.innerHTML = `<div class="empty">Couldn't find that business board.<br>Double check the link.</div>`;
+    }
+  }
+
+  async function renderHome() {
+    root.innerHTML = `
+      <div class="topbar"><h1>${escapeHtml(businessName)}</h1><div style="width:34px;"></div></div>
+      <div class="page" id="notes-page"><div class="empty">Loading notes…</div></div>
+      <button class="fab" id="fab">+</button>
+      <div class="footer-brand">Powered by <a href="index.html">Suggestions Box</a></div>
+    `;
+    document.getElementById('fab').addEventListener('click', renderCompose);
+    await loadNotes();
+  }
+
+  async function loadNotes() {
+    const page = document.getElementById('notes-page');
+    try {
+      const notes = await api(`/api/board/${businessId}/notes?deviceId=${getDeviceId()}`);
+      if (notes.length === 0) {
+        page.innerHTML = `<div class="empty">No notes yet.<br>Be the first to say something — tap the + button below.</div>`;
+        return;
+      }
+      page.innerHTML = notes.map((n) => `
+        <div class="note-card" data-id="${n.id}">
+          <button class="vote-btn ${n.hasVoted ? 'voted' : ''}" data-vote="${n.id}">
+            <span>${n.voteCount}</span><span class="vlabel">votes</span>
+          </button>
+          <div class="note-body" data-open="${n.id}">
+            <div class="ntext">${escapeHtml(n.text)}</div>
+            <div class="note-meta">
+              <span class="status-pill ${n.status}">${STATUS_LABELS[n.status]}</span>
+              <span>·</span><span>${escapeHtml(n.category)}</span>
+              <span>·</span><span>${escapeHtml(n.displayName)}</span>
+            </div>
+          </div>
+        </div>
+      `).join('');
+
+      page.querySelectorAll('[data-vote]').forEach((btn) => {
+        btn.addEventListener('click', async (e) => {
+          e.stopPropagation();
+          const id = btn.dataset.vote;
+          try {
+            await api(`/api/board/${businessId}/notes/${id}/vote`, { method: 'POST', body: JSON.stringify({ deviceId: getDeviceId() }) });
+            loadNotes();
+          } catch {}
+        });
+      });
+      page.querySelectorAll('[data-open]').forEach((el) => {
+        el.addEventListener('click', () => renderDetail(el.dataset.open));
+      });
+    } catch (err) {
+      page.innerHTML = `<div class="empty">Couldn't load notes.</div>`;
+    }
+  }
+
+  function renderCompose() {
+    root.innerHTML = `
+      <div class="topbar">
+        <div class="icon-btn" id="back"><svg viewBox="0 0 24 24" fill="none"><path d="M15 18l-6-6 6-6" stroke="#2E2B28" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+        <h1>New note</h1><div style="width:34px;"></div>
+      </div>
+      <div class="page">
+        <div class="field"><label>What's this about</label>
+          <div class="chip-row" id="cat-row">
+            ${['General','Service','Pricing','Scheduling','Quality'].map((c,i) => `<div class="chip ${i===0?'active':''}" data-cat="${c.toLowerCase()}">${c}</div>`).join('')}
+          </div>
+        </div>
+        <div class="field"><label>Your note</label><textarea id="note-text" placeholder="What's working, or what isn't?"></textarea></div>
+        <div id="mod-check"></div>
+        <div class="checkbox-row"><input type="checkbox" id="anon"><label for="anon" style="margin:0; text-transform:none; font-family:'Work Sans';">Post anonymously</label></div>
+        <div class="field" id="name-field"><label>Your name (optional)</label><input id="author-name" placeholder="e.g. Priya"></div>
+        <div id="submit-error" style="color:var(--alert); font-size:12px; margin-bottom:10px;"></div>
+        <button class="btn-primary" id="submit-note" disabled>Tear off & send</button>
+      </div>
+    `;
+    document.getElementById('back').addEventListener('click', renderHome);
+
+    let category = 'general';
+    document.querySelectorAll('[data-cat]').forEach((chip) => {
+      chip.addEventListener('click', () => {
+        document.querySelectorAll('[data-cat]').forEach((c) => c.classList.remove('active'));
+        chip.classList.add('active');
+        category = chip.dataset.cat;
+      });
+    });
+
+    document.getElementById('anon').addEventListener('change', (e) => {
+      document.getElementById('name-field').style.display = e.target.checked ? 'none' : 'block';
+    });
+
+    const textarea = document.getElementById('note-text');
+    const submitBtn = document.getElementById('submit-note');
+    const modBox = document.getElementById('mod-check');
+    let moderation = null;
+    let debounceTimer;
+
+    textarea.addEventListener('input', () => {
+      submitBtn.disabled = !textarea.value.trim();
+      moderation = null;
+      modBox.innerHTML = '';
+      clearTimeout(debounceTimer);
+      if (!textarea.value.trim()) return;
+      debounceTimer = setTimeout(async () => {
+        try {
+          const result = await api('/api/moderate', { method: 'POST', body: JSON.stringify({ text: textarea.value }) });
+          if (!result.ok) {
+            moderation = result;
+            modBox.innerHTML = `
+              <div class="nudge"><div>${escapeHtml(result.message)}
+                <div style="margin-top:8px;">
+                  <button id="use-rewrite">Use rewrite</button>
+                  <button id="edit-myself">I'll edit it myself</button>
+                </div>
+              </div></div>`;
+            document.getElementById('use-rewrite').addEventListener('click', () => {
+              textarea.value = result.suggestion;
+              moderation = null;
+              modBox.innerHTML = '';
+            });
+            document.getElementById('edit-myself').addEventListener('click', () => { modBox.innerHTML = ''; });
+          }
+        } catch {}
+      }, 500);
+    });
+
+    submitBtn.addEventListener('click', async () => {
+      const text = textarea.value.trim();
+      if (!text) return;
+      const isAnonymous = document.getElementById('anon').checked;
+      const authorName = document.getElementById('author-name').value;
+      const errBox = document.getElementById('submit-error');
+      errBox.textContent = '';
+      submitBtn.disabled = true;
+      submitBtn.textContent = 'Sending…';
+      try {
+        await api(`/api/board/${businessId}/notes`, {
+          method: 'POST',
+          body: JSON.stringify({ text, category, isAnonymous, authorName, deviceId: getDeviceId() }),
+        });
+        renderHome();
+      } catch (err) {
+        if (err.status === 422 && err.data?.moderation) {
+          modBox.innerHTML = `<div class="nudge">${escapeHtml(err.data.moderation.message)}</div>`;
+        } else {
+          errBox.textContent = err.message;
+        }
+        submitBtn.disabled = false;
+        submitBtn.textContent = 'Tear off & send';
+      }
+    });
+  }
+
+  async function renderDetail(noteId) {
+    root.innerHTML = `
+      <div class="topbar">
+        <div class="icon-btn" id="back"><svg viewBox="0 0 24 24" fill="none"><path d="M15 18l-6-6 6-6" stroke="#2E2B28" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+        <h1>Note</h1><div style="width:34px;"></div>
+      </div>
+      <div class="page" id="detail-page"><div class="empty">Loading…</div></div>
+    `;
+    document.getElementById('back').addEventListener('click', renderHome);
+
+    try {
+      const note = await api(`/api/board/${businessId}/notes/${noteId}?deviceId=${getDeviceId()}`);
+      document.getElementById('detail-page').innerHTML = `
+        <div class="note-card" style="margin-bottom:18px;">
+          <button class="vote-btn ${note.hasVoted ? 'voted' : ''}" id="vote-btn"><span>${note.voteCount}</span><span class="vlabel">votes</span></button>
+          <div class="note-body">
+            <div class="ntext">${escapeHtml(note.text)}</div>
+            <div class="note-meta"><span>${escapeHtml(note.category)}</span><span>·</span><span>${escapeHtml(note.displayName)}</span></div>
+          </div>
+        </div>
+        <h3 style="font-size:14px; margin-bottom:4px;">Status</h3>
+        <div class="timeline">
+          ${note.statusHistory.map((h) => `
+            <div class="tstep">
+              <div class="tlabel">${h.status.replace('_',' ')}</div>
+              <div class="ttime">${new Date(h.at).toLocaleString()}</div>
+              ${h.message ? `<div class="tmsg">${escapeHtml(h.message)}</div>` : ''}
+            </div>
+          `).join('')}
+        </div>
+      `;
+      document.getElementById('vote-btn').addEventListener('click', async () => {
+        await api(`/api/board/${businessId}/notes/${noteId}/vote`, { method: 'POST', body: JSON.stringify({ deviceId: getDeviceId() }) });
+        renderDetail(noteId);
+      });
+    } catch {
+      document.getElementById('detail-page').innerHTML = `<div class="empty">Couldn't load this note.</div>`;
+    }
+  }
+
+  boot();
+</script>
+</body>
+</html>
